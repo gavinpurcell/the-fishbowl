@@ -23,13 +23,13 @@ export class FishbowlScene {
 
   // Fishbowl circle center and radius (matches Room's fishbowl ellipse)
   private readonly CIRCLE_CX = 400;
-  private readonly CIRCLE_CY = 380;
-  private readonly CIRCLE_RX = 140;
-  private readonly CIRCLE_RY = 42;
+  private readonly CIRCLE_CY = 390;
+  private readonly CIRCLE_RX = 180;
+  private readonly CIRCLE_RY = 55;
 
   // Observer position (outside the circle, bottom-right)
-  private readonly OBSERVER_X = 650;
-  private readonly OBSERVER_Y = 440;
+  private readonly OBSERVER_X = 680;
+  private readonly OBSERVER_Y = 460;
 
   /** Initialize the scene, letting PixiJS create its own canvas inside a container div */
   async initWithContainer(container: HTMLElement, options: InitOptions): Promise<void> {

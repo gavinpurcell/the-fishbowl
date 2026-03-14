@@ -7,41 +7,48 @@ import { FishbowlScene } from '@/scene/FishbowlScene';
 import { ConversationOrchestrator } from '@/engine/conversation';
 import { createProvider } from '@/providers/index';
 import { VideoRecorder } from '@/scene/VideoRecorder';
-import FishbowlCanvas from '@/components/scene/FishbowlCanvas';
 import StatusBar from '@/components/scene/StatusBar';
+// Note: PixiJS scene is managed directly via ref, not via FishbowlCanvas component
 import ModerationInput from '@/components/scene/ModerationInput';
 import type { RoundType, TranscriptEntry, Panelist } from '@/engine/types';
-import SpeakerCard from '@/components/scene/SpeakerCard';
 
-type SessionPhase =
-  | 'initializing'
-  | 'waiting-for-advance'   // waiting for spacebar to trigger next speaker
-  | 'speaking'              // a panelist is currently speaking
-  | 'moderation'            // user is asking questions
-  | 'wrapping-up'
-  | 'done';
+type ViewMode = 'briefing' | 'transition' | 'roundtable';
 
 export default function SessionPage() {
   const router = useRouter();
   const store = useFishbowlStore();
 
+  // Refs for stable access across async flows
+  const storeRef = useRef(store);
+  storeRef.current = store;
   const sceneRef = useRef<FishbowlScene | null>(null);
   const orchestratorRef = useRef<ConversationOrchestrator | null>(null);
   const recorderRef = useRef<VideoRecorder | null>(null);
   const startedRef = useRef(false);
   const advanceResolverRef = useRef<(() => void) | null>(null);
+  const isSpeakingRef = useRef(false);
+  const speakerTextRef = useRef('');
+  const textUpdateTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const localTranscriptRef = useRef<TranscriptEntry[]>([]);
 
-  const [phase, setPhase] = useState<SessionPhase>('initializing');
+  // UI state
+  const [viewMode, setViewMode] = useState<ViewMode>('briefing');
   const [currentRound, setCurrentRound] = useState<RoundType>('initial-takes');
   const [panelistsSpoken, setPanelistsSpoken] = useState(0);
   const [error, setError] = useState<string | null>(null);
-  const [liveTranscript, setLiveTranscript] = useState<TranscriptEntry[]>([]);
-  const [hint, setHint] = useState('Setting up the fishbowl...');
-  const [activeSpeaker, setActiveSpeaker] = useState<Panelist | null>(null);
-  const [activeSpeakerText, setActiveSpeakerText] = useState('');
+  const [hint, setHint] = useState('Press SPACE to meet your panel');
   const [isSpeaking, setIsSpeaking] = useState(false);
-  const speakerTextRef = useRef('');
-  const textUpdateTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const [liveTranscript, setLiveTranscript] = useState<TranscriptEntry[]>([]);
+
+  // Briefing state
+  const [briefingIndex, setBriefingIndex] = useState(-1);
+  const [briefingText, setBriefingText] = useState('');
+
+  // Moderation state
+  const [inModeration, setInModeration] = useState(false);
+
+  // Keep isSpeaking ref in sync
+  useEffect(() => { isSpeakingRef.current = isSpeaking; }, [isSpeaking]);
 
   // Redirect to setup if no active session
   useEffect(() => {
@@ -50,115 +57,143 @@ export default function SessionPage() {
     }
   }, [store.status, store.panelists.length, router]);
 
-  // Wait for user to press space (returns a promise that resolves on keypress)
-  const waitForAdvance = useCallback((): Promise<void> => {
+  // Wait for spacebar — returns promise that resolves on press
+  const waitForSpace = useCallback((): Promise<void> => {
     return new Promise((resolve) => {
       advanceResolverRef.current = resolve;
-      setPhase('waiting-for-advance');
     });
   }, []);
 
-  // Spacebar handler
+  // Spacebar handler — blocks during speaking
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
-      if (e.code === 'Space' && advanceResolverRef.current) {
+      if (e.code === 'Space') {
         e.preventDefault();
-        const resolver = advanceResolverRef.current;
-        advanceResolverRef.current = null;
-        resolver();
+        if (isSpeakingRef.current) return; // Block during speech
+        if (advanceResolverRef.current) {
+          const resolver = advanceResolverRef.current;
+          advanceResolverRef.current = null;
+          resolver();
+        }
       }
     };
     window.addEventListener('keydown', handleKey);
     return () => window.removeEventListener('keydown', handleKey);
   }, []);
 
-  // Capture store values in refs so handleSceneReady doesn't depend on store
-  const storeRef = useRef(store);
-  storeRef.current = store;
+  // PixiJS scene container ref (always in DOM, hidden until roundtable)
+  const sceneContainerRef = useRef<HTMLDivElement>(null);
+  const sceneInitializedRef = useRef(false);
 
-  const handleSceneReady = useCallback(async (scene: FishbowlScene) => {
+  // Initialize PixiJS scene once container is available
+  useEffect(() => {
+    if (!sceneContainerRef.current || sceneInitializedRef.current) return;
+    sceneInitializedRef.current = true;
+
+    const fishbowlScene = new FishbowlScene();
+    sceneRef.current = fishbowlScene;
+
+    fishbowlScene.initWithContainer(sceneContainerRef.current, {
+      panelists: store.panelists,
+      onReady: () => {
+        // Start video recording
+        const canvas = fishbowlScene.getCanvas();
+        if (canvas) {
+          const recorder = new VideoRecorder();
+          recorderRef.current = recorder;
+          recorder.start(canvas);
+        }
+      },
+    });
+
+    return () => {
+      fishbowlScene.destroy();
+      sceneRef.current = null;
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Main session flow — runs once on mount
+  useEffect(() => {
     if (startedRef.current) return;
+    if (store.status !== 'running' || store.panelists.length < 3) return;
     startedRef.current = true;
-    sceneRef.current = scene;
 
     const s = storeRef.current;
-
-    // Start video recording
-    const canvas = scene.getCanvas();
-    if (canvas) {
-      const recorder = new VideoRecorder();
-      recorderRef.current = recorder;
-      recorder.start(canvas);
-    }
-
     const provider = createProvider(s.provider, s.apiKey);
-
-    // Collect transcript entries locally (not just in store)
     const localTranscript: TranscriptEntry[] = [];
+    localTranscriptRef.current = localTranscript;
 
     const orchestrator = new ConversationOrchestrator(
-      store.panelists,
-      store.ideaText,
-      store.ideaFiles,
+      s.panelists,
+      s.ideaText,
+      s.ideaFiles,
       provider,
       {
         onRoundChange: (round: RoundType) => {
           setCurrentRound(round);
-          store.setCurrentRound(round);
+          storeRef.current.setCurrentRound(round);
           setPanelistsSpoken(0);
         },
         onPanelistActivated: (panelistId: string) => {
-          setPhase('speaking');
-          store.setActivePanelist(panelistId);
-          const speaker = store.panelists.find((p) => p.id === panelistId) || null;
-          setActiveSpeaker(speaker);
-          setActiveSpeakerText('');
-          speakerTextRef.current = '';
           setIsSpeaking(true);
-          scene.setCharacterState(panelistId, 'talking');
-          scene.showSpeechBubble(panelistId);
-          store.panelists.forEach((p) => {
-            if (p.id !== panelistId) {
-              scene.setCharacterState(p.id, Math.random() > 0.7 ? 'reacting' : 'thinking');
-            }
-          });
+          isSpeakingRef.current = true;
+          speakerTextRef.current = '';
+          storeRef.current.setActivePanelist(panelistId);
+
+          // During roundtable, drive the scene
+          const scene = sceneRef.current;
+          if (scene && viewMode === 'roundtable') {
+            scene.setCharacterState(panelistId, 'talking');
+            scene.showSpeechBubble(panelistId);
+            storeRef.current.panelists.forEach((p) => {
+              if (p.id !== panelistId) {
+                scene.setCharacterState(p.id, Math.random() > 0.7 ? 'reacting' : 'thinking');
+              }
+            });
+          }
         },
         onPanelistDeactivated: () => {
-          // Flush any pending text update
+          // Flush pending text updates
           if (textUpdateTimerRef.current) {
             clearTimeout(textUpdateTimerRef.current);
             textUpdateTimerRef.current = null;
           }
-          setActiveSpeakerText(speakerTextRef.current);
+          setBriefingText(speakerTextRef.current);
           setLiveTranscript([...localTranscript]);
 
-          store.setActivePanelist(null);
           setIsSpeaking(false);
+          isSpeakingRef.current = false;
+          storeRef.current.setActivePanelist(null);
           setPanelistsSpoken((prev) => prev + 1);
-          store.panelists.forEach((p) => {
-            scene.setCharacterState(p.id, 'idle');
-          });
+
+          const scene = sceneRef.current;
+          if (scene) {
+            storeRef.current.panelists.forEach((p) => scene.setCharacterState(p.id, 'idle'));
+          }
         },
         onTranscriptEntry: (entry) => {
-          store.addTranscriptEntry(entry);
+          storeRef.current.addTranscriptEntry(entry);
           localTranscript.push(entry);
           setLiveTranscript([...localTranscript]);
         },
-        onStreamChunk: (panelistId: string, chunk: string) => {
-          // Update PixiJS scene immediately
-          scene.appendToBubble(panelistId, chunk);
-
-          // Accumulate in ref (no re-render per chunk)
+        onStreamChunk: (_panelistId: string, chunk: string) => {
           speakerTextRef.current += chunk;
           if (localTranscript.length > 0) {
             localTranscript[localTranscript.length - 1].content += chunk;
           }
 
-          // Throttle React state updates to every 150ms
+          // Drive scene bubbles during roundtable
+          const scene = sceneRef.current;
+          if (scene) {
+            scene.appendToBubble(_panelistId, chunk);
+          }
+
+          // Throttle React updates
           if (!textUpdateTimerRef.current) {
             textUpdateTimerRef.current = setTimeout(() => {
               textUpdateTimerRef.current = null;
-              setActiveSpeakerText(speakerTextRef.current);
+              setBriefingText(speakerTextRef.current);
               setLiveTranscript([...localTranscript]);
             }, 150);
           }
@@ -171,71 +206,105 @@ export default function SessionPage() {
 
     orchestratorRef.current = orchestrator;
 
-    try {
-      // === ROUND 1: INITIAL TAKES ===
-      console.log('[Session] Starting Round 1: Initial Takes');
-      setHint('Press SPACE to hear each panelist\'s initial take');
-      setCurrentRound('initial-takes');
+    // Run the session flow
+    (async () => {
+      try {
+        // === PHASE 1: INDIVIDUAL BRIEFINGS ===
+        setViewMode('briefing');
+        setCurrentRound('initial-takes');
 
-      for (const panelist of store.panelists) {
-        console.log('[Session] Waiting for advance before', panelist.name);
-        await waitForAdvance();
-        console.log('[Session] Advance received, running', panelist.name);
-        setHint(`${panelist.name} is sharing their initial take...`);
-        await orchestrator.runSinglePanelist(panelist, 'initial-takes');
-        console.log('[Session]', panelist.name, 'finished');
-        setHint(`${panelist.name} finished. Press SPACE to continue.`);
+        for (let i = 0; i < s.panelists.length; i++) {
+          const panelist = s.panelists[i];
+
+          if (i === 0) {
+            setBriefingIndex(0);
+            setBriefingText('');
+            setHint(`Press SPACE to hear ${panelist.name}'s take`);
+            await waitForSpace();
+          }
+
+          setHint(`${panelist.name} is sharing their initial take...`);
+          setBriefingText('');
+          speakerTextRef.current = '';
+          await orchestrator.runSinglePanelist(panelist, 'initial-takes');
+
+          if (i < s.panelists.length - 1) {
+            setHint(`Press SPACE for ${s.panelists[i + 1].name}'s take`);
+            await waitForSpace();
+            setBriefingIndex(i + 1);
+            setBriefingText('');
+          } else {
+            setHint('Press SPACE to start the discussion');
+          }
+        }
+
+        // === TRANSITION ===
+        await waitForSpace();
+        setViewMode('transition');
+        setHint('');
+        await new Promise((r) => setTimeout(r, 2500));
+
+        // === PHASE 2: ROUNDTABLE CROSS-TALK ===
+        setViewMode('roundtable');
+        setCurrentRound('cross-talk');
+        setPanelistsSpoken(0);
+
+        // Cross-talk with spacebar pacing between each speaker
+        for (let round = 0; round < 2; round++) {
+          for (const panelist of s.panelists) {
+            if (orchestrator.isAborted) return;
+            setHint(`Press SPACE to hear ${panelist.name}`);
+            await waitForSpace();
+            setHint(`${panelist.name} is responding...`);
+            await orchestrator.runSinglePanelist(panelist, 'cross-talk');
+            setHint(`${panelist.name} finished.`);
+          }
+        }
+
+        // === PHASE 3: MODERATION ===
+        setCurrentRound('moderation');
+        setInModeration(true);
+        const scene = sceneRef.current;
+        if (scene) scene.moveObserverIn();
+        setHint('You\'re in the fishbowl. Type a question below, or press Wrap Up.');
+
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'An error occurred.');
       }
+    })();
 
-      // === ROUND 2: CROSS-TALK ===
-      console.log('[Session] Starting Round 2: Cross-Talk');
-      setHint('Press SPACE to start the cross-talk round');
-      await waitForAdvance();
-      setCurrentRound('cross-talk');
-      setHint('Panelists are discussing with each other...');
-      await orchestrator.runCrossTalk();
-
-      // === ROUND 3: MODERATION ===
-      setCurrentRound('moderation');
-      setPhase('moderation');
-      scene.moveObserverIn();
-      setHint('You\'re in the fishbowl. Type a question below, or press Wrap Up.');
-
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred.');
-    }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [waitForAdvance]);
+  }, []);
 
   const handleModeration = useCallback(async (question: string) => {
     const orchestrator = orchestratorRef.current;
-    if (!orchestrator || phase !== 'moderation') return;
+    if (!orchestrator || !inModeration) return;
 
-    setPhase('speaking');
+    setIsSpeaking(true);
+    isSpeakingRef.current = true;
     setHint('Panelists are responding...');
     setError(null);
     try {
       await orchestrator.handleModerationQuestion(question);
-      setPhase('moderation');
       setHint('Ask another question, or press Wrap Up.');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error processing question.');
-      setPhase('moderation');
     }
-  }, [phase]);
+    setIsSpeaking(false);
+    isSpeakingRef.current = false;
+  }, [inModeration]);
 
   const handleWrapUp = useCallback(async () => {
     const orchestrator = orchestratorRef.current;
     if (!orchestrator) return;
 
-    setPhase('wrapping-up');
+    setInModeration(false);
     setHint('Getting final takeaways...');
     setError(null);
 
     try {
       await orchestrator.runWrapUp();
 
-      // Stop video
       if (recorderRef.current?.isRecording) {
         const blob = await recorderRef.current.stop();
         if (blob.size > 0) {
@@ -246,22 +315,20 @@ export default function SessionPage() {
 
       setHint('Generating summary...');
       const summary = await orchestrator.generateSummary();
-      store.setSummary(summary);
-      store.setTranscript(orchestrator.getTranscript());
-      store.completeSession();
+      storeRef.current.setSummary(summary);
+      storeRef.current.setTranscript(orchestrator.getTranscript());
+      storeRef.current.completeSession();
       router.push('/results');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error during wrap-up.');
-      setPhase('moderation');
+      setInModeration(true);
     }
-  }, [store, router]);
+  }, [router]);
 
-  if (store.status !== 'running' || store.panelists.length < 3) {
-    return null;
-  }
+  // Don't render if not running
+  if (store.status !== 'running' || store.panelists.length < 3) return null;
 
-  const canWrapUp = phase === 'moderation';
-  const totalPanelists = store.panelists.length;
+  const currentPanelist = briefingIndex >= 0 ? store.panelists[briefingIndex] : null;
 
   return (
     <div className="min-h-screen">
@@ -274,7 +341,7 @@ export default function SessionPage() {
         </div>
       </div>
 
-      {/* Desktop session */}
+      {/* Desktop */}
       <div className="hidden md:block">
         <div className="max-w-5xl mx-auto px-6 py-6">
           <div className="text-center mb-4">
@@ -282,25 +349,98 @@ export default function SessionPage() {
             <h1 className="text-2xl font-700 tracking-tight" style={{ color: 'var(--text-primary)' }}>The Fishbowl</h1>
           </div>
 
-          {/* PixiJS Scene */}
-          <FishbowlCanvas panelists={store.panelists} onSceneReady={handleSceneReady} />
+          {/* === BRIEFING VIEW === */}
+          {viewMode === 'briefing' && (
+            <div className="max-w-[800px] mx-auto">
+              {briefingIndex < 0 ? (
+                <div className="text-center py-20">
+                  <p className="text-lg" style={{ color: 'var(--text-secondary)' }}>Your panel of {store.panelists.length} experts is ready.</p>
+                  <div className="flex justify-center gap-3 mt-6">
+                    {store.panelists.map((p) => (
+                      <div key={p.id} className="flex flex-col items-center gap-1">
+                        <div className="w-12 h-12 rounded-full flex items-center justify-center text-sm font-700"
+                          style={{ backgroundColor: p.color + '20', color: p.color, border: `2px solid ${p.color}` }}>
+                          {p.name.charAt(0)}
+                        </div>
+                        <span className="text-xs" style={{ color: 'var(--text-muted)' }}>{p.name}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : currentPanelist && (
+                <div className="rounded-xl overflow-hidden animate-fade-in" key={currentPanelist.id} style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)' }}>
+                  <div className="flex">
+                    <div className="w-64 flex-shrink-0 flex flex-col items-center justify-center py-10 px-6"
+                      style={{ background: currentPanelist.color + '12', borderRight: '1px solid var(--border)' }}>
+                      <div className="w-24 h-24 rounded-full flex items-center justify-center text-3xl font-800 mb-4"
+                        style={{ backgroundColor: currentPanelist.color + '25', color: currentPanelist.color, border: `3px solid ${currentPanelist.color}` }}>
+                        {currentPanelist.name.charAt(0)}
+                      </div>
+                      <div className="text-center">
+                        <div className="text-lg font-700" style={{ color: 'var(--text-primary)' }}>{currentPanelist.name}</div>
+                        <div className="label-mono mt-1" style={{ color: currentPanelist.color }}>{currentPanelist.role}</div>
+                      </div>
+                      <p className="text-xs text-center mt-3 leading-relaxed px-2" style={{ color: 'var(--text-muted)' }}>
+                        {currentPanelist.description}
+                      </p>
+                      <div className="mt-4 label-mono" style={{ fontSize: '9px' }}>
+                        Panelist {briefingIndex + 1} of {store.panelists.length}
+                      </div>
+                    </div>
+                    <div className="flex-1 p-8">
+                      <div className="label-mono mb-3" style={{ color: currentPanelist.color }}>Initial Take</div>
+                      {briefingText ? (
+                        <p className="text-sm leading-relaxed whitespace-pre-wrap" style={{ color: 'var(--text-secondary)' }}>
+                          {briefingText}
+                          {isSpeaking && <span className="inline-block w-1 h-3.5 ml-0.5 animate-pulse" style={{ background: currentPanelist.color }} />}
+                        </p>
+                      ) : (
+                        <p className="text-sm italic" style={{ color: 'var(--text-muted)' }}>Preparing response...</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
 
-          {/* Status Bar */}
-          <StatusBar
-            round={currentRound}
-            panelistsSpoken={panelistsSpoken}
-            totalPanelists={totalPanelists}
-            onWrapUp={handleWrapUp}
-            canWrapUp={canWrapUp}
-          />
+          {/* === TRANSITION === */}
+          {viewMode === 'transition' && (
+            <div className="max-w-[800px] mx-auto text-center py-24 animate-fade-in">
+              <div className="label-mono mb-4" style={{ color: 'var(--accent-gold)' }}>All panelists briefed</div>
+              <h2 className="text-4xl font-800 tracking-tight" style={{ color: 'var(--text-primary)' }}>Start the Discussion</h2>
+              <p className="mt-3 text-lg" style={{ color: 'var(--text-secondary)' }}>The panel will now debate with each other.</p>
+              <div className="flex justify-center gap-2 mt-8">
+                {store.panelists.map((p) => (
+                  <div key={p.id} className="w-3 h-3 rounded-full" style={{ background: p.color }} />
+                ))}
+              </div>
+            </div>
+          )}
 
-          {/* Hint / instruction bar */}
+          {/* === ROUNDTABLE (PixiJS canvas always in DOM, hidden until needed) === */}
+          <div style={{ display: viewMode === 'roundtable' ? 'block' : 'none' }}>
+            <div
+              ref={sceneContainerRef}
+              className="w-full max-w-[800px] mx-auto rounded-t-xl overflow-hidden shadow-lg"
+              style={{ aspectRatio: '4/3' }}
+            />
+            <StatusBar
+              round={currentRound}
+              panelistsSpoken={panelistsSpoken}
+              totalPanelists={store.panelists.length}
+              onWrapUp={handleWrapUp}
+              canWrapUp={inModeration && !isSpeaking}
+            />
+          </div>
+
+          {/* Hint bar */}
           <div className="max-w-[800px] mx-auto mt-4 text-center">
-            <p className={`text-sm ${phase === 'waiting-for-advance' ? 'animate-pulse' : ''}`}
-              style={{ color: phase === 'waiting-for-advance' ? 'var(--accent-gold)' : 'var(--text-muted)' }}>
+            <p className={`text-sm ${!isSpeaking ? 'animate-pulse' : ''}`}
+              style={{ color: !isSpeaking ? 'var(--accent-gold)' : 'var(--text-muted)' }}>
               {hint}
             </p>
-            {phase === 'waiting-for-advance' && (
+            {!isSpeaking && advanceResolverRef.current && (
               <button
                 onClick={() => {
                   if (advanceResolverRef.current) {
@@ -309,20 +449,13 @@ export default function SessionPage() {
                     resolver();
                   }
                 }}
-                className="mt-3 px-5 py-2 rounded-lg text-sm font-500 transition-all glow-gold"
+                className="mt-3 px-5 py-2 rounded-lg text-sm font-500 glow-gold transition-all"
                 style={{ background: 'var(--accent-gold)', color: 'var(--bg-deep)' }}
               >
                 Continue (or press Space)
               </button>
             )}
           </div>
-
-          {/* Speaker Card */}
-          <SpeakerCard
-            panelist={activeSpeaker}
-            text={activeSpeakerText}
-            isStreaming={isSpeaking}
-          />
 
           {/* Error */}
           {error && (
@@ -333,9 +466,9 @@ export default function SessionPage() {
           )}
 
           {/* Moderation Input */}
-          {phase === 'moderation' && (
+          {inModeration && (
             <div className="max-w-[800px] mx-auto mt-4">
-              <ModerationInput onSubmit={handleModeration} disabled={phase !== 'moderation'} />
+              <ModerationInput onSubmit={handleModeration} disabled={isSpeaking} />
             </div>
           )}
 

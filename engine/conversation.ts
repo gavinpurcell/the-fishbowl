@@ -192,6 +192,10 @@ export class ConversationOrchestrator {
     this.aborted = true;
   }
 
+  get isAborted(): boolean {
+    return this.aborted;
+  }
+
   getTranscript(): TranscriptEntry[] {
     return [...this.transcript];
   }
