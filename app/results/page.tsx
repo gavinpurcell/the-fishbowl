@@ -3,6 +3,7 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useFishbowlStore } from '@/lib/store';
+import { getModelById, formatCost, formatTokens } from '@/lib/models';
 import Transcript from '@/components/results/Transcript';
 import Summary from '@/components/results/Summary';
 import ExportActions from '@/components/results/ExportActions';
@@ -55,6 +56,14 @@ export default function ResultsPage() {
           <h1 className="text-3xl font-bold tracking-tight">Session Results</h1>
           <p className="text-gray-500 mt-2">
             {store.panelists.length} panelists &middot; {store.transcript.length} messages
+            {(() => {
+              const model = getModelById(store.modelId);
+              const tokens = store.sessionCost.inputTokens + store.sessionCost.outputTokens;
+              if (!model || tokens === 0) return null;
+              const cost = (store.sessionCost.inputTokens / 1_000_000) * model.inputPer1M +
+                (store.sessionCost.outputTokens / 1_000_000) * model.outputPer1M;
+              return <> &middot; {formatCost(cost)} ({formatTokens(tokens)} tokens)</>;
+            })()}
           </p>
         </div>
 

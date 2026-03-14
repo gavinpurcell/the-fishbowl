@@ -2,8 +2,10 @@
 
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { FishbowlScene } from '@/scene/FishbowlScene';
-import type { Panelist, RoundType } from '@/engine/types';
+import type { Panelist, RoundType, TranscriptEntry } from '@/engine/types';
 import StatusBar from '@/components/scene/StatusBar';
+import ModerationInput from '@/components/scene/ModerationInput';
+import { formatCost, formatTokens } from '@/lib/models';
 
 const FAKE_PANELISTS: Panelist[] = [
   { id: 'p1', name: 'Mei', role: 'UX Designer', description: 'Ten years of product design at startups and FAANG. Thinks user-first and will challenge any feature that adds complexity without clear user value.', systemPrompt: '', color: '#4a9a7a', spriteIndex: 0 },
@@ -26,6 +28,34 @@ const CROSSTALK = [
   "OK, I'm hearing consensus: keep video export, cut session save and load from version one, and accept that API key setup is fine for the initial audience. But my core point stands — the magic moment is watching the discussion. Don't let debugging the scene engine eat all the time that should go into prompt quality and conversation flow.",
 ];
 
+// Fake moderation responses — each set is used for successive questions
+const MODERATION_RESPONSES = [
+  [
+    "Great question. From a UX perspective, the biggest risk is cognitive overload during the moderation phase itself. You're asking users to watch an animated scene, read streaming speech bubbles, track a live transcript, AND formulate questions — that's four competing attention streams. I'd suggest auto-pausing the scene when the input is focused, and making the transcript the primary reading surface during moderation. The scene becomes a visual anchor, not the information source.",
+    "Technically, the moderation flow is straightforward — you're just appending a user message to the conversation context and running another round of inference. The tricky part is managing state transitions cleanly. Right now the spacebar handler, the input form, and the wrap-up button can all fire events simultaneously. You need a clear state machine: either the user is typing, a panelist is speaking, or the session is idle. No overlapping states.",
+    "Honestly, the moderation part is where this gets really fun for me as a user. The first two phases — briefing and cross-talk — I'm just watching. But now I get to participate. The key thing is making it feel like a real conversation, not a form submission. Show my question in the scene somehow — maybe the observer character gets a speech bubble too? That would make it feel like I'm actually in the fishbowl.",
+    "The moderation round is where product-market fit lives or dies. If users ask a question and get four generic responses, they'll feel like they're just prompting ChatGPT with extra steps. The responses need to feel like a continuation of the debate — panelists should reference each other's earlier points, disagree with each other, and build on the conversation that already happened. That's the whole point of a roundtable versus four separate chats.",
+  ],
+  [
+    "I'd push for progressive disclosure here. Show the most opinionated or contrarian response first, and let the user expand to see the rest. In a real focus group, you don't hear from everyone on every question — you hear from whoever has the strongest reaction. We could rank responses by how much they diverge from the group consensus and surface the outlier first.",
+    "One thing that would make this way more useful: let users tag or star specific responses during moderation. When you're running a real focus group, you're constantly noting the moments that matter. A simple bookmark or highlight on any transcript entry would make the results page dramatically more valuable. It's a small feature with outsized impact on the 'jobs to be done' for this tool.",
+    "I keep coming back to the feeling of participation. Right now when I ask a question and four experts answer me thoughtfully — even fake experts — there's something satisfying about it. It's like having a personal advisory board. For regular people who don't have access to panels of experts, this is genuinely powerful. Don't underestimate the emotional value of feeling heard by smart people.",
+    "Follow-up questions are where the real insights come from. The first question gets surface-level takes. The second question, informed by those takes, digs deeper. I'd bet the average high-value session has three to five moderation questions. So the experience needs to encourage that — maybe show a subtle prompt like 'dig deeper' or 'ask a follow-up' after each round of responses, rather than defaulting to 'wrap up' right away.",
+  ],
+];
+
+const WRAPUP_RESPONSES = [
+  "Ship the visual scene as your differentiator, but put the transcript front and center during moderation — that's where users actually extract value.",
+  "Lock down the state machine before adding features. A clean pause-speak-idle cycle prevents every future bug in this UI.",
+  "Make me feel like I'm in the room. If you nail the participation feeling during moderation, people will share this tool with everyone they know.",
+  "Optimize for three-question sessions. Design the moderation UX to encourage follow-up questions, not to rush toward wrap-up.",
+];
+
+let fakeIdCounter = 0;
+function fakeId(): string {
+  return `fake-${++fakeIdCounter}`;
+}
+
 type ViewMode = 'briefing' | 'transition' | 'roundtable';
 
 export default function TestPage() {
@@ -42,6 +72,13 @@ export default function TestPage() {
   const [panelistsSpoken, setPanelistsSpoken] = useState(0);
   const [roundtableSpeakerIndex, setRoundtableSpeakerIndex] = useState(0);
   const [hint, setHint] = useState('Press SPACE to meet your panel');
+
+  // Moderation state
+  const [inModeration, setInModeration] = useState(false);
+  const [moderationQuestionCount, setModerationQuestionCount] = useState(0);
+  const [transcript, setTranscript] = useState<TranscriptEntry[]>([]);
+  const [sessionComplete, setSessionComplete] = useState(false);
+  const [fakeTokens, setFakeTokens] = useState({ input: 0, output: 0 });
 
   const advanceResolverRef = useRef<(() => void) | null>(null);
   const streamAbortRef = useRef(false);
@@ -103,6 +140,98 @@ export default function TestPage() {
     setIsSpeaking(false);
   }, []);
 
+  // Add an entry to the local transcript
+  const addTranscriptEntry = useCallback((entry: TranscriptEntry) => {
+    setTranscript((prev) => [...prev, entry]);
+  }, []);
+
+  const addFakeTokens = useCallback((text: string) => {
+    const outputTokens = Math.round(text.split(' ').length * 1.3);
+    const inputTokens = 500;
+    setFakeTokens((prev) => ({
+      input: prev.input + inputTokens,
+      output: prev.output + outputTokens,
+    }));
+  }, []);
+
+  // Handle moderation question — streams fake responses from all panelists
+  const handleModeration = useCallback(async (question: string) => {
+    const s = sceneStateRef.current;
+    if (!s || isSpeakingRef.current) return;
+
+    // Add user question to transcript
+    const userEntry: TranscriptEntry = {
+      id: fakeId(),
+      panelistId: 'user',
+      panelistName: 'You',
+      content: question,
+      round: 'moderation',
+      timestamp: Date.now(),
+    };
+    addTranscriptEntry(userEntry);
+
+    // Pick the response set (cycle through available sets)
+    const responseSetIndex = moderationQuestionCount % MODERATION_RESPONSES.length;
+    const responses = MODERATION_RESPONSES[responseSetIndex];
+    setModerationQuestionCount((prev) => prev + 1);
+
+    setPanelistsSpoken(0);
+
+    // Each panelist responds in turn, with spacebar pacing
+    for (let i = 0; i < FAKE_PANELISTS.length; i++) {
+      const panelist = FAKE_PANELISTS[i];
+      setHint(`Press SPACE to hear ${panelist.name}'s response`);
+      await waitForSpace();
+
+      setHint(`${panelist.name} is responding...`);
+      await streamRoundtableText(s, panelist, responses[i]);
+      addFakeTokens(responses[i]);
+      addTranscriptEntry({
+        id: fakeId(),
+        panelistId: panelist.id,
+        panelistName: panelist.name,
+        content: responses[i],
+        round: 'moderation',
+        timestamp: Date.now(),
+      });
+      setPanelistsSpoken(i + 1);
+    }
+
+    setHint('Ask another question, or press Wrap Up.');
+  }, [moderationQuestionCount, streamRoundtableText, addTranscriptEntry, waitForSpace, addFakeTokens]);
+
+  // Handle wrap-up — final one-sentence takeaways
+  const handleWrapUp = useCallback(async () => {
+    const s = sceneStateRef.current;
+    if (!s || isSpeakingRef.current) return;
+
+    setInModeration(false);
+    setCurrentRound('wrap-up');
+    setPanelistsSpoken(0);
+
+    for (let i = 0; i < FAKE_PANELISTS.length; i++) {
+      const panelist = FAKE_PANELISTS[i];
+      setHint(`Press SPACE for ${panelist.name}'s final takeaway`);
+      await waitForSpace();
+
+      setHint(`${panelist.name} is wrapping up...`);
+      await streamRoundtableText(s, panelist, WRAPUP_RESPONSES[i]);
+      addFakeTokens(WRAPUP_RESPONSES[i]);
+      addTranscriptEntry({
+        id: fakeId(),
+        panelistId: panelist.id,
+        panelistName: panelist.name,
+        content: WRAPUP_RESPONSES[i],
+        round: 'wrap-up',
+        timestamp: Date.now(),
+      });
+      setPanelistsSpoken(i + 1);
+    }
+
+    setSessionComplete(true);
+    setHint('Session complete! Scroll down to see the full transcript.');
+  }, [streamRoundtableText, addTranscriptEntry, waitForSpace, addFakeTokens]);
+
   const runDemo = useCallback(async () => {
     // === PHASE 1: INDIVIDUAL BRIEFINGS ===
     setViewMode('briefing');
@@ -110,7 +239,6 @@ export default function TestPage() {
 
     for (let i = 0; i < FAKE_PANELISTS.length; i++) {
       if (i === 0) {
-        // First panelist — show their card, then wait for space to start talking
         setBriefingIndex(i);
         setBriefingText('');
         setHint(`Press SPACE to hear ${FAKE_PANELISTS[i].name}'s take`);
@@ -119,13 +247,22 @@ export default function TestPage() {
 
       setHint(`${FAKE_PANELISTS[i].name} is sharing their initial take...`);
       await streamBriefingText(INITIAL_TAKES[i]);
+      addFakeTokens(INITIAL_TAKES[i]);
       setPanelistsSpoken(i + 1);
 
-      // After finishing, show "press space" hint and wait
+      // Add to transcript
+      addTranscriptEntry({
+        id: fakeId(),
+        panelistId: FAKE_PANELISTS[i].id,
+        panelistName: FAKE_PANELISTS[i].name,
+        content: INITIAL_TAKES[i],
+        round: 'initial-takes',
+        timestamp: Date.now(),
+      });
+
       if (i < FAKE_PANELISTS.length - 1) {
         setHint(`Press SPACE for ${FAKE_PANELISTS[i + 1].name}'s take`);
         await waitForSpace();
-        // Set up next briefing card
         setBriefingIndex(i + 1);
         setBriefingText('');
       } else {
@@ -137,7 +274,7 @@ export default function TestPage() {
     await waitForSpace();
     setViewMode('transition');
     setHint('');
-    await new Promise((r) => setTimeout(r, 2000)); // Show transition for 2s
+    await new Promise((r) => setTimeout(r, 2000));
 
     // === PHASE 2: ROUNDTABLE ===
     setViewMode('roundtable');
@@ -153,7 +290,19 @@ export default function TestPage() {
       setRoundtableSpeakerIndex(i);
       setHint(`${FAKE_PANELISTS[i].name} is responding...`);
       await streamRoundtableText(s, FAKE_PANELISTS[i], CROSSTALK[i]);
+      addFakeTokens(CROSSTALK[i]);
       setPanelistsSpoken(i + 1);
+
+      // Add to transcript
+      addTranscriptEntry({
+        id: fakeId(),
+        panelistId: FAKE_PANELISTS[i].id,
+        panelistName: FAKE_PANELISTS[i].name,
+        content: CROSSTALK[i],
+        round: 'cross-talk',
+        timestamp: Date.now(),
+      });
+
       setHint(`${FAKE_PANELISTS[i].name} finished.`);
     }
 
@@ -161,9 +310,11 @@ export default function TestPage() {
     setHint('Press SPACE to enter the fishbowl');
     await waitForSpace();
     setCurrentRound('moderation');
+    setPanelistsSpoken(0);
     s.moveObserverIn();
-    setHint('You\'re in the fishbowl. Demo complete!');
-  }, [waitForSpace, streamBriefingText, streamRoundtableText]);
+    setInModeration(true);
+    setHint('You\'re in the fishbowl. Ask the panel a question below, or press Wrap Up.');
+  }, [waitForSpace, streamBriefingText, streamRoundtableText, addTranscriptEntry, addFakeTokens]);
 
   const runDemoRef = useRef(runDemo);
   runDemoRef.current = runDemo;
@@ -172,9 +323,13 @@ export default function TestPage() {
   // Keep ref in sync
   useEffect(() => { isSpeakingRef.current = isSpeaking; }, [isSpeaking]);
 
-  // Spacebar handler — blocks during speaking
+  // Spacebar handler — blocks during speaking, ignores when typing in input
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
+      // Don't capture space when user is typing in an input or textarea
+      const tag = (e.target as HTMLElement)?.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+
       if (e.code === 'Space') {
         e.preventDefault();
         // Don't advance while someone is speaking
@@ -291,13 +446,21 @@ export default function TestPage() {
             className="w-full max-w-[800px] mx-auto rounded-t-xl overflow-hidden shadow-lg"
             style={{ aspectRatio: '4/3' }}
           />
-          <StatusBar
-            round={currentRound}
-            panelistsSpoken={panelistsSpoken}
-            totalPanelists={FAKE_PANELISTS.length}
-            onWrapUp={() => {}}
-            canWrapUp={currentRound === 'moderation'}
-          />
+          {(() => {
+            const cost = (fakeTokens.input / 1_000_000) * 3.00 + (fakeTokens.output / 1_000_000) * 15.00;
+            const total = fakeTokens.input + fakeTokens.output;
+            return (
+              <StatusBar
+                round={currentRound}
+                panelistsSpoken={panelistsSpoken}
+                totalPanelists={FAKE_PANELISTS.length}
+                onWrapUp={handleWrapUp}
+                canWrapUp={inModeration && !isSpeaking}
+                costDollars={cost}
+                totalTokens={total}
+              />
+            );
+          })()}
         </div>
 
         {/* Hint bar (always visible) */}
@@ -321,6 +484,46 @@ export default function TestPage() {
             </button>
           )}
         </div>
+
+        {/* Moderation Input */}
+        {inModeration && (
+          <div className="max-w-[800px] mx-auto mt-4">
+            <ModerationInput onSubmit={handleModeration} disabled={isSpeaking} />
+          </div>
+        )}
+
+        {/* Live Transcript */}
+        {transcript.length > 0 && viewMode === 'roundtable' && (
+          <div className="max-w-[800px] mx-auto mt-6">
+            <div className="label-mono mb-2">Transcript</div>
+            <div className="rounded-xl p-4 max-h-64 overflow-y-auto space-y-3" style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)' }}>
+              {transcript.map((entry) => {
+                const panelist = FAKE_PANELISTS.find((p) => p.id === entry.panelistId);
+                const isUser = entry.panelistId === 'user';
+                const color = panelist?.color || (isUser ? 'var(--accent-gold)' : 'var(--text-muted)');
+                return (
+                  <div key={entry.id} className="text-sm">
+                    <span className="font-600" style={{ color }}>{entry.panelistName}:</span>{' '}
+                    <span style={{ color: isUser ? 'var(--text-primary)' : 'var(--text-secondary)' }}>{entry.content}</span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Session complete summary */}
+        {sessionComplete && (
+          <div className="max-w-[800px] mx-auto mt-6 text-center">
+            <button
+              onClick={() => window.location.reload()}
+              className="px-5 py-2 rounded-lg text-sm font-500 transition-all"
+              style={{ background: 'var(--accent-gold)', color: 'var(--bg-deep)' }}
+            >
+              Run Again
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
