@@ -18,6 +18,8 @@ export default function PanelistBuilder({ panelists, onUpdate }: Props) {
   const [newRole, setNewRole] = useState('');
   const [newDesc, setNewDesc] = useState('');
   const [isExpanding, setIsExpanding] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editPrompt, setEditPrompt] = useState('');
   const { provider: providerType, apiKey } = useFishbowlStore();
 
   const addPanelist = async () => {
@@ -30,35 +32,13 @@ export default function PanelistBuilder({ panelists, onUpdate }: Props) {
       setIsExpanding(true);
       try {
         const provider = createProvider(providerType, apiKey);
-        panelist = await createCustomPanelist(
-          newName.trim(),
-          newRole.trim(),
-          newDesc.trim() || newRole.trim(),
-          panelists.length,
-          provider
-        );
+        panelist = await createCustomPanelist(newName.trim(), newRole.trim(), newDesc.trim() || newRole.trim(), panelists.length, provider);
       } catch {
-        panelist = createPanelistFromTemplate(
-          {
-            name: newName.trim(),
-            role: newRole.trim(),
-            description: newDesc.trim() || `Expert ${newRole.trim()}`,
-            color: COLORS[panelists.length % COLORS.length],
-          },
-          panelists.length
-        );
+        panelist = createPanelistFromTemplate({ name: newName.trim(), role: newRole.trim(), description: newDesc.trim() || `Expert ${newRole.trim()}`, color: COLORS[panelists.length % COLORS.length] }, panelists.length);
       }
       setIsExpanding(false);
     } else {
-      panelist = createPanelistFromTemplate(
-        {
-          name: newName.trim(),
-          role: newRole.trim(),
-          description: newDesc.trim() || `Expert ${newRole.trim()}`,
-          color: COLORS[panelists.length % COLORS.length],
-        },
-        panelists.length
-      );
+      panelist = createPanelistFromTemplate({ name: newName.trim(), role: newRole.trim(), description: newDesc.trim() || `Expert ${newRole.trim()}`, color: COLORS[panelists.length % COLORS.length] }, panelists.length);
     }
 
     onUpdate([...panelists, panelist]);
@@ -67,79 +47,64 @@ export default function PanelistBuilder({ panelists, onUpdate }: Props) {
     setNewDesc('');
   };
 
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [editPrompt, setEditPrompt] = useState('');
+  const removePanelist = (id: string) => onUpdate(panelists.filter((p) => p.id !== id));
 
-  const removePanelist = (id: string) => {
-    onUpdate(panelists.filter((p) => p.id !== id));
-  };
-
-  const startEditing = (p: Panelist) => {
-    setEditingId(p.id);
-    setEditPrompt(p.systemPrompt);
-  };
-
+  const startEditing = (p: Panelist) => { setEditingId(p.id); setEditPrompt(p.systemPrompt); };
   const savePrompt = () => {
     if (!editingId) return;
-    onUpdate(panelists.map((p) =>
-      p.id === editingId ? { ...p, systemPrompt: editPrompt } : p
-    ));
+    onUpdate(panelists.map((p) => p.id === editingId ? { ...p, systemPrompt: editPrompt } : p));
     setEditingId(null);
-    setEditPrompt('');
+  };
+
+  const inputStyle = {
+    background: 'var(--bg-elevated)',
+    border: '1px solid var(--border)',
+    color: 'var(--text-primary)',
+    borderRadius: '8px',
+    padding: '8px 12px',
+    fontSize: '13px',
+    outline: 'none',
+    width: '100%',
   };
 
   return (
     <div>
-      <h2 className="text-xl font-bold mb-4">Your Panel</h2>
+      <div className="label-mono mb-4">Your Panel</div>
 
       <div className="space-y-2 mb-4">
         {panelists.map((p) => (
-          <div key={p.id} className="border rounded-lg overflow-hidden">
-            <div className="flex items-center gap-3 p-3">
-              <div className="w-4 h-4 rounded-full flex-shrink-0" style={{ backgroundColor: p.color }} />
-              <div className="flex-1 min-w-0">
-                <span className="font-medium">{p.name}</span>
-                <span className="text-gray-500 ml-2">— {p.role}</span>
+          <div key={p.id} className="rounded-xl overflow-hidden" style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)' }}>
+            <div className="flex items-center gap-3 p-4">
+              <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-600" style={{ backgroundColor: p.color + '25', color: p.color, border: `1px solid ${p.color}50` }}>
+                {p.name.charAt(0)}
               </div>
-              <button
-                onClick={() => startEditing(p)}
-                className="text-blue-500 hover:text-blue-700 text-sm"
-              >
-                {editingId === p.id ? 'Cancel' : 'Edit Prompt'}
+              <div className="flex-1 min-w-0">
+                <span className="font-500" style={{ color: 'var(--text-primary)' }}>{p.name}</span>
+                <span className="ml-2 text-sm" style={{ color: 'var(--text-muted)' }}>— {p.role}</span>
+              </div>
+              <button onClick={() => editingId === p.id ? setEditingId(null) : startEditing(p)} className="text-xs transition-colors" style={{ color: 'var(--accent-gold)' }}>
+                {editingId === p.id ? 'Close' : 'Edit Prompt'}
               </button>
-              <button
-                onClick={() => removePanelist(p.id)}
-                className="text-red-400 hover:text-red-600 text-sm"
-              >
+              <button onClick={() => removePanelist(p.id)} className="text-xs transition-colors" style={{ color: 'var(--text-muted)' }}>
                 Remove
               </button>
             </div>
-            {editingId === p.id && (
-              <div className="px-3 pb-3">
+            {editingId === p.id ? (
+              <div className="px-4 pb-4">
                 <textarea
                   value={editPrompt}
                   onChange={(e) => setEditPrompt(e.target.value)}
-                  className="w-full h-48 px-3 py-2 border rounded text-xs font-mono bg-gray-50 resize-y"
+                  className="w-full h-48 rounded-lg resize-y font-mono text-xs p-3"
+                  style={{ background: 'var(--bg-deep)', border: '1px solid var(--border)', color: 'var(--text-secondary)', outline: 'none' }}
                 />
                 <div className="flex gap-2 mt-2">
-                  <button
-                    onClick={savePrompt}
-                    className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700"
-                  >
-                    Save
-                  </button>
-                  <button
-                    onClick={() => setEditingId(null)}
-                    className="px-3 py-1 bg-gray-200 text-gray-700 rounded text-sm hover:bg-gray-300"
-                  >
-                    Cancel
-                  </button>
+                  <button onClick={savePrompt} className="px-3 py-1.5 rounded text-xs font-500" style={{ background: 'var(--accent-gold)', color: 'var(--bg-deep)' }}>Save</button>
+                  <button onClick={() => setEditingId(null)} className="px-3 py-1.5 rounded text-xs" style={{ background: 'var(--bg-elevated)', color: 'var(--text-secondary)' }}>Cancel</button>
                 </div>
               </div>
-            )}
-            {editingId !== p.id && (
-              <div className="px-3 pb-3">
-                <p className="text-xs text-gray-400 truncate">{p.description}</p>
+            ) : (
+              <div className="px-4 pb-3">
+                <p className="text-xs truncate" style={{ color: 'var(--text-muted)' }}>{p.description}</p>
               </div>
             )}
           </div>
@@ -147,44 +112,27 @@ export default function PanelistBuilder({ panelists, onUpdate }: Props) {
       </div>
 
       {panelists.length < 5 && (
-        <div className="border rounded-lg p-4 bg-gray-50">
-          <h3 className="text-sm font-medium mb-3">Add a panelist</h3>
+        <div className="rounded-xl p-4" style={{ background: 'var(--bg-surface)', border: '1px dashed var(--border-light)' }}>
+          <div className="label-mono mb-3">Add a panelist</div>
           <div className="grid grid-cols-2 gap-3 mb-3">
-            <input
-              value={newName}
-              onChange={(e) => setNewName(e.target.value)}
-              placeholder="Name (e.g., Sarah)"
-              className="px-3 py-2 border rounded text-sm"
-            />
-            <input
-              value={newRole}
-              onChange={(e) => setNewRole(e.target.value)}
-              placeholder="Role (e.g., Growth Expert)"
-              className="px-3 py-2 border rounded text-sm"
-            />
+            <input value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="Name" style={inputStyle} />
+            <input value={newRole} onChange={(e) => setNewRole(e.target.value)} placeholder="Role" style={inputStyle} />
           </div>
-          <input
-            value={newDesc}
-            onChange={(e) => setNewDesc(e.target.value)}
-            placeholder="Personality (e.g., Data-driven, blunt, allergic to generic advice)"
-            className="w-full px-3 py-2 border rounded text-sm mb-3"
-          />
+          <input value={newDesc} onChange={(e) => setNewDesc(e.target.value)} placeholder="Personality (optional — e.g., Data-driven, blunt, skeptical)" style={{ ...inputStyle, marginBottom: '12px' }} />
           <button
             onClick={addPanelist}
             disabled={!newName.trim() || !newRole.trim() || isExpanding}
-            className="px-4 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-4 py-2 rounded-lg text-xs font-500 transition-all disabled:opacity-30"
+            style={{ background: 'var(--accent-gold)', color: 'var(--bg-deep)' }}
           >
             {isExpanding ? 'Building persona...' : 'Add to Panel'}
           </button>
         </div>
       )}
 
-      {panelists.length >= 5 && (
-        <p className="text-sm text-gray-500">Maximum of 5 panelists reached.</p>
-      )}
-
+      {panelists.length >= 5 && <p className="text-xs" style={{ color: 'var(--text-muted)' }}>Maximum of 5 panelists.</p>}
       {panelists.length < 3 && panelists.length > 0 && (
-        <p className="text-sm text-amber-600 mt-2">Add at least {3 - panelists.length} more panelist{3 - panelists.length > 1 ? 's' : ''} (minimum 3).</p>
+        <p className="text-xs mt-2" style={{ color: 'var(--accent-warm)' }}>Add at least {3 - panelists.length} more (minimum 3).</p>
       )}
     </div>
   );

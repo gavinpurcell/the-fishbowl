@@ -2,144 +2,325 @@
 
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { FishbowlScene } from '@/scene/FishbowlScene';
-import type { Panelist } from '@/engine/types';
+import type { Panelist, RoundType } from '@/engine/types';
+import StatusBar from '@/components/scene/StatusBar';
 
 const FAKE_PANELISTS: Panelist[] = [
-  { id: 'p1', name: 'Victoria', role: 'VC', description: '', systemPrompt: '', color: '#4a9a7a', spriteIndex: 0 },
-  { id: 'p2', name: 'Derek', role: 'Growth', description: '', systemPrompt: '', color: '#e74c4c', spriteIndex: 1 },
-  { id: 'p3', name: 'Priya', role: 'Customer', description: '', systemPrompt: '', color: '#4477ee', spriteIndex: 2 },
-  { id: 'p4', name: 'Carl', role: 'Skeptic', description: '', systemPrompt: '', color: '#e44a9a', spriteIndex: 3 },
+  { id: 'p1', name: 'Mei', role: 'UX Designer', description: 'Ten years of product design at startups and FAANG. Thinks user-first and will challenge any feature that adds complexity without clear user value.', systemPrompt: '', color: '#4a9a7a', spriteIndex: 0 },
+  { id: 'p2', name: 'Jordan', role: 'Senior Engineer', description: 'Full-stack engineer who ships products used by millions. Evaluates technical feasibility and architecture trade-offs.', systemPrompt: '', color: '#e74c4c', spriteIndex: 1 },
+  { id: 'p3', name: 'Alex', role: 'End User', description: 'Non-technical user who just wants things to work. Will tell you if the product makes sense in plain language.', systemPrompt: '', color: '#4477ee', spriteIndex: 2 },
+  { id: 'p4', name: 'Taylor', role: 'Product Manager', description: 'Has shipped 20+ features across B2B and B2C. Thinks about prioritization, scope, and building the right thing.', systemPrompt: '', color: '#e44a9a', spriteIndex: 3 },
 ];
 
-const FAKE_RESPONSES = [
-  "I think the positioning is actually pretty strong here. The accessible AI briefing for non-technical people is a real lane. But the revenue model concerns me — $425/month net after three years is not a business, it's a hobby.",
-  "Sarah's right about the revenue but wrong about the timing. You should be pitching sponsors NOW, not waiting for 100K subs. Your 40% newsletter open rate is exceptional and sponsors know it. That's your lead card.",
-  "As someone who represents the target audience — I'd actually pay for this if there was a premium tier. The content is clearly valuable. But I need to know what I'm getting that I can't get from Matt Wolfe for free.",
-  "Everyone's being too nice. The real problem is you have no moat. Any AI-savvy creator can launch a competing show tomorrow. The two-host chemistry is your only defensible asset and one of them isn't fully committed. That's a structural risk.",
+const INITIAL_TAKES = [
+  "The visual approach is genuinely novel — watching pixel-art characters debate your ideas is more engaging than reading a ChatGPT wall of text. But I'm concerned about the information density. Speech bubbles in a tiny isometric scene can only show maybe 20 words at a time. The real value is in the transcript and summary below, which means the visual scene is more of a vibe than a functional UI element. That's OK if you lean into it — make the scene ambient and put the readable content front and center.",
+  "From a technical standpoint, PixiJS 8 for this use case is solid but slightly overkill. You could achieve 90% of the visual effect with CSS animations and SVG. That said, canvas gives you video export for free via MediaRecorder, which is a killer feature for shareability. The BYOK architecture is clean — edge function proxy avoids CORS, Zustand keeps state simple. Main concern: streaming chunk handlers can cause render thrashing. Throttle your React state updates.",
+  "I tried to imagine using this as someone who doesn't know what an API key is, and honestly I'd bounce at the setup screen. 'Paste your Claude API key' is a non-starter for normies. For this to reach a broad audience, you'd need either a hosted version with built-in credits, or a much friendlier onboarding. The actual fishbowl experience though? Really cool. Watching characters argue about my idea feels way more approachable than getting a single AI response.",
+  "The product instinct here is right — there's a real gap between enterprise synthetic research at fifty thousand dollars plus and free text-only tools. But I'd push back on the scope. You've got setup, scene rendering, conversation engine, streaming, video export, session save and load, and moderation all in the MVP. That's a lot. If I were prioritizing, I'd cut video export and session persistence from version one, nail the core loop, and add features once the core is solid.",
 ];
+
+const CROSSTALK = [
+  "Jordan makes a fair point about CSS vs Canvas, but the canvas approach is justified specifically because video export is the growth hack. Screenshots and recordings of pixel characters debating are inherently shareable — that's not a nice-to-have, that's your distribution strategy. I'd actually prioritize making the scene MORE visually interesting.",
+  "I hear Alex on the API key friction, but this is explicitly an open-source BYOK tool — the target user for version one is developers and AI-curious power users, not complete beginners. A hosted version is a different product. Agree with Taylor on scope though — session save and load is premature.",
+  "I want to push back on Taylor's suggestion to cut video export. Mei's right that the visual is the distribution — if I can't record and share a clip of these characters roasting my startup idea, what's the point? The whole appeal is the spectacle. Keep video, cut session persistence.",
+  "OK, I'm hearing consensus: keep video export, cut session save and load from version one, and accept that API key setup is fine for the initial audience. But my core point stands — the magic moment is watching the discussion. Don't let debugging the scene engine eat all the time that should go into prompt quality and conversation flow.",
+];
+
+type ViewMode = 'briefing' | 'transition' | 'roundtable';
 
 export default function TestPage() {
   const containerRef = useRef<HTMLDivElement>(null);
   const sceneRef = useRef<FishbowlScene | null>(null);
   const [scene, setScene] = useState<FishbowlScene | null>(null);
-  const [log, setLog] = useState<string[]>([]);
-  const [currentStep, setCurrentStep] = useState(0);
-  const [isStreaming, setIsStreaming] = useState(false);
+  const sceneStateRef = useRef<FishbowlScene | null>(null);
+
+  const [viewMode, setViewMode] = useState<ViewMode>('briefing');
+  const [currentRound, setCurrentRound] = useState<RoundType>('initial-takes');
+  const [briefingIndex, setBriefingIndex] = useState(-1); // -1 = not started
+  const [briefingText, setBriefingText] = useState('');
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const [panelistsSpoken, setPanelistsSpoken] = useState(0);
+  const [roundtableSpeakerIndex, setRoundtableSpeakerIndex] = useState(0);
+  const [hint, setHint] = useState('Press SPACE to meet your panel');
+
+  const advanceResolverRef = useRef<(() => void) | null>(null);
   const streamAbortRef = useRef(false);
+  const startedRef = useRef(false);
 
-  const addLog = (msg: string) => setLog((prev) => [...prev.slice(-20), msg]);
-
+  // Init PixiJS scene (hidden during briefing, shown during roundtable)
   useEffect(() => {
     if (!containerRef.current || sceneRef.current) return;
-
     const s = new FishbowlScene();
     sceneRef.current = s;
-
     s.initWithContainer(containerRef.current, {
       panelists: FAKE_PANELISTS,
-      onReady: () => {
-        addLog('Scene ready! Press SPACE to advance through the demo.');
-        setScene(s);
-      },
+      onReady: () => { setScene(s); sceneStateRef.current = s; },
     });
-
-    return () => {
-      s.destroy();
-      sceneRef.current = null;
-    };
+    return () => { s.destroy(); sceneRef.current = null; };
   }, []);
 
-  const streamResponse = useCallback(async (scene: FishbowlScene, panelistIndex: number) => {
-    const p = FAKE_PANELISTS[panelistIndex];
-    const text = FAKE_RESPONSES[panelistIndex];
+  const waitForSpace = useCallback((): Promise<void> => {
+    return new Promise((resolve) => { advanceResolverRef.current = resolve; });
+  }, []);
 
-    setIsStreaming(true);
+  const streamBriefingText = useCallback(async (text: string): Promise<void> => {
+    setBriefingText('');
+    setIsSpeaking(true);
     streamAbortRef.current = false;
-    addLog(`${p.name} is speaking...`);
 
-    // Set speaking character to talking, others to thinking/reacting
-    scene.setCharacterState(p.id, 'talking');
-    scene.showSpeechBubble(p.id);
-    FAKE_PANELISTS.forEach((other) => {
-      if (other.id !== p.id) {
-        scene.setCharacterState(other.id, Math.random() > 0.7 ? 'reacting' : 'thinking');
+    const words = text.split(' ');
+    let accumulated = '';
+    for (const word of words) {
+      if (streamAbortRef.current) break;
+      await new Promise((r) => setTimeout(r, 35));
+      accumulated += word + ' ';
+      setBriefingText(accumulated);
+    }
+    setIsSpeaking(false);
+  }, []);
+
+  const streamRoundtableText = useCallback(async (scene: FishbowlScene, panelist: Panelist, text: string) => {
+    streamAbortRef.current = false;
+    setIsSpeaking(true);
+
+    scene.setCharacterState(panelist.id, 'talking');
+    scene.showSpeechBubble(panelist.id);
+    FAKE_PANELISTS.forEach((p) => {
+      if (p.id !== panelist.id) {
+        scene.setCharacterState(p.id, Math.random() > 0.7 ? 'reacting' : 'thinking');
       }
     });
 
-    // Stream word by word
     const words = text.split(' ');
     for (const word of words) {
       if (streamAbortRef.current) break;
-      await new Promise((r) => setTimeout(r, 60));
-      scene.appendToBubble(p.id, word + ' ');
+      await new Promise((r) => setTimeout(r, 40));
+      scene.appendToBubble(panelist.id, word + ' ');
     }
 
-    // Done speaking — reset to idle
-    scene.setCharacterState(p.id, 'idle');
-    FAKE_PANELISTS.forEach((other) => {
-      if (other.id !== p.id) scene.setCharacterState(other.id, 'idle');
-    });
-
-    setIsStreaming(false);
-    addLog(`${p.name} finished.${panelistIndex < 3 ? ' Press SPACE for next.' : ' Demo complete!'}`);
+    scene.setCharacterState(panelist.id, 'idle');
+    FAKE_PANELISTS.forEach((p) => scene.setCharacterState(p.id, 'idle'));
+    setIsSpeaking(false);
   }, []);
 
-  const advanceStep = useCallback(() => {
-    if (!scene || isStreaming) return;
+  const runDemo = useCallback(async () => {
+    // === PHASE 1: INDIVIDUAL BRIEFINGS ===
+    setViewMode('briefing');
+    setCurrentRound('initial-takes');
 
-    if (currentStep < 4) {
-      // Stream each panelist's response
-      streamResponse(scene, currentStep);
-      setCurrentStep((prev) => prev + 1);
-    } else if (currentStep === 4) {
-      // Move observer in
-      scene.moveObserverIn();
-      addLog('Observer stepping into the fishbowl. Press SPACE to restart.');
-      setCurrentStep(5);
-    } else {
-      // Reset — reload the page to fully reset PixiJS state
-      window.location.reload();
+    for (let i = 0; i < FAKE_PANELISTS.length; i++) {
+      if (i === 0) {
+        // First panelist — show their card, then wait for space to start talking
+        setBriefingIndex(i);
+        setBriefingText('');
+        setHint(`Press SPACE to hear ${FAKE_PANELISTS[i].name}'s take`);
+        await waitForSpace();
+      }
+
+      setHint(`${FAKE_PANELISTS[i].name} is sharing their initial take...`);
+      await streamBriefingText(INITIAL_TAKES[i]);
+      setPanelistsSpoken(i + 1);
+
+      // After finishing, show "press space" hint and wait
+      if (i < FAKE_PANELISTS.length - 1) {
+        setHint(`Press SPACE for ${FAKE_PANELISTS[i + 1].name}'s take`);
+        await waitForSpace();
+        // Set up next briefing card
+        setBriefingIndex(i + 1);
+        setBriefingText('');
+      } else {
+        setHint('Press SPACE to start the discussion');
+      }
     }
-  }, [scene, currentStep, isStreaming, streamResponse]);
 
-  // Spacebar handler
+    // === TRANSITION ===
+    await waitForSpace();
+    setViewMode('transition');
+    setHint('');
+    await new Promise((r) => setTimeout(r, 2000)); // Show transition for 2s
+
+    // === PHASE 2: ROUNDTABLE ===
+    setViewMode('roundtable');
+    setCurrentRound('cross-talk');
+    setPanelistsSpoken(0);
+    const s = sceneStateRef.current;
+    if (!s) return;
+
+    for (let i = 0; i < CROSSTALK.length; i++) {
+      setHint(`Press SPACE to hear ${FAKE_PANELISTS[i].name}'s response`);
+      await waitForSpace();
+
+      setRoundtableSpeakerIndex(i);
+      setHint(`${FAKE_PANELISTS[i].name} is responding...`);
+      await streamRoundtableText(s, FAKE_PANELISTS[i], CROSSTALK[i]);
+      setPanelistsSpoken(i + 1);
+      setHint(`${FAKE_PANELISTS[i].name} finished.`);
+    }
+
+    // === MODERATION ===
+    setHint('Press SPACE to enter the fishbowl');
+    await waitForSpace();
+    setCurrentRound('moderation');
+    s.moveObserverIn();
+    setHint('You\'re in the fishbowl. Demo complete!');
+  }, [waitForSpace, streamBriefingText, streamRoundtableText]);
+
+  const runDemoRef = useRef(runDemo);
+  runDemoRef.current = runDemo;
+
+  const isSpeakingRef = useRef(false);
+  // Keep ref in sync
+  useEffect(() => { isSpeakingRef.current = isSpeaking; }, [isSpeaking]);
+
+  // Spacebar handler — blocks during speaking
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
       if (e.code === 'Space') {
         e.preventDefault();
-        advanceStep();
+        // Don't advance while someone is speaking
+        if (isSpeakingRef.current) return;
+
+        if (advanceResolverRef.current) {
+          const resolver = advanceResolverRef.current;
+          advanceResolverRef.current = null;
+          resolver();
+        } else if (!startedRef.current) {
+          startedRef.current = true;
+          runDemoRef.current();
+        }
       }
     };
     window.addEventListener('keydown', handleKey);
     return () => window.removeEventListener('keydown', handleKey);
-  }, [advanceStep]);
+  }, []);
+
+  const currentPanelist = briefingIndex >= 0 ? FAKE_PANELISTS[briefingIndex] : null;
 
   return (
-    <div className="min-h-screen bg-gray-100 p-6">
-      <h1 className="text-2xl font-bold mb-2">Fishbowl Scene Test</h1>
-      <p className="text-gray-500 text-sm mb-4">Press <kbd className="px-1.5 py-0.5 bg-gray-200 rounded text-xs font-mono">SPACE</kbd> to advance through the demo. No API calls.</p>
+    <div className="min-h-screen">
+      <div className="fixed top-0 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-[var(--accent-gold)] opacity-[0.06] rounded-full blur-[120px] pointer-events-none" />
 
-      <div
-        ref={containerRef}
-        className="w-full max-w-[800px] mx-auto rounded-lg shadow-lg overflow-hidden bg-white"
-        style={{ aspectRatio: '4/3' }}
-      />
+      <div className="max-w-5xl mx-auto px-6 py-6 relative">
+        <div className="text-center mb-4">
+          <div className="label-mono mb-1">Test Mode — No API Calls</div>
+          <h1 className="text-2xl font-700 tracking-tight" style={{ color: 'var(--text-primary)' }}>The Fishbowl</h1>
+        </div>
 
-      <div className="max-w-[800px] mx-auto mt-4 flex flex-wrap gap-2">
-        <button
-          onClick={advanceStep}
-          disabled={isStreaming}
-          className="px-4 py-2 bg-blue-600 text-white rounded text-sm disabled:opacity-50"
-        >
-          {currentStep === 0 ? 'Start Demo' : currentStep <= 4 ? `Next (${currentStep}/4 spoke)` : 'Restart'}
-        </button>
-        {isStreaming && (
-          <span className="px-3 py-2 text-amber-600 text-sm animate-pulse">Speaking...</span>
+        {/* === BRIEFING VIEW === */}
+        {viewMode === 'briefing' && (
+          <div className="max-w-[800px] mx-auto">
+            {briefingIndex < 0 ? (
+              /* Pre-start state */
+              <div className="text-center py-20">
+                <p className="text-lg" style={{ color: 'var(--text-secondary)' }}>Your panel of {FAKE_PANELISTS.length} experts is ready.</p>
+                <div className="flex justify-center gap-3 mt-6">
+                  {FAKE_PANELISTS.map((p) => (
+                    <div key={p.id} className="flex flex-col items-center gap-1">
+                      <div className="w-12 h-12 rounded-full flex items-center justify-center text-sm font-700"
+                        style={{ backgroundColor: p.color + '20', color: p.color, border: `2px solid ${p.color}` }}>
+                        {p.name.charAt(0)}
+                      </div>
+                      <span className="text-xs" style={{ color: 'var(--text-muted)' }}>{p.name}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : currentPanelist && (
+              /* Expert briefing card — large format */
+              <div className="rounded-xl overflow-hidden animate-fade-in" style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)' }}>
+                <div className="flex">
+                  {/* Left: Expert visual */}
+                  <div className="w-64 flex-shrink-0 flex flex-col items-center justify-center py-10 px-6"
+                    style={{ background: currentPanelist.color + '12', borderRight: `1px solid var(--border)` }}>
+                    <div className="w-24 h-24 rounded-full flex items-center justify-center text-3xl font-800 mb-4"
+                      style={{ backgroundColor: currentPanelist.color + '25', color: currentPanelist.color, border: `3px solid ${currentPanelist.color}` }}>
+                      {currentPanelist.name.charAt(0)}
+                    </div>
+                    <div className="text-center">
+                      <div className="text-lg font-700" style={{ color: 'var(--text-primary)' }}>{currentPanelist.name}</div>
+                      <div className="label-mono mt-1" style={{ color: currentPanelist.color }}>{currentPanelist.role}</div>
+                    </div>
+                    <p className="text-xs text-center mt-3 leading-relaxed px-2" style={{ color: 'var(--text-muted)' }}>
+                      {currentPanelist.description}
+                    </p>
+                    <div className="mt-4 label-mono" style={{ fontSize: '9px' }}>
+                      Panelist {briefingIndex + 1} of {FAKE_PANELISTS.length}
+                    </div>
+                  </div>
+
+                  {/* Right: Their take */}
+                  <div className="flex-1 p-8">
+                    <div className="label-mono mb-3" style={{ color: currentPanelist.color }}>Initial Take</div>
+                    {briefingText ? (
+                      <p className="text-sm leading-relaxed whitespace-pre-wrap" style={{ color: 'var(--text-secondary)' }}>
+                        {briefingText}
+                        {isSpeaking && <span className="inline-block w-1 h-3.5 ml-0.5 animate-pulse" style={{ background: currentPanelist.color }} />}
+                      </p>
+                    ) : (
+                      <p className="text-sm italic" style={{ color: 'var(--text-muted)' }}>Preparing response...</p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
         )}
-      </div>
 
-      <div className="max-w-[800px] mx-auto mt-4 p-3 bg-black text-green-400 rounded font-mono text-xs h-32 overflow-y-auto">
-        {log.map((l, i) => <div key={i}>{l}</div>)}
+        {/* === TRANSITION SCREEN === */}
+        {viewMode === 'transition' && (
+          <div className="max-w-[800px] mx-auto text-center py-24 animate-fade-in">
+            <div className="label-mono mb-4" style={{ color: 'var(--accent-gold)' }}>All panelists briefed</div>
+            <h2 className="text-4xl font-800 tracking-tight" style={{ color: 'var(--text-primary)' }}>
+              Start the Discussion
+            </h2>
+            <p className="mt-3 text-lg" style={{ color: 'var(--text-secondary)' }}>
+              The panel will now debate with each other.
+            </p>
+            <div className="flex justify-center gap-2 mt-8">
+              {FAKE_PANELISTS.map((p) => (
+                <div key={p.id} className="w-3 h-3 rounded-full" style={{ background: p.color }} />
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* === ROUNDTABLE VIEW (canvas always in DOM, hidden until needed) === */}
+        <div style={{ display: viewMode === 'roundtable' ? 'block' : 'none' }}>
+          <div
+            ref={containerRef}
+            className="w-full max-w-[800px] mx-auto rounded-t-xl overflow-hidden shadow-lg"
+            style={{ aspectRatio: '4/3' }}
+          />
+          <StatusBar
+            round={currentRound}
+            panelistsSpoken={panelistsSpoken}
+            totalPanelists={FAKE_PANELISTS.length}
+            onWrapUp={() => {}}
+            canWrapUp={currentRound === 'moderation'}
+          />
+        </div>
+
+        {/* Hint bar (always visible) */}
+        <div className="max-w-[800px] mx-auto mt-6 text-center">
+          <p className={`text-sm ${!isSpeaking ? 'animate-pulse' : ''}`}
+            style={{ color: !isSpeaking ? 'var(--accent-gold)' : 'var(--text-muted)' }}>
+            {hint}
+          </p>
+          {!isSpeaking && !startedRef.current && briefingIndex < 0 && (
+            <button
+              onClick={() => {
+                if (!startedRef.current) {
+                  startedRef.current = true;
+                  runDemoRef.current();
+                }
+              }}
+              className="mt-3 px-5 py-2 rounded-lg text-sm font-500 glow-gold transition-all"
+              style={{ background: 'var(--accent-gold)', color: 'var(--bg-deep)' }}
+            >
+              Start Demo (or press Space)
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );

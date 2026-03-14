@@ -18,18 +18,25 @@ export default function ModerationInput({ onSubmit, disabled }: Props) {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="flex gap-2 max-w-[800px] mx-auto mt-4">
+    <form onSubmit={handleSubmit} className="flex gap-2">
       <input
         value={question}
         onChange={(e) => setQuestion(e.target.value)}
-        placeholder="Ask the panel a question or give a directive..."
+        placeholder="Ask the panel a question..."
         disabled={disabled}
-        className="flex-1 px-4 py-3 border rounded-lg text-sm disabled:opacity-50"
+        className="flex-1 px-4 py-3 rounded-xl text-sm disabled:opacity-40"
+        style={{
+          background: 'var(--bg-surface)',
+          border: '1px solid var(--border)',
+          color: 'var(--text-primary)',
+          outline: 'none',
+        }}
       />
       <button
         type="submit"
         disabled={disabled || !question.trim()}
-        className="px-6 py-3 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50 transition-colors"
+        className="px-5 py-3 rounded-xl text-sm font-500 transition-all disabled:opacity-30"
+        style={{ background: 'var(--accent-gold)', color: 'var(--bg-deep)' }}
       >
         Ask
       </button>

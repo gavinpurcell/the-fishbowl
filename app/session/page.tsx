@@ -40,6 +40,8 @@ export default function SessionPage() {
   const [activeSpeaker, setActiveSpeaker] = useState<Panelist | null>(null);
   const [activeSpeakerText, setActiveSpeakerText] = useState('');
   const [isSpeaking, setIsSpeaking] = useState(false);
+  const speakerTextRef = useRef('');
+  const textUpdateTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   // Redirect to setup if no active session
   useEffect(() => {
@@ -70,10 +72,16 @@ export default function SessionPage() {
     return () => window.removeEventListener('keydown', handleKey);
   }, []);
 
+  // Capture store values in refs so handleSceneReady doesn't depend on store
+  const storeRef = useRef(store);
+  storeRef.current = store;
+
   const handleSceneReady = useCallback(async (scene: FishbowlScene) => {
     if (startedRef.current) return;
     startedRef.current = true;
     sceneRef.current = scene;
+
+    const s = storeRef.current;
 
     // Start video recording
     const canvas = scene.getCanvas();
@@ -83,7 +91,7 @@ export default function SessionPage() {
       recorder.start(canvas);
     }
 
-    const provider = createProvider(store.provider, store.apiKey);
+    const provider = createProvider(s.provider, s.apiKey);
 
     // Collect transcript entries locally (not just in store)
     const localTranscript: TranscriptEntry[] = [];
@@ -105,6 +113,7 @@ export default function SessionPage() {
           const speaker = store.panelists.find((p) => p.id === panelistId) || null;
           setActiveSpeaker(speaker);
           setActiveSpeakerText('');
+          speakerTextRef.current = '';
           setIsSpeaking(true);
           scene.setCharacterState(panelistId, 'talking');
           scene.showSpeechBubble(panelistId);
@@ -115,6 +124,14 @@ export default function SessionPage() {
           });
         },
         onPanelistDeactivated: () => {
+          // Flush any pending text update
+          if (textUpdateTimerRef.current) {
+            clearTimeout(textUpdateTimerRef.current);
+            textUpdateTimerRef.current = null;
+          }
+          setActiveSpeakerText(speakerTextRef.current);
+          setLiveTranscript([...localTranscript]);
+
           store.setActivePanelist(null);
           setIsSpeaking(false);
           setPanelistsSpoken((prev) => prev + 1);
@@ -128,13 +145,22 @@ export default function SessionPage() {
           setLiveTranscript([...localTranscript]);
         },
         onStreamChunk: (panelistId: string, chunk: string) => {
+          // Update PixiJS scene immediately
           scene.appendToBubble(panelistId, chunk);
-          store.appendToLastEntry(chunk);
-          setActiveSpeakerText((prev) => prev + chunk);
+
+          // Accumulate in ref (no re-render per chunk)
+          speakerTextRef.current += chunk;
           if (localTranscript.length > 0) {
-            const last = localTranscript[localTranscript.length - 1];
-            last.content += chunk;
-            setLiveTranscript([...localTranscript]);
+            localTranscript[localTranscript.length - 1].content += chunk;
+          }
+
+          // Throttle React state updates to every 150ms
+          if (!textUpdateTimerRef.current) {
+            textUpdateTimerRef.current = setTimeout(() => {
+              textUpdateTimerRef.current = null;
+              setActiveSpeakerText(speakerTextRef.current);
+              setLiveTranscript([...localTranscript]);
+            }, 150);
           }
         },
         onError: (err: Error) => {
@@ -147,23 +173,26 @@ export default function SessionPage() {
 
     try {
       // === ROUND 1: INITIAL TAKES ===
+      console.log('[Session] Starting Round 1: Initial Takes');
       setHint('Press SPACE to hear each panelist\'s initial take');
       setCurrentRound('initial-takes');
 
       for (const panelist of store.panelists) {
+        console.log('[Session] Waiting for advance before', panelist.name);
         await waitForAdvance();
+        console.log('[Session] Advance received, running', panelist.name);
         setHint(`${panelist.name} is sharing their initial take...`);
-        // Manually run one panelist at a time
         await orchestrator.runSinglePanelist(panelist, 'initial-takes');
+        console.log('[Session]', panelist.name, 'finished');
         setHint(`${panelist.name} finished. Press SPACE to continue.`);
       }
 
       // === ROUND 2: CROSS-TALK ===
+      console.log('[Session] Starting Round 2: Cross-Talk');
       setHint('Press SPACE to start the cross-talk round');
       await waitForAdvance();
       setCurrentRound('cross-talk');
       setHint('Panelists are discussing with each other...');
-      // Cross-talk runs automatically (2 rounds of back-and-forth)
       await orchestrator.runCrossTalk();
 
       // === ROUND 3: MODERATION ===
@@ -175,7 +204,8 @@ export default function SessionPage() {
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred.');
     }
-  }, [store, waitForAdvance]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [waitForAdvance]);
 
   const handleModeration = useCallback(async (question: string) => {
     const orchestrator = orchestratorRef.current;
@@ -234,13 +264,13 @@ export default function SessionPage() {
   const totalPanelists = store.panelists.length;
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen">
       {/* Mobile fallback */}
       <div className="md:hidden flex items-center justify-center min-h-screen p-8 text-center">
         <div>
-          <h2 className="text-xl font-bold mb-2">Open on desktop for the full experience</h2>
-          <p className="text-gray-500 text-sm">The Fishbowl requires a larger screen.</p>
-          <button onClick={() => router.replace('/')} className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm">Go Back</button>
+          <h2 className="text-xl font-700 mb-2" style={{ color: 'var(--text-primary)' }}>Open on desktop</h2>
+          <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>The Fishbowl requires a larger screen.</p>
+          <button onClick={() => router.replace('/')} className="mt-4 px-4 py-2 rounded-lg text-sm" style={{ background: 'var(--accent-gold)', color: 'var(--bg-deep)' }}>Go Back</button>
         </div>
       </div>
 
@@ -248,7 +278,8 @@ export default function SessionPage() {
       <div className="hidden md:block">
         <div className="max-w-5xl mx-auto px-6 py-6">
           <div className="text-center mb-4">
-            <h1 className="text-2xl font-bold tracking-tight">The Fishbowl</h1>
+            <div className="label-mono mb-1">Live Session</div>
+            <h1 className="text-2xl font-700 tracking-tight" style={{ color: 'var(--text-primary)' }}>The Fishbowl</h1>
           </div>
 
           {/* PixiJS Scene */}
@@ -264,8 +295,9 @@ export default function SessionPage() {
           />
 
           {/* Hint / instruction bar */}
-          <div className="max-w-[800px] mx-auto mt-3 text-center">
-            <p className={`text-sm ${phase === 'waiting-for-advance' ? 'text-blue-600 font-medium animate-pulse' : 'text-gray-500'}`}>
+          <div className="max-w-[800px] mx-auto mt-4 text-center">
+            <p className={`text-sm ${phase === 'waiting-for-advance' ? 'animate-pulse' : ''}`}
+              style={{ color: phase === 'waiting-for-advance' ? 'var(--accent-gold)' : 'var(--text-muted)' }}>
               {hint}
             </p>
             {phase === 'waiting-for-advance' && (
@@ -277,7 +309,8 @@ export default function SessionPage() {
                     resolver();
                   }
                 }}
-                className="mt-2 px-4 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700"
+                className="mt-3 px-5 py-2 rounded-lg text-sm font-500 transition-all glow-gold"
+                style={{ background: 'var(--accent-gold)', color: 'var(--bg-deep)' }}
               >
                 Continue (or press Space)
               </button>
@@ -293,29 +326,31 @@ export default function SessionPage() {
 
           {/* Error */}
           {error && (
-            <div className="max-w-[800px] mx-auto mt-3 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+            <div className="max-w-[800px] mx-auto mt-3 p-3 rounded-xl text-sm" style={{ background: '#fef2f2', border: '1px solid #fecaca', color: '#991b1b' }}>
               <strong>Error:</strong> {error}
-              <button onClick={() => setError(null)} className="ml-2 text-red-500 underline text-xs">Dismiss</button>
+              <button onClick={() => setError(null)} className="ml-2 underline text-xs" style={{ color: '#dc2626' }}>Dismiss</button>
             </div>
           )}
 
           {/* Moderation Input */}
           {phase === 'moderation' && (
-            <ModerationInput onSubmit={handleModeration} disabled={phase !== 'moderation'} />
+            <div className="max-w-[800px] mx-auto mt-4">
+              <ModerationInput onSubmit={handleModeration} disabled={phase !== 'moderation'} />
+            </div>
           )}
 
           {/* Live Transcript */}
           {liveTranscript.length > 0 && (
             <div className="max-w-[800px] mx-auto mt-6">
-              <h3 className="text-sm font-bold text-gray-700 mb-2">Transcript</h3>
-              <div className="border rounded-lg p-4 max-h-64 overflow-y-auto bg-gray-50 space-y-3">
+              <div className="label-mono mb-2">Transcript</div>
+              <div className="rounded-xl p-4 max-h-64 overflow-y-auto space-y-3" style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)' }}>
                 {liveTranscript.map((entry) => {
                   const panelist = store.panelists.find((p) => p.id === entry.panelistId);
-                  const color = panelist?.color || (entry.panelistId === 'user' ? '#eea444' : '#888');
+                  const color = panelist?.color || (entry.panelistId === 'user' ? '#eea444' : 'var(--text-muted)');
                   return (
                     <div key={entry.id} className="text-sm">
-                      <span className="font-semibold" style={{ color }}>{entry.panelistName}:</span>{' '}
-                      <span className="text-gray-700">{entry.content}</span>
+                      <span className="font-600" style={{ color }}>{entry.panelistName}:</span>{' '}
+                      <span style={{ color: 'var(--text-secondary)' }}>{entry.content}</span>
                     </div>
                   );
                 })}

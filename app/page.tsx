@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useFishbowlStore } from '@/lib/store';
 import { createPanelistFromTemplate } from '@/engine/panelist';
-import type { PanelTemplate, Panelist } from '@/engine/types';
+import type { PanelTemplate } from '@/engine/types';
 import TemplatePicker from '@/components/setup/TemplatePicker';
 import PanelistBuilder from '@/components/setup/PanelistBuilder';
 import IdeaInput from '@/components/setup/IdeaInput';
@@ -37,22 +37,32 @@ export default function SetupPage() {
   };
 
   return (
-    <div className="min-h-screen bg-white">
-      <div className="max-w-4xl mx-auto px-6 py-12">
-        <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold tracking-tight">The Fishbowl</h1>
-          <p className="text-gray-500 mt-2 text-lg">
+    <div className="min-h-screen">
+      {/* Ambient glow */}
+      <div className="fixed top-0 left-1/2 -translate-x-1/2 w-[600px] h-[400px] bg-[var(--accent-gold)] opacity-[0.08] rounded-full blur-[120px] pointer-events-none" />
+
+      <div className="max-w-4xl mx-auto px-6 py-16 relative">
+        {/* Header */}
+        <div className="text-center mb-16 animate-fade-in">
+          <div className="label-mono mb-4">AI Focus Group</div>
+          <h1 className="text-5xl font-800 tracking-tight" style={{ color: 'var(--text-primary)' }}>
+            The Fishbowl
+          </h1>
+          <p className="mt-3 text-lg" style={{ color: 'var(--text-secondary)' }}>
             Watch AI experts debate your ideas. Then step in and ask questions.
           </p>
         </div>
 
         {step === 'template' && (
-          <div>
+          <div className="animate-fade-in">
             <TemplatePicker onSelect={handleTemplateSelect} />
-            <div className="text-center mt-8">
+            <div className="text-center mt-10">
               <button
                 onClick={handleBuildOwn}
-                className="text-blue-600 hover:underline text-sm"
+                className="text-sm transition-colors"
+                style={{ color: 'var(--accent-gold)' }}
+                onMouseEnter={(e) => e.currentTarget.style.color = 'var(--accent-amber)'}
+                onMouseLeave={(e) => e.currentTarget.style.color = 'var(--accent-gold)'}
               >
                 Or build your own panel from scratch
               </button>
@@ -61,7 +71,7 @@ export default function SetupPage() {
         )}
 
         {step === 'configure' && (
-          <div className="space-y-8">
+          <div className="space-y-10 animate-fade-in">
             <PanelistBuilder
               panelists={store.panelists}
               onUpdate={store.setPanelists}
@@ -81,17 +91,24 @@ export default function SetupPage() {
               onApiKeyChange={store.setApiKey}
             />
 
-            <div className="flex items-center justify-between pt-4 border-t">
+            <div className="flex items-center justify-between pt-6" style={{ borderTop: '1px solid var(--border)' }}>
               <button
                 onClick={() => setStep('template')}
-                className="text-gray-500 hover:text-gray-700 text-sm"
+                className="text-sm transition-colors"
+                style={{ color: 'var(--text-muted)' }}
+                onMouseEnter={(e) => e.currentTarget.style.color = 'var(--text-secondary)'}
+                onMouseLeave={(e) => e.currentTarget.style.color = 'var(--text-muted)'}
               >
                 Back to templates
               </button>
               <button
                 onClick={handleStart}
                 disabled={!canStart}
-                className="px-8 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="px-8 py-3 rounded-lg font-600 text-sm transition-all disabled:opacity-30 disabled:cursor-not-allowed glow-gold"
+                style={{
+                  background: canStart ? 'var(--accent-gold)' : 'var(--border)',
+                  color: canStart ? 'var(--bg-deep)' : 'var(--text-muted)',
+                }}
               >
                 Start the Fishbowl
               </button>
