@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
+import { getDefaultModel } from '@/lib/models';
 import type {
   Panelist,
   TranscriptEntry,
@@ -16,6 +17,8 @@ interface FishbowlState {
   ideaFiles: FileContent[];
   provider: ProviderType;
   apiKey: string;
+  modelId: string;
+  sessionCost: { inputTokens: number; outputTokens: number };
   status: SessionStatus;
   currentRound: RoundType;
   transcript: TranscriptEntry[];
@@ -30,6 +33,8 @@ interface FishbowlState {
   setIdeaFiles: (files: FileContent[]) => void;
   setProvider: (provider: ProviderType) => void;
   setApiKey: (key: string) => void;
+  setModelId: (id: string) => void;
+  addTokenUsage: (input: number, output: number) => void;
 
   startSession: () => void;
   setCurrentRound: (round: RoundType) => void;
@@ -53,6 +58,8 @@ export const useFishbowlStore = create<FishbowlState>()(
   ideaFiles: [],
   provider: 'claude',
   apiKey: '',
+  modelId: getDefaultModel('claude').id,
+  sessionCost: { inputTokens: 0, outputTokens: 0 },
   status: 'setup',
   currentRound: 'initial-takes',
   transcript: [],
@@ -68,10 +75,17 @@ export const useFishbowlStore = create<FishbowlState>()(
     })),
   setIdeaText: (ideaText) => set({ ideaText }),
   setIdeaFiles: (ideaFiles) => set({ ideaFiles }),
-  setProvider: (provider) => set({ provider }),
+  setProvider: (provider) => set({ provider, modelId: getDefaultModel(provider).id }),
   setApiKey: (apiKey) => set({ apiKey }),
+  setModelId: (modelId) => set({ modelId }),
+  addTokenUsage: (input, output) => set((s) => ({
+    sessionCost: {
+      inputTokens: s.sessionCost.inputTokens + input,
+      outputTokens: s.sessionCost.outputTokens + output,
+    },
+  })),
 
-  startSession: () => set({ status: 'running', currentRound: 'initial-takes', transcript: [], summary: null }),
+  startSession: () => set({ status: 'running', currentRound: 'initial-takes', transcript: [], summary: null, sessionCost: { inputTokens: 0, outputTokens: 0 } }),
   setCurrentRound: (currentRound) => set({ currentRound }),
   setActivePanelist: (activePanelistId) => set({ activePanelistId }),
   addTranscriptEntry: (entry) => set((s) => ({ transcript: [...s.transcript, entry] })),
@@ -114,6 +128,7 @@ export const useFishbowlStore = create<FishbowlState>()(
       ideaFiles: s.ideaFiles,
       provider: s.provider,
       apiKey: s.apiKey,
+      modelId: s.modelId,
     };
   },
   }),
@@ -126,6 +141,8 @@ export const useFishbowlStore = create<FishbowlState>()(
         ideaFiles: state.ideaFiles,
         provider: state.provider,
         apiKey: state.apiKey,
+        modelId: state.modelId,
+        sessionCost: state.sessionCost,
         status: state.status,
         transcript: state.transcript,
         summary: state.summary,
