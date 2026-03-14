@@ -1,4 +1,4 @@
-import type { LLMProvider, Message } from './types';
+import type { LLMProvider, Message, StreamEvent, GenerateResult } from './types';
 
 export class OllamaProvider implements LLMProvider {
   private baseUrl: string;
@@ -7,7 +7,7 @@ export class OllamaProvider implements LLMProvider {
     this.baseUrl = baseUrl || 'http://localhost:11434';
   }
 
-  async *stream(messages: Message[]): AsyncIterable<string> {
+  async *stream(messages: Message[]): AsyncIterable<StreamEvent> {
     const response = await fetch(`${this.baseUrl}/api/chat`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -41,7 +41,7 @@ export class OllamaProvider implements LLMProvider {
         try {
           const parsed = JSON.parse(line);
           if (parsed.message?.content) {
-            yield parsed.message.content;
+            yield { type: 'text', text: parsed.message.content };
           }
         } catch {
           // Skip unparseable lines
@@ -50,7 +50,7 @@ export class OllamaProvider implements LLMProvider {
     }
   }
 
-  async generate(messages: Message[]): Promise<string> {
+  async generate(messages: Message[]): Promise<GenerateResult> {
     const response = await fetch(`${this.baseUrl}/api/chat`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -66,6 +66,6 @@ export class OllamaProvider implements LLMProvider {
     }
 
     const data = await response.json();
-    return data.message?.content || '';
+    return { text: data.message?.content || '' };
   }
 }

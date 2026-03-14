@@ -1,9 +1,9 @@
-import type { LLMProvider, Message } from './types';
+import type { LLMProvider, Message, StreamEvent, GenerateResult } from './types';
 
 export class ClaudeProvider implements LLMProvider {
   constructor(private apiKey: string, private modelId?: string) {}
 
-  async *stream(messages: Message[]): AsyncIterable<string> {
+  async *stream(messages: Message[]): AsyncIterable<StreamEvent> {
     const response = await fetch('/api/llm', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -43,7 +43,9 @@ export class ClaudeProvider implements LLMProvider {
         try {
           const parsed = JSON.parse(data);
           if (parsed.type === 'content_block_delta' && parsed.delta?.text) {
-            yield parsed.delta.text;
+            yield { type: 'text', text: parsed.delta.text };
+          } else if (parsed.type === 'usage') {
+            yield { type: 'usage', inputTokens: parsed.inputTokens, outputTokens: parsed.outputTokens };
           }
         } catch {
           // Skip unparseable lines
@@ -52,7 +54,7 @@ export class ClaudeProvider implements LLMProvider {
     }
   }
 
-  async generate(messages: Message[]): Promise<string> {
+  async generate(messages: Message[]): Promise<GenerateResult> {
     const response = await fetch('/api/llm', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -71,6 +73,12 @@ export class ClaudeProvider implements LLMProvider {
     }
 
     const data = await response.json();
-    return data.content?.[0]?.text || '';
+    return {
+      text: data.content?.[0]?.text || '',
+      usage: data.usage ? {
+        inputTokens: data.usage.input_tokens,
+        outputTokens: data.usage.output_tokens,
+      } : undefined,
+    };
   }
 }

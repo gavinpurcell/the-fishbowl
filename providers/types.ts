@@ -3,9 +3,18 @@ export interface Message {
   content: string;
 }
 
+export type StreamEvent =
+  | { type: 'text'; text: string }
+  | { type: 'usage'; inputTokens: number; outputTokens: number };
+
+export interface GenerateResult {
+  text: string;
+  usage?: { inputTokens: number; outputTokens: number };
+}
+
 export interface LLMProvider {
-  stream(messages: Message[]): AsyncIterable<string>;
-  generate(messages: Message[]): Promise<string>;
+  stream(messages: Message[]): AsyncIterable<StreamEvent>;
+  generate(messages: Message[]): Promise<GenerateResult>;
 }
 
 export interface LLMRequestBody {

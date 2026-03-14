@@ -60,7 +60,7 @@ export async function expandPanelistDescription(
     { role: 'system', content: META_PROMPT },
     { role: 'user', content: shortDescription },
   ]);
-  return result.trim();
+  return result.text.trim();
 }
 
 export async function createCustomPanelist(

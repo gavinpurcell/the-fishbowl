@@ -8,6 +8,7 @@ export interface ConversationCallbacks {
   onPanelistDeactivated: () => void;
   onTranscriptEntry: (entry: TranscriptEntry) => void;
   onStreamChunk: (panelistId: string, chunk: string) => void;
+  onTokenUsage: (inputTokens: number, outputTokens: number) => void;
   onError: (error: Error) => void;
 }
 
@@ -70,15 +71,19 @@ export class ConversationOrchestrator {
 
     let fullResponse = '';
     try {
-      for await (const chunk of this.provider.stream(messages)) {
+      for await (const event of this.provider.stream(messages)) {
         if (this.aborted) break;
-        fullResponse += chunk;
-        this.callbacks.onStreamChunk(panelist.id, chunk);
+        if (event.type === 'text') {
+          fullResponse += event.text;
+          this.callbacks.onStreamChunk(panelist.id, event.text);
+        } else if (event.type === 'usage') {
+          this.callbacks.onTokenUsage(event.inputTokens, event.outputTokens);
+        }
       }
     } catch (error) {
       this.callbacks.onError(error instanceof Error ? error : new Error(String(error)));
       fullResponse = '[Error generating response]';
-      this.aborted = true; // Stop the session on API errors
+      this.aborted = true;
     }
 
     entry.content = fullResponse;
@@ -88,17 +93,14 @@ export class ConversationOrchestrator {
     return fullResponse;
   }
 
-  /** Run initial takes for all panelists sequentially */
   async runInitialTakes(): Promise<void> {
     this.callbacks.onRoundChange('initial-takes');
-
     for (const panelist of this.panelists) {
       if (this.aborted) return;
       await this.runSinglePanelist(panelist, 'initial-takes');
     }
   }
 
-  /** Run a single panelist's response for a given round */
   async runSinglePanelist(panelist: Panelist, round: RoundType): Promise<void> {
     if (this.aborted) return;
 
@@ -171,10 +173,13 @@ export class ConversationOrchestrator {
     const prompt = `${transcriptContext}\n\nSynthesize this discussion into a structured summary with these sections:\n\n## Key Insights\nBulleted list of the most important points raised.\n\n## Points of Agreement\nWhere the panelists aligned.\n\n## Points of Disagreement\nWhere they diverged and why.\n\n## Top Recommendations\nThe 3-5 most actionable next steps, in priority order.\n\nBe specific and reference which panelists made which points.`;
 
     try {
-      const summary = await this.provider.generate([
+      const result = await this.provider.generate([
         { role: 'user', content: prompt },
       ]);
-      return summary;
+      if (result.usage) {
+        this.callbacks.onTokenUsage(result.usage.inputTokens, result.usage.outputTokens);
+      }
+      return result.text;
     } catch (error) {
       this.callbacks.onError(error instanceof Error ? error : new Error(String(error)));
       return 'Error generating summary.';

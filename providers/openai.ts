@@ -1,9 +1,9 @@
-import type { LLMProvider, Message } from './types';
+import type { LLMProvider, Message, StreamEvent, GenerateResult } from './types';
 
 export class OpenAIProvider implements LLMProvider {
   constructor(private apiKey: string, private modelId?: string) {}
 
-  async *stream(messages: Message[]): AsyncIterable<string> {
+  async *stream(messages: Message[]): AsyncIterable<StreamEvent> {
     const response = await fetch('/api/llm', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -42,8 +42,12 @@ export class OpenAIProvider implements LLMProvider {
 
         try {
           const parsed = JSON.parse(data);
-          const content = parsed.choices?.[0]?.delta?.content;
-          if (content) yield content;
+          if (parsed.type === 'usage') {
+            yield { type: 'usage', inputTokens: parsed.inputTokens, outputTokens: parsed.outputTokens };
+          } else {
+            const content = parsed.choices?.[0]?.delta?.content;
+            if (content) yield { type: 'text', text: content };
+          }
         } catch {
           // Skip unparseable lines
         }
@@ -51,7 +55,7 @@ export class OpenAIProvider implements LLMProvider {
     }
   }
 
-  async generate(messages: Message[]): Promise<string> {
+  async generate(messages: Message[]): Promise<GenerateResult> {
     const response = await fetch('/api/llm', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -70,6 +74,12 @@ export class OpenAIProvider implements LLMProvider {
     }
 
     const data = await response.json();
-    return data.choices?.[0]?.message?.content || '';
+    return {
+      text: data.choices?.[0]?.message?.content || '',
+      usage: data.usage ? {
+        inputTokens: data.usage.prompt_tokens,
+        outputTokens: data.usage.completion_tokens,
+      } : undefined,
+    };
   }
 }
