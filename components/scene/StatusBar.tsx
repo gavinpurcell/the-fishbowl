@@ -1,6 +1,7 @@
 'use client';
 
 import type { RoundType } from '@/engine/types';
+import { formatCost, formatTokens } from '@/lib/models';
 
 interface Props {
   round: RoundType;
@@ -8,6 +9,9 @@ interface Props {
   totalPanelists: number;
   onWrapUp: () => void;
   canWrapUp: boolean;
+  costDollars?: number;
+  totalTokens?: number;
+  isOllama?: boolean;
 }
 
 const ROUND_LABELS: Record<RoundType, string> = {
@@ -18,7 +22,7 @@ const ROUND_LABELS: Record<RoundType, string> = {
   'summary': 'Generating Summary...',
 };
 
-export default function StatusBar({ round, panelistsSpoken, totalPanelists, onWrapUp, canWrapUp }: Props) {
+export default function StatusBar({ round, panelistsSpoken, totalPanelists, onWrapUp, canWrapUp, costDollars, totalTokens, isOllama }: Props) {
   return (
     <div
       className="flex items-center justify-between px-5 py-2.5 max-w-[800px] mx-auto rounded-b-xl"
@@ -31,6 +35,11 @@ export default function StatusBar({ round, panelistsSpoken, totalPanelists, onWr
         </span>
       </div>
       <div className="flex items-center gap-4">
+        {totalTokens != null && totalTokens > 0 && (
+          <span className="text-xs font-mono" style={{ color: 'var(--text-muted)' }}>
+            {isOllama ? 'Free (local)' : `${formatCost(costDollars || 0)} · ${formatTokens(totalTokens)} tokens`}
+          </span>
+        )}
         <span className="text-xs" style={{ color: 'var(--text-muted)' }}>
           {panelistsSpoken}/{totalPanelists} spoke
         </span>

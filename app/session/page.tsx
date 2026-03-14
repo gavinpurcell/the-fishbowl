@@ -8,6 +8,7 @@ import { ConversationOrchestrator } from '@/engine/conversation';
 import { createProvider } from '@/providers/index';
 import { VideoRecorder } from '@/scene/VideoRecorder';
 import StatusBar from '@/components/scene/StatusBar';
+import { getModelById } from '@/lib/models';
 // Note: PixiJS scene is managed directly via ref, not via FishbowlCanvas component
 import ModerationInput from '@/components/scene/ModerationInput';
 import type { RoundType, TranscriptEntry, Panelist } from '@/engine/types';
@@ -64,9 +65,13 @@ export default function SessionPage() {
     });
   }, []);
 
-  // Spacebar handler — blocks during speaking
+  // Spacebar handler — blocks during speaking, ignores when typing in input
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
+      // Don't capture space when user is typing in an input or textarea
+      const tag = (e.target as HTMLElement)?.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+
       if (e.code === 'Space') {
         e.preventDefault();
         if (isSpeakingRef.current) return; // Block during speech
@@ -120,7 +125,7 @@ export default function SessionPage() {
     startedRef.current = true;
 
     const s = storeRef.current;
-    const provider = createProvider(s.provider, s.apiKey);
+    const provider = createProvider(s.provider, s.apiKey, s.modelId);
     const localTranscript: TranscriptEntry[] = [];
     localTranscriptRef.current = localTranscript;
 
@@ -200,6 +205,9 @@ export default function SessionPage() {
         },
         onError: (err: Error) => {
           setError(err.message);
+        },
+        onTokenUsage: (inputTokens: number, outputTokens: number) => {
+          storeRef.current.addTokenUsage(inputTokens, outputTokens);
         },
       }
     );
@@ -425,13 +433,26 @@ export default function SessionPage() {
               className="w-full max-w-[800px] mx-auto rounded-t-xl overflow-hidden shadow-lg"
               style={{ aspectRatio: '4/3' }}
             />
-            <StatusBar
-              round={currentRound}
-              panelistsSpoken={panelistsSpoken}
-              totalPanelists={store.panelists.length}
-              onWrapUp={handleWrapUp}
-              canWrapUp={inModeration && !isSpeaking}
-            />
+            {(() => {
+              const model = getModelById(store.modelId);
+              const cost = model
+                ? (store.sessionCost.inputTokens / 1_000_000) * model.inputPer1M +
+                  (store.sessionCost.outputTokens / 1_000_000) * model.outputPer1M
+                : 0;
+              const totalTokens = store.sessionCost.inputTokens + store.sessionCost.outputTokens;
+              return (
+                <StatusBar
+                  round={currentRound}
+                  panelistsSpoken={panelistsSpoken}
+                  totalPanelists={store.panelists.length}
+                  onWrapUp={handleWrapUp}
+                  canWrapUp={inModeration && !isSpeaking}
+                  costDollars={cost}
+                  totalTokens={totalTokens}
+                  isOllama={store.provider === 'ollama'}
+                />
+              );
+            })()}
           </div>
 
           {/* Hint bar */}

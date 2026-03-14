@@ -9,6 +9,7 @@ import TemplatePicker from '@/components/setup/TemplatePicker';
 import PanelistBuilder from '@/components/setup/PanelistBuilder';
 import IdeaInput from '@/components/setup/IdeaInput';
 import ApiKeyConfig from '@/components/setup/ApiKeyConfig';
+import { estimateSessionCost, formatCost } from '@/lib/models';
 
 export default function SetupPage() {
   const router = useRouter();
@@ -87,9 +88,20 @@ export default function SetupPage() {
             <ApiKeyConfig
               provider={store.provider}
               apiKey={store.apiKey}
+              modelId={store.modelId}
               onProviderChange={store.setProvider}
               onApiKeyChange={store.setApiKey}
+              onModelChange={store.setModelId}
             />
+
+            {store.provider !== 'ollama' && store.panelists.length >= 3 && (
+              <div className="text-xs" style={{ color: 'var(--text-muted)' }}>
+                {(() => {
+                  const est = estimateSessionCost(store.modelId, store.panelists.length);
+                  return `Estimated session cost: ~${formatCost(est.low)} – ${formatCost(est.high)}`;
+                })()}
+              </div>
+            )}
 
             <div className="flex items-center justify-between pt-6" style={{ borderTop: '1px solid var(--border)' }}>
               <button
