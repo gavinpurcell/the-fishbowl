@@ -25,6 +25,7 @@ export class Character extends Container {
   private state: CharacterState = 'idle';
   private animTime = 0;
   private breathOffset: number;
+  private headBaseY = 0;
 
   // Animation indicators (created on demand)
   private talkLines: Graphics | null = null;
@@ -263,77 +264,67 @@ export class Character extends Container {
   }
 
   private animateIdle(): void {
-    // Subtle breathing — gentle vertical movement
+    // Subtle breathing — gentle vertical movement (absolute positioning, not additive)
     const breathAmount = Math.sin(this.animTime * 2 + this.breathOffset) * 0.8;
-    this.head.y = breathAmount * 0.5;
-    this.hair.y = breathAmount * 0.5;
-    this.leftEye.y = breathAmount * 0.5;
-    this.rightEye.y = breathAmount * 0.5;
+    this.headBaseY = breathAmount * 0.5;
+    this.head.y = this.headBaseY;
+    this.hair.y = this.headBaseY;
+    this.leftEye.y = this.headBaseY;
+    this.rightEye.y = this.headBaseY;
     this.body.y = breathAmount * 0.3;
   }
 
   private animateTalking(): void {
-    // Talk lines that pulse beside the head
+    // Talk lines — use alpha pulsing instead of redrawing
     if (!this.talkLines) {
       this.talkLines = new Graphics();
+      const headY = -this.BODY_HEIGHT / 2 - this.HEAD_RADIUS + 6;
+      for (let i = 0; i < 3; i++) {
+        const x = this.HEAD_RADIUS + 6 + i * 4;
+        const y = headY - 4 + i * 5;
+        this.talkLines.rect(x, y, 5, 1.5)
+          .fill({ color: this.bodyColor });
+      }
       this.addChild(this.talkLines);
     }
-
-    this.talkLines.clear();
-    const headY = -this.BODY_HEIGHT / 2 - this.HEAD_RADIUS + 6;
-
-    // Three small lines on the right side of the head
-    for (let i = 0; i < 3; i++) {
-      const offset = Math.sin(this.animTime * 4 + i * 1.2) * 2;
-      const alpha = 0.4 + Math.sin(this.animTime * 3 + i) * 0.3;
-      const x = this.HEAD_RADIUS + 6 + i * 4 + offset;
-      const y = headY - 4 + i * 5;
-
-      this.talkLines.rect(x, y, 5, 1.5)
-        .fill({ color: this.bodyColor, alpha });
-    }
+    // Pulse the opacity
+    this.talkLines.alpha = 0.4 + Math.sin(this.animTime * 3) * 0.3;
   }
 
   private animateThinking(): void {
-    // Animated dots above head
+    // Thinking dots — use position/alpha animation instead of redrawing
     if (!this.thinkDots) {
       this.thinkDots = new Graphics();
+      const headY = -this.BODY_HEIGHT / 2 - this.HEAD_RADIUS + 6;
+      for (let i = 0; i < 3; i++) {
+        const dotX = -6 + i * 6;
+        const dotY = headY - this.HEAD_RADIUS - 12;
+        this.thinkDots.circle(dotX, dotY, 2.5)
+          .fill({ color: 0x888888 });
+      }
       this.addChild(this.thinkDots);
     }
-
-    this.thinkDots.clear();
+    // Bounce the whole group
     const headY = -this.BODY_HEIGHT / 2 - this.HEAD_RADIUS + 6;
-
-    for (let i = 0; i < 3; i++) {
-      const bounce = Math.sin(this.animTime * 3 + i * 0.8) * 3;
-      const alpha = 0.3 + Math.sin(this.animTime * 2 + i * 1.2) * 0.4;
-      const dotY = headY - this.HEAD_RADIUS - 12 + bounce;
-      const dotX = -6 + i * 6;
-
-      this.thinkDots.circle(dotX, dotY, 2.5)
-        .fill({ color: 0x888888, alpha });
-    }
+    this.thinkDots.y = Math.sin(this.animTime * 3) * 3;
+    this.thinkDots.alpha = 0.4 + Math.sin(this.animTime * 2) * 0.3;
   }
 
   private animateReacting(): void {
-    // Subtle nod + small indicator
+    // Subtle nod — add to the base breathing position, not accumulate
     const nodAmount = Math.sin(this.animTime * 4) * 1.5;
-    this.head.y += nodAmount;
-    this.hair.y += nodAmount;
-    this.leftEye.y += nodAmount;
-    this.rightEye.y += nodAmount;
+    this.head.y = this.headBaseY + nodAmount;
+    this.hair.y = this.headBaseY + nodAmount;
+    this.leftEye.y = this.headBaseY + nodAmount;
+    this.rightEye.y = this.headBaseY + nodAmount;
 
     if (!this.reactIndicator) {
       this.reactIndicator = new Graphics();
+      const headY = -this.BODY_HEIGHT / 2 - this.HEAD_RADIUS + 6;
+      this.reactIndicator.circle(this.HEAD_RADIUS + 8, headY - 8, 3)
+        .fill({ color: 0xf0c866 });
       this.addChild(this.reactIndicator);
     }
-
-    this.reactIndicator.clear();
-    const headY = -this.BODY_HEIGHT / 2 - this.HEAD_RADIUS + 6;
-
-    // Small exclamation mark or subtle indicator
-    const alpha = 0.4 + Math.sin(this.animTime * 3) * 0.3;
-    this.reactIndicator.circle(this.HEAD_RADIUS + 8, headY - 8, 3)
-      .fill({ color: 0xf0c866, alpha });
+    this.reactIndicator.alpha = 0.4 + Math.sin(this.animTime * 3) * 0.3;
   }
 }

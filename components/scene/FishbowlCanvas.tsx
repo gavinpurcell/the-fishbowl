@@ -10,31 +10,35 @@ interface Props {
 }
 
 export default function FishbowlCanvas({ panelists, onSceneReady }: Props) {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const sceneRef = useRef<FishbowlScene | null>(null);
 
   useEffect(() => {
-    if (!canvasRef.current || sceneRef.current) return;
+    if (!containerRef.current || sceneRef.current) return;
 
+    let cancelled = false;
     const scene = new FishbowlScene();
     sceneRef.current = scene;
 
-    scene.init(canvasRef.current, {
+    scene.initWithContainer(containerRef.current, {
       panelists,
-      onReady: () => onSceneReady(scene),
+      onReady: () => {
+        if (!cancelled) onSceneReady(scene);
+      },
     });
 
     return () => {
+      cancelled = true;
       scene.destroy();
       sceneRef.current = null;
     };
   }, [panelists, onSceneReady]);
 
   return (
-    <canvas
-      ref={canvasRef}
-      className="w-full max-w-[800px] mx-auto rounded-lg shadow-lg"
-      style={{ aspectRatio: '4/3', imageRendering: 'pixelated' }}
+    <div
+      ref={containerRef}
+      className="w-full max-w-[800px] mx-auto rounded-lg shadow-lg overflow-hidden"
+      style={{ aspectRatio: '4/3' }}
     />
   );
 }

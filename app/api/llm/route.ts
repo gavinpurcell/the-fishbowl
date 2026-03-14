@@ -21,6 +21,7 @@ export async function POST(req: NextRequest) {
     }
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('[LLM API Route Error]', message);
     return new Response(JSON.stringify({ error: message }), { status: 500 });
   }
 }

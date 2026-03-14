@@ -31,48 +31,44 @@ export class FishbowlScene {
   private readonly OBSERVER_X = 650;
   private readonly OBSERVER_Y = 440;
 
-  /** Initialize the scene on a given canvas element */
-  async init(canvas: HTMLCanvasElement, options: InitOptions): Promise<void> {
+  /** Initialize the scene, letting PixiJS create its own canvas inside a container div */
+  async initWithContainer(container: HTMLElement, options: InitOptions): Promise<void> {
     const { panelists, onReady } = options;
 
     this.app = new Application();
     await this.app.init({
-      canvas,
       width: 800,
       height: 600,
-      backgroundColor: 0xf0e8d8,
+      background: 0xf0e8d8,
       antialias: false,
-      resolution: 1,
+      resolution: window.devicePixelRatio || 1,
+      autoDensity: true,
     });
+
+    // Let PixiJS manage its own canvas and append it to the container
+    const canvas = this.app.canvas;
+    canvas.style.width = '100%';
+    canvas.style.height = '100%';
+    container.appendChild(canvas);
 
     // Create the room
     this.room = new Room();
     this.app.stage.addChild(this.room);
 
-    // Create characters and position them in the fishbowl circle
-    const seatCount = panelists.length;
+    // Create characters and position ALL panelists in the fishbowl circle
     panelists.forEach((panelist, index) => {
-      const isObserver = index === seatCount - 1; // last panelist is observer
-
       const character = new Character({
         panelistId: panelist.id,
         name: panelist.name,
         color: panelist.color,
-        isObserver,
+        isObserver: false,
       });
 
-      if (isObserver) {
-        // Observer sits outside the circle
-        character.position.set(this.OBSERVER_X, this.OBSERVER_Y);
-        this.observerId = panelist.id;
-      } else {
-        // Arrange non-observers evenly around the ellipse
-        const seatedCount = seatCount - 1;
-        const angle = (index / seatedCount) * Math.PI * 2 - Math.PI / 2;
-        const x = this.CIRCLE_CX + Math.cos(angle) * this.CIRCLE_RX;
-        const y = this.CIRCLE_CY + Math.sin(angle) * this.CIRCLE_RY;
-        character.position.set(x, y);
-      }
+      // Arrange evenly around the ellipse
+      const angle = (index / panelists.length) * Math.PI * 2 - Math.PI / 2;
+      const x = this.CIRCLE_CX + Math.cos(angle) * this.CIRCLE_RX;
+      const y = this.CIRCLE_CY + Math.sin(angle) * this.CIRCLE_RY;
+      character.position.set(x, y);
 
       // Set z-index based on y position for proper depth sorting
       character.zIndex = Math.floor(character.position.y);
@@ -88,6 +84,19 @@ export class FishbowlScene {
       this.bubbles.set(panelist.id, bubble);
       this.app!.stage.addChild(bubble);
     });
+
+    // Create the observer ("You") as a separate character outside the circle
+    const observer = new Character({
+      panelistId: '__observer__',
+      name: 'You',
+      color: '#eea444',
+      isObserver: true,
+    });
+    observer.position.set(this.OBSERVER_X, this.OBSERVER_Y);
+    observer.zIndex = Math.floor(this.OBSERVER_Y);
+    this.observerId = '__observer__';
+    this.characters.set('__observer__', observer);
+    this.app.stage.addChild(observer);
 
     // Enable z-index sorting on stage
     this.app.stage.sortableChildren = true;
@@ -123,8 +132,11 @@ export class FishbowlScene {
 
   /** Show a speech bubble above a character, optionally with text */
   showSpeechBubble(id: string, text?: string): void {
+    // Hide all other bubbles first
+    this.bubbles.forEach((b) => b.hide());
     const bubble = this.bubbles.get(id);
     if (bubble) {
+      console.log('[Fishbowl] showSpeechBubble', id, 'text:', text?.slice(0, 30));
       bubble.show(text);
     }
   }
@@ -206,7 +218,8 @@ export class FishbowlScene {
 
   /** Get the canvas element (for video recording) */
   getCanvas(): HTMLCanvasElement | null {
-    return this.app?.canvas as HTMLCanvasElement ?? null;
+    if (!this.app) return null;
+    return this.app.canvas as HTMLCanvasElement;
   }
 
   /** Clean up all PixiJS resources */
@@ -218,7 +231,13 @@ export class FishbowlScene {
     this.room = null;
 
     if (this.app) {
-      this.app.destroy();
+      try {
+        this.app.stop();
+        this.app.stage.removeChildren();
+        this.app.destroy(true, { children: true });
+      } catch {
+        // PixiJS destroy can throw if app wasn't fully initialized
+      }
       this.app = null;
     }
   }

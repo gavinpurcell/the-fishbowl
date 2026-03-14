@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { persist, createJSONStorage } from 'zustand/middleware';
 import type {
   Panelist,
   TranscriptEntry,
@@ -44,7 +45,9 @@ interface FishbowlState {
   getSessionConfig: () => SessionConfig;
 }
 
-export const useFishbowlStore = create<FishbowlState>((set, get) => ({
+export const useFishbowlStore = create<FishbowlState>()(
+  persist(
+    (set, get) => ({
   panelists: [],
   ideaText: '',
   ideaFiles: [],
@@ -113,4 +116,21 @@ export const useFishbowlStore = create<FishbowlState>((set, get) => ({
       apiKey: s.apiKey,
     };
   },
-}));
+  }),
+    {
+      name: 'fishbowl-session',
+      storage: createJSONStorage(() => sessionStorage),
+      partialize: (state) => ({
+        panelists: state.panelists,
+        ideaText: state.ideaText,
+        ideaFiles: state.ideaFiles,
+        provider: state.provider,
+        apiKey: state.apiKey,
+        status: state.status,
+        transcript: state.transcript,
+        summary: state.summary,
+        currentRound: state.currentRound,
+      }),
+    },
+  ),
+);

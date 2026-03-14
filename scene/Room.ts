@@ -170,53 +170,47 @@ export class Room extends Container {
   private drawFishbowlCircle(): Graphics {
     const circle = new Graphics();
     circle.zIndex = 1;
+    this.fishbowlCircle = circle;
+    this.renderFishbowlEllipse();
     this.addChild(circle);
     this.sortChildren();
     return circle;
   }
 
-  private renderFishbowlEllipse(alpha: number): void {
-    this.fishbowlCircle.clear();
-
+  private renderFishbowlEllipse(): void {
     const cx = 400;
     const cy = 380;
     const rx = 170;
     const ry = 50;
     const segments = 48;
-    const dashLen = 4;
 
-    // Draw dashed ellipse
+    // Draw dashed ellipse using a single Graphics object
     for (let i = 0; i < segments; i++) {
-      if (i % 2 !== 0) continue; // skip every other segment for dash effect
+      if (i % 2 !== 0) continue;
 
       const startAngle = (i / segments) * Math.PI * 2;
-      const endAngle = ((i + dashLen / 6) / segments) * Math.PI * 2;
+      const endAngle = ((i + 0.67) / segments) * Math.PI * 2;
       const steps = 6;
 
-      const dashGraphic = new Graphics();
-
-      dashGraphic.moveTo(
+      this.fishbowlCircle.moveTo(
         cx + Math.cos(startAngle) * rx,
         cy + Math.sin(startAngle) * ry
       );
 
       for (let s = 1; s <= steps; s++) {
         const angle = startAngle + (endAngle - startAngle) * (s / steps);
-        dashGraphic.lineTo(
+        this.fishbowlCircle.lineTo(
           cx + Math.cos(angle) * rx,
           cy + Math.sin(angle) * ry
         );
       }
-
-      dashGraphic.stroke({ color: 0xf0c866, alpha: alpha, width: 2 });
-      this.fishbowlCircle.addChild(dashGraphic);
     }
 
+    this.fishbowlCircle.stroke({ color: 0xf0c866, alpha: 0.5, width: 2 });
+
     // Inner glow ellipse
-    const glow = new Graphics();
-    glow.ellipse(cx, cy, rx - 4, ry - 2)
-      .fill({ color: 0xf5d780, alpha: alpha * 0.06 });
-    this.fishbowlCircle.addChild(glow);
+    this.fishbowlCircle.ellipse(cx, cy, rx - 4, ry - 2)
+      .fill({ color: 0xf5d780, alpha: 0.03 });
   }
 
   /** Call every frame with delta time to animate the fishbowl circle pulse */
@@ -224,8 +218,7 @@ export class Room extends Container {
     this.pulseTime += delta * 0.02;
     const alpha = 0.5 + Math.sin(this.pulseTime) * 0.2;
 
-    // Clear and redraw the fishbowl circle with new alpha
-    this.fishbowlCircle.removeChildren();
-    this.renderFishbowlEllipse(alpha);
+    // Just update the alpha of the existing circle — no recreating objects
+    this.fishbowlCircle.alpha = alpha;
   }
 }

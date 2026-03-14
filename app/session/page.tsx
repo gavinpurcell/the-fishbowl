@@ -10,7 +10,16 @@ import { VideoRecorder } from '@/scene/VideoRecorder';
 import FishbowlCanvas from '@/components/scene/FishbowlCanvas';
 import StatusBar from '@/components/scene/StatusBar';
 import ModerationInput from '@/components/scene/ModerationInput';
-import type { RoundType } from '@/engine/types';
+import type { RoundType, TranscriptEntry, Panelist } from '@/engine/types';
+import SpeakerCard from '@/components/scene/SpeakerCard';
+
+type SessionPhase =
+  | 'initializing'
+  | 'waiting-for-advance'   // waiting for spacebar to trigger next speaker
+  | 'speaking'              // a panelist is currently speaking
+  | 'moderation'            // user is asking questions
+  | 'wrapping-up'
+  | 'done';
 
 export default function SessionPage() {
   const router = useRouter();
@@ -19,13 +28,18 @@ export default function SessionPage() {
   const sceneRef = useRef<FishbowlScene | null>(null);
   const orchestratorRef = useRef<ConversationOrchestrator | null>(null);
   const recorderRef = useRef<VideoRecorder | null>(null);
+  const startedRef = useRef(false);
+  const advanceResolverRef = useRef<(() => void) | null>(null);
 
+  const [phase, setPhase] = useState<SessionPhase>('initializing');
   const [currentRound, setCurrentRound] = useState<RoundType>('initial-takes');
   const [panelistsSpoken, setPanelistsSpoken] = useState(0);
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [showModeration, setShowModeration] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [isWrappingUp, setIsWrappingUp] = useState(false);
+  const [liveTranscript, setLiveTranscript] = useState<TranscriptEntry[]>([]);
+  const [hint, setHint] = useState('Setting up the fishbowl...');
+  const [activeSpeaker, setActiveSpeaker] = useState<Panelist | null>(null);
+  const [activeSpeakerText, setActiveSpeakerText] = useState('');
+  const [isSpeaking, setIsSpeaking] = useState(false);
 
   // Redirect to setup if no active session
   useEffect(() => {
@@ -34,29 +48,31 @@ export default function SessionPage() {
     }
   }, [store.status, store.panelists.length, router]);
 
-  const setNonSpeakingCharacterStates = useCallback((speakingId: string) => {
-    const scene = sceneRef.current;
-    if (!scene) return;
+  // Wait for user to press space (returns a promise that resolves on keypress)
+  const waitForAdvance = useCallback((): Promise<void> => {
+    return new Promise((resolve) => {
+      advanceResolverRef.current = resolve;
+      setPhase('waiting-for-advance');
+    });
+  }, []);
 
-    store.panelists.forEach((p) => {
-      if (p.id !== speakingId) {
-        // 70% thinking, 30% reacting for liveliness
-        const state = Math.random() < 0.7 ? 'thinking' : 'reacting';
-        scene.setCharacterState(p.id, state);
+  // Spacebar handler
+  useEffect(() => {
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.code === 'Space' && advanceResolverRef.current) {
+        e.preventDefault();
+        const resolver = advanceResolverRef.current;
+        advanceResolverRef.current = null;
+        resolver();
       }
-    });
-  }, [store.panelists]);
-
-  const resetAllCharactersToIdle = useCallback(() => {
-    const scene = sceneRef.current;
-    if (!scene) return;
-
-    store.panelists.forEach((p) => {
-      scene.setCharacterState(p.id, 'idle');
-    });
-  }, [store.panelists]);
+    };
+    window.addEventListener('keydown', handleKey);
+    return () => window.removeEventListener('keydown', handleKey);
+  }, []);
 
   const handleSceneReady = useCallback(async (scene: FishbowlScene) => {
+    if (startedRef.current) return;
+    startedRef.current = true;
     sceneRef.current = scene;
 
     // Start video recording
@@ -67,10 +83,11 @@ export default function SessionPage() {
       recorder.start(canvas);
     }
 
-    // Create LLM provider
     const provider = createProvider(store.provider, store.apiKey);
 
-    // Create conversation orchestrator with scene-driving callbacks
+    // Collect transcript entries locally (not just in store)
+    const localTranscript: TranscriptEntry[] = [];
+
     const orchestrator = new ConversationOrchestrator(
       store.panelists,
       store.ideaText,
@@ -80,86 +97,115 @@ export default function SessionPage() {
         onRoundChange: (round: RoundType) => {
           setCurrentRound(round);
           store.setCurrentRound(round);
+          setPanelistsSpoken(0);
         },
         onPanelistActivated: (panelistId: string) => {
-          setIsProcessing(true);
-          setPanelistsSpoken((prev) => prev + 1);
+          setPhase('speaking');
           store.setActivePanelist(panelistId);
-
-          // Set speaking character to talking state
+          const speaker = store.panelists.find((p) => p.id === panelistId) || null;
+          setActiveSpeaker(speaker);
+          setActiveSpeakerText('');
+          setIsSpeaking(true);
           scene.setCharacterState(panelistId, 'talking');
           scene.showSpeechBubble(panelistId);
-
-          // Make non-speaking characters look alive
-          setNonSpeakingCharacterStates(panelistId);
+          store.panelists.forEach((p) => {
+            if (p.id !== panelistId) {
+              scene.setCharacterState(p.id, Math.random() > 0.7 ? 'reacting' : 'thinking');
+            }
+          });
         },
         onPanelistDeactivated: () => {
-          setIsProcessing(false);
           store.setActivePanelist(null);
-
-          // Reset all to idle briefly
-          resetAllCharactersToIdle();
-
-          // Hide all speech bubbles
+          setIsSpeaking(false);
+          setPanelistsSpoken((prev) => prev + 1);
           store.panelists.forEach((p) => {
-            scene.hideSpeechBubble(p.id);
+            scene.setCharacterState(p.id, 'idle');
           });
         },
         onTranscriptEntry: (entry) => {
           store.addTranscriptEntry(entry);
+          localTranscript.push(entry);
+          setLiveTranscript([...localTranscript]);
         },
         onStreamChunk: (panelistId: string, chunk: string) => {
           scene.appendToBubble(panelistId, chunk);
           store.appendToLastEntry(chunk);
+          setActiveSpeakerText((prev) => prev + chunk);
+          if (localTranscript.length > 0) {
+            const last = localTranscript[localTranscript.length - 1];
+            last.content += chunk;
+            setLiveTranscript([...localTranscript]);
+          }
         },
         onError: (err: Error) => {
           setError(err.message);
-          console.error('Conversation error:', err);
         },
       }
     );
 
     orchestratorRef.current = orchestrator;
 
-    // Run auto rounds (initial takes + cross-talk)
     try {
-      await orchestrator.runAutoRounds();
+      // === ROUND 1: INITIAL TAKES ===
+      setHint('Press SPACE to hear each panelist\'s initial take');
+      setCurrentRound('initial-takes');
 
-      // After auto rounds, show moderation input and move observer in
-      setShowModeration(true);
+      for (const panelist of store.panelists) {
+        await waitForAdvance();
+        setHint(`${panelist.name} is sharing their initial take...`);
+        // Manually run one panelist at a time
+        await orchestrator.runSinglePanelist(panelist, 'initial-takes');
+        setHint(`${panelist.name} finished. Press SPACE to continue.`);
+      }
+
+      // === ROUND 2: CROSS-TALK ===
+      setHint('Press SPACE to start the cross-talk round');
+      await waitForAdvance();
+      setCurrentRound('cross-talk');
+      setHint('Panelists are discussing with each other...');
+      // Cross-talk runs automatically (2 rounds of back-and-forth)
+      await orchestrator.runCrossTalk();
+
+      // === ROUND 3: MODERATION ===
       setCurrentRound('moderation');
-      store.setCurrentRound('moderation');
+      setPhase('moderation');
       scene.moveObserverIn();
+      setHint('You\'re in the fishbowl. Type a question below, or press Wrap Up.');
+
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred during the discussion.');
+      setError(err instanceof Error ? err.message : 'An error occurred.');
     }
-  }, [store, setNonSpeakingCharacterStates, resetAllCharactersToIdle]);
+  }, [store, waitForAdvance]);
 
   const handleModeration = useCallback(async (question: string) => {
     const orchestrator = orchestratorRef.current;
-    if (!orchestrator || isProcessing) return;
+    if (!orchestrator || phase !== 'moderation') return;
 
+    setPhase('speaking');
+    setHint('Panelists are responding...');
     setError(null);
     try {
       await orchestrator.handleModerationQuestion(question);
+      setPhase('moderation');
+      setHint('Ask another question, or press Wrap Up.');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error processing question.');
+      setPhase('moderation');
     }
-  }, [isProcessing]);
+  }, [phase]);
 
   const handleWrapUp = useCallback(async () => {
     const orchestrator = orchestratorRef.current;
-    if (!orchestrator || isWrappingUp) return;
+    if (!orchestrator) return;
 
-    setIsWrappingUp(true);
-    setShowModeration(false);
+    setPhase('wrapping-up');
+    setHint('Getting final takeaways...');
     setError(null);
 
     try {
-      // Run wrap-up round
       await orchestrator.runWrapUp();
 
-      // Stop video recording and save blob URL
+      // Stop video
       if (recorderRef.current?.isRecording) {
         const blob = await recorderRef.current.stop();
         if (blob.size > 0) {
@@ -168,30 +214,24 @@ export default function SessionPage() {
         }
       }
 
-      // Generate summary
+      setHint('Generating summary...');
       const summary = await orchestrator.generateSummary();
       store.setSummary(summary);
-
-      // Save final transcript
       store.setTranscript(orchestrator.getTranscript());
-
-      // Complete session and navigate to results
       store.completeSession();
       router.push('/results');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error during wrap-up.');
-      setIsWrappingUp(false);
+      setPhase('moderation');
     }
-  }, [isWrappingUp, store, router]);
+  }, [store, router]);
 
-  // Don't render if session not running
   if (store.status !== 'running' || store.panelists.length < 3) {
     return null;
   }
 
-  // Count only non-observer panelists for the status display
+  const canWrapUp = phase === 'moderation';
   const totalPanelists = store.panelists.length;
-  const canWrapUp = showModeration && !isProcessing && !isWrappingUp;
 
   return (
     <div className="min-h-screen bg-white">
@@ -199,31 +239,20 @@ export default function SessionPage() {
       <div className="md:hidden flex items-center justify-center min-h-screen p-8 text-center">
         <div>
           <h2 className="text-xl font-bold mb-2">Open on desktop for the full experience</h2>
-          <p className="text-gray-500 text-sm">
-            The Fishbowl uses a pixel-art scene that requires a larger screen.
-          </p>
-          <button
-            onClick={() => router.replace('/')}
-            className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm"
-          >
-            Go Back
-          </button>
+          <p className="text-gray-500 text-sm">The Fishbowl requires a larger screen.</p>
+          <button onClick={() => router.replace('/')} className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm">Go Back</button>
         </div>
       </div>
 
-      {/* Desktop session view */}
+      {/* Desktop session */}
       <div className="hidden md:block">
-        <div className="max-w-5xl mx-auto px-6 py-8">
-          <div className="text-center mb-6">
+        <div className="max-w-5xl mx-auto px-6 py-6">
+          <div className="text-center mb-4">
             <h1 className="text-2xl font-bold tracking-tight">The Fishbowl</h1>
-            <p className="text-gray-500 text-sm mt-1">Live session in progress</p>
           </div>
 
           {/* PixiJS Scene */}
-          <FishbowlCanvas
-            panelists={store.panelists}
-            onSceneReady={handleSceneReady}
-          />
+          <FishbowlCanvas panelists={store.panelists} onSceneReady={handleSceneReady} />
 
           {/* Status Bar */}
           <StatusBar
@@ -234,31 +263,63 @@ export default function SessionPage() {
             canWrapUp={canWrapUp}
           />
 
-          {/* Error message */}
-          {error && (
-            <div className="max-w-[800px] mx-auto mt-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
-              <strong>Error:</strong> {error}
+          {/* Hint / instruction bar */}
+          <div className="max-w-[800px] mx-auto mt-3 text-center">
+            <p className={`text-sm ${phase === 'waiting-for-advance' ? 'text-blue-600 font-medium animate-pulse' : 'text-gray-500'}`}>
+              {hint}
+            </p>
+            {phase === 'waiting-for-advance' && (
               <button
-                onClick={() => setError(null)}
-                className="ml-2 text-red-500 hover:text-red-700 underline text-xs"
+                onClick={() => {
+                  if (advanceResolverRef.current) {
+                    const resolver = advanceResolverRef.current;
+                    advanceResolverRef.current = null;
+                    resolver();
+                  }
+                }}
+                className="mt-2 px-4 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700"
               >
-                Dismiss
+                Continue (or press Space)
               </button>
+            )}
+          </div>
+
+          {/* Speaker Card */}
+          <SpeakerCard
+            panelist={activeSpeaker}
+            text={activeSpeakerText}
+            isStreaming={isSpeaking}
+          />
+
+          {/* Error */}
+          {error && (
+            <div className="max-w-[800px] mx-auto mt-3 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+              <strong>Error:</strong> {error}
+              <button onClick={() => setError(null)} className="ml-2 text-red-500 underline text-xs">Dismiss</button>
             </div>
           )}
 
           {/* Moderation Input */}
-          {showModeration && (
-            <ModerationInput
-              onSubmit={handleModeration}
-              disabled={isProcessing || isWrappingUp}
-            />
+          {phase === 'moderation' && (
+            <ModerationInput onSubmit={handleModeration} disabled={phase !== 'moderation'} />
           )}
 
-          {/* Wrapping up indicator */}
-          {isWrappingUp && (
-            <div className="max-w-[800px] mx-auto mt-4 text-center text-gray-500 text-sm">
-              <span className="animate-pulse">Wrapping up the discussion...</span>
+          {/* Live Transcript */}
+          {liveTranscript.length > 0 && (
+            <div className="max-w-[800px] mx-auto mt-6">
+              <h3 className="text-sm font-bold text-gray-700 mb-2">Transcript</h3>
+              <div className="border rounded-lg p-4 max-h-64 overflow-y-auto bg-gray-50 space-y-3">
+                {liveTranscript.map((entry) => {
+                  const panelist = store.panelists.find((p) => p.id === entry.panelistId);
+                  const color = panelist?.color || (entry.panelistId === 'user' ? '#eea444' : '#888');
+                  return (
+                    <div key={entry.id} className="text-sm">
+                      <span className="font-semibold" style={{ color }}>{entry.panelistName}:</span>{' '}
+                      <span className="text-gray-700">{entry.content}</span>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           )}
         </div>

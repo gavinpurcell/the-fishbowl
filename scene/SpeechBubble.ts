@@ -6,68 +6,63 @@ import { Container, Graphics, Text, TextStyle } from 'pixi.js';
  */
 export class SpeechBubble extends Container {
   private bubble: Graphics;
+  private tail: Graphics;
   private textDisplay: Text;
   private fullText = '';
   private isStreaming = false;
+  private dirty = false;
 
-  private readonly MAX_WIDTH = 280;
-  private readonly PADDING = 12;
-  private readonly TAIL_HEIGHT = 10;
-  private readonly MIN_HEIGHT = 36;
-  private readonly BORDER_RADIUS = 8;
+  private readonly MAX_WIDTH = 260;
+  private readonly PADDING = 10;
+  private readonly TAIL_HEIGHT = 8;
 
   constructor() {
     super();
-
-    // Start hidden
     this.visible = false;
 
-    // Background bubble graphic
+    // Bubble background
     this.bubble = new Graphics();
     this.addChild(this.bubble);
 
-    // Text content
+    // Tail (drawn once, reused)
+    this.tail = new Graphics();
+    this.tail.moveTo(-5, 0).lineTo(0, this.TAIL_HEIGHT).lineTo(5, 0).closePath()
+      .fill({ color: 0xffffff });
+    this.addChild(this.tail);
+
+    // Text
     this.textDisplay = new Text({
       text: '',
       style: new TextStyle({
         fontFamily: 'system-ui, -apple-system, sans-serif',
-        fontSize: 12,
+        fontSize: 11,
         fill: 0x333333,
         wordWrap: true,
         wordWrapWidth: this.MAX_WIDTH - this.PADDING * 2,
-        lineHeight: 16,
+        lineHeight: 15,
       }),
     });
-    this.textDisplay.anchor.set(0.5, 1);
     this.addChild(this.textDisplay);
-
-    // Set pivot so position coordinates point to where tail meets character
-    this.pivot.set(0, 0);
   }
 
-  /** Show the bubble, optionally with initial text */
   show(text?: string): void {
     this.visible = true;
     this.fullText = text ?? '';
-    this.isStreaming = !text; // if no text provided, assume streaming will follow
-    this.textDisplay.text = this.fullText;
-    this.redrawBubble();
+    this.isStreaming = true;
+    this.textDisplay.text = this.fullText || ' '; // space prevents zero-height
+    this.dirty = true;
   }
 
-  /** Append a chunk of text (for streaming) */
   appendText(chunk: string): void {
-    this.isStreaming = true;
     this.fullText += chunk;
     this.textDisplay.text = this.fullText;
-    this.redrawBubble();
+    this.dirty = true;
   }
 
-  /** Mark streaming as complete */
   finishStreaming(): void {
     this.isStreaming = false;
   }
 
-  /** Hide the bubble and clear text */
   hide(): void {
     this.visible = false;
     this.fullText = '';
@@ -75,76 +70,30 @@ export class SpeechBubble extends Container {
     this.isStreaming = false;
   }
 
-  private redrawBubble(): void {
+  private layout(): void {
+    const textW = Math.min(this.textDisplay.width + this.PADDING * 2, this.MAX_WIDTH);
+    const textH = this.textDisplay.height + this.PADDING * 2;
+
+    // Position text inside bubble
+    this.textDisplay.position.set(
+      -textW / 2 + this.PADDING,
+      -this.TAIL_HEIGHT - textH + this.PADDING
+    );
+
+    // Draw bubble background
     this.bubble.clear();
-    this.bubble.removeChildren();
+    this.bubble.roundRect(-textW / 2, -this.TAIL_HEIGHT - textH, textW, textH, 6)
+      .fill({ color: 0xffffff, alpha: 0.95 })
+      .stroke({ color: 0xddd8d0, width: 1 });
 
-    if (!this.fullText) return;
-
-    // Measure the text to size the bubble
-    const textBounds = this.textDisplay.getBounds();
-    const bubbleWidth = Math.min(
-      Math.max(textBounds.width + this.PADDING * 2, 60),
-      this.MAX_WIDTH
-    );
-    const bubbleHeight = Math.max(
-      textBounds.height + this.PADDING * 2,
-      this.MIN_HEIGHT
-    );
-
-    // Position text centered in bubble, above the tail
-    this.textDisplay.position.set(0, -this.TAIL_HEIGHT - this.PADDING);
-
-    // Draw bubble body (centered horizontally, above the tail point)
-    const bx = -bubbleWidth / 2;
-    const by = -this.TAIL_HEIGHT - bubbleHeight;
-
-    // Shadow
-    this.bubble.roundRect(bx + 2, by + 2, bubbleWidth, bubbleHeight, this.BORDER_RADIUS)
-      .fill({ color: 0x000000, alpha: 0.08 });
-
-    // Main bubble
-    this.bubble.roundRect(bx, by, bubbleWidth, bubbleHeight, this.BORDER_RADIUS)
-      .fill({ color: 0xffffff, alpha: 0.95 });
-
-    // Border
-    this.bubble.roundRect(bx, by, bubbleWidth, bubbleHeight, this.BORDER_RADIUS)
-      .stroke({ color: 0xe0d8c8, width: 1.5 });
-
-    // Tail — pointing down to character
-    const tail = new Graphics();
-    tail.moveTo(-6, -this.TAIL_HEIGHT)
-      .lineTo(0, 0)
-      .lineTo(6, -this.TAIL_HEIGHT)
-      .closePath()
-      .fill({ color: 0xffffff, alpha: 0.95 });
-    // Tail border lines
-    tail.moveTo(-6, -this.TAIL_HEIGHT)
-      .lineTo(0, 0)
-      .stroke({ color: 0xe0d8c8, width: 1.5 });
-    tail.moveTo(0, 0)
-      .lineTo(6, -this.TAIL_HEIGHT)
-      .stroke({ color: 0xe0d8c8, width: 1.5 });
-    this.bubble.addChild(tail);
-
-    // Streaming indicator (blinking cursor)
-    if (this.isStreaming) {
-      const cursorAlpha = Math.sin(Date.now() * 0.005) > 0 ? 0.6 : 0;
-      const cursor = new Graphics();
-      cursor.rect(
-        this.textDisplay.x + textBounds.width / 2 + 2,
-        -this.TAIL_HEIGHT - this.PADDING - 2,
-        2,
-        12
-      ).fill({ color: 0x666666, alpha: cursorAlpha });
-      this.bubble.addChild(cursor);
-    }
+    // Position tail at bottom center
+    this.tail.position.set(0, -this.TAIL_HEIGHT);
   }
 
-  /** Call each frame to update streaming cursor animation */
   update(_delta: number): void {
-    if (this.isStreaming && this.visible) {
-      this.redrawBubble();
+    if (this.dirty && this.visible) {
+      this.layout();
+      this.dirty = false;
     }
   }
 }

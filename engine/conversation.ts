@@ -78,6 +78,7 @@ export class ConversationOrchestrator {
     } catch (error) {
       this.callbacks.onError(error instanceof Error ? error : new Error(String(error)));
       fullResponse = '[Error generating response]';
+      this.aborted = true; // Stop the session on API errors
     }
 
     entry.content = fullResponse;
@@ -87,15 +88,33 @@ export class ConversationOrchestrator {
     return fullResponse;
   }
 
+  /** Run initial takes for all panelists sequentially */
   async runInitialTakes(): Promise<void> {
     this.callbacks.onRoundChange('initial-takes');
-    const ideaContext = this.buildIdeaContext();
 
     for (const panelist of this.panelists) {
       if (this.aborted) return;
-      const prompt = `${ideaContext}\n\nGive your initial reaction to this idea. What stands out? What concerns you? What excites you? Be specific and draw on your expertise. Keep your response to 100-200 words.`;
-      await this.streamPanelistResponse(panelist, prompt, 'initial-takes');
+      await this.runSinglePanelist(panelist, 'initial-takes');
     }
+  }
+
+  /** Run a single panelist's response for a given round */
+  async runSinglePanelist(panelist: Panelist, round: RoundType): Promise<void> {
+    if (this.aborted) return;
+
+    const ideaContext = this.buildIdeaContext();
+    const transcriptContext = this.buildTranscriptContext();
+
+    let prompt: string;
+    if (round === 'initial-takes') {
+      prompt = `${ideaContext}\n\nGive your initial reaction to this idea. What stands out? What concerns you? What excites you? Be specific and draw on your expertise. Keep your response to 100-200 words.`;
+    } else if (round === 'cross-talk') {
+      prompt = `${ideaContext}\n\n${transcriptContext}\n\nRespond to what the other panelists have said. You can agree, disagree, build on their points, or challenge their assumptions. Reference specific panelists by name. Be direct and specific. Keep your response to 100-200 words.`;
+    } else {
+      prompt = `${ideaContext}\n\n${transcriptContext}\n\nShare your thoughts. Keep your response to 100-200 words.`;
+    }
+
+    await this.streamPanelistResponse(panelist, prompt, round);
   }
 
   async runCrossTalk(): Promise<void> {

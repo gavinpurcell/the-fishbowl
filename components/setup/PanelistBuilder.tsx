@@ -67,8 +67,25 @@ export default function PanelistBuilder({ panelists, onUpdate }: Props) {
     setNewDesc('');
   };
 
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editPrompt, setEditPrompt] = useState('');
+
   const removePanelist = (id: string) => {
     onUpdate(panelists.filter((p) => p.id !== id));
+  };
+
+  const startEditing = (p: Panelist) => {
+    setEditingId(p.id);
+    setEditPrompt(p.systemPrompt);
+  };
+
+  const savePrompt = () => {
+    if (!editingId) return;
+    onUpdate(panelists.map((p) =>
+      p.id === editingId ? { ...p, systemPrompt: editPrompt } : p
+    ));
+    setEditingId(null);
+    setEditPrompt('');
   };
 
   return (
@@ -77,18 +94,54 @@ export default function PanelistBuilder({ panelists, onUpdate }: Props) {
 
       <div className="space-y-2 mb-4">
         {panelists.map((p) => (
-          <div key={p.id} className="flex items-center gap-3 p-3 border rounded-lg">
-            <div className="w-4 h-4 rounded-full flex-shrink-0" style={{ backgroundColor: p.color }} />
-            <div className="flex-1 min-w-0">
-              <span className="font-medium">{p.name}</span>
-              <span className="text-gray-500 ml-2">— {p.role}</span>
+          <div key={p.id} className="border rounded-lg overflow-hidden">
+            <div className="flex items-center gap-3 p-3">
+              <div className="w-4 h-4 rounded-full flex-shrink-0" style={{ backgroundColor: p.color }} />
+              <div className="flex-1 min-w-0">
+                <span className="font-medium">{p.name}</span>
+                <span className="text-gray-500 ml-2">— {p.role}</span>
+              </div>
+              <button
+                onClick={() => startEditing(p)}
+                className="text-blue-500 hover:text-blue-700 text-sm"
+              >
+                {editingId === p.id ? 'Cancel' : 'Edit Prompt'}
+              </button>
+              <button
+                onClick={() => removePanelist(p.id)}
+                className="text-red-400 hover:text-red-600 text-sm"
+              >
+                Remove
+              </button>
             </div>
-            <button
-              onClick={() => removePanelist(p.id)}
-              className="text-red-400 hover:text-red-600 text-sm"
-            >
-              Remove
-            </button>
+            {editingId === p.id && (
+              <div className="px-3 pb-3">
+                <textarea
+                  value={editPrompt}
+                  onChange={(e) => setEditPrompt(e.target.value)}
+                  className="w-full h-48 px-3 py-2 border rounded text-xs font-mono bg-gray-50 resize-y"
+                />
+                <div className="flex gap-2 mt-2">
+                  <button
+                    onClick={savePrompt}
+                    className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700"
+                  >
+                    Save
+                  </button>
+                  <button
+                    onClick={() => setEditingId(null)}
+                    className="px-3 py-1 bg-gray-200 text-gray-700 rounded text-sm hover:bg-gray-300"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            )}
+            {editingId !== p.id && (
+              <div className="px-3 pb-3">
+                <p className="text-xs text-gray-400 truncate">{p.description}</p>
+              </div>
+            )}
           </div>
         ))}
       </div>

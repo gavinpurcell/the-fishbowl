@@ -13,24 +13,43 @@ interface Props {
 
 export default function IdeaInput({ ideaText, ideaFiles, onTextChange, onFilesChange }: Props) {
   const [isDragging, setIsDragging] = useState(false);
+  const [fileError, setFileError] = useState<string | null>(null);
+
+  const handleFilesWithFeedback = useCallback(
+    async (files: FileList | File[]) => {
+      setFileError(null);
+      const fileArray = Array.from(files);
+      const unsupported = fileArray.filter((f) => {
+        const ext = f.name.split('.').pop()?.toLowerCase();
+        return ext !== 'md' && ext !== 'txt';
+      });
+      if (unsupported.length > 0) {
+        const names = unsupported.map((f) => f.name).join(', ');
+        setFileError(`Unsupported file type: ${names}. Only .md and .txt files are supported (PDF coming soon).`);
+      }
+      const parsed = await parseFiles(fileArray);
+      if (parsed.length > 0) {
+        onFilesChange([...ideaFiles, ...parsed].slice(0, 3));
+      }
+    },
+    [ideaFiles, onFilesChange]
+  );
 
   const handleDrop = useCallback(
     async (e: React.DragEvent) => {
       e.preventDefault();
       setIsDragging(false);
-      const parsed = await parseFiles(e.dataTransfer.files);
-      onFilesChange([...ideaFiles, ...parsed].slice(0, 3));
+      await handleFilesWithFeedback(e.dataTransfer.files);
     },
-    [ideaFiles, onFilesChange]
+    [handleFilesWithFeedback]
   );
 
   const handleFileSelect = useCallback(
     async (e: React.ChangeEvent<HTMLInputElement>) => {
       if (!e.target.files) return;
-      const parsed = await parseFiles(e.target.files);
-      onFilesChange([...ideaFiles, ...parsed].slice(0, 3));
+      await handleFilesWithFeedback(e.target.files);
     },
-    [ideaFiles, onFilesChange]
+    [handleFilesWithFeedback]
   );
 
   const removeFile = (index: number) => {
@@ -65,6 +84,10 @@ export default function IdeaInput({ ideaText, ideaFiles, onTextChange, onFilesCh
         </p>
         <p className="text-xs text-gray-400 mt-1">Up to 3 files. Obsidian notes work great.</p>
       </div>
+
+      {fileError && (
+        <p className="text-sm text-red-500 mt-2">{fileError}</p>
+      )}
 
       {ideaFiles.length > 0 && (
         <div className="mt-3 space-y-2">
