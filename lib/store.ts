@@ -24,6 +24,9 @@ interface FishbowlState {
   transcript: TranscriptEntry[];
   activePanelistId: string | null;
   summary: string | null;
+  sessionStartTime: number | null;
+  sessionEndTime: number | null;
+  moderationQuestionCount: number;
 
   setPanelists: (panelists: Panelist[]) => void;
   addPanelist: (panelist: Panelist) => void;
@@ -35,6 +38,7 @@ interface FishbowlState {
   setApiKey: (key: string) => void;
   setModelId: (id: string) => void;
   addTokenUsage: (input: number, output: number) => void;
+  incrementModerationCount: () => void;
 
   startSession: () => void;
   setCurrentRound: (round: RoundType) => void;
@@ -65,6 +69,9 @@ export const useFishbowlStore = create<FishbowlState>()(
   transcript: [],
   activePanelistId: null,
   summary: null,
+  sessionStartTime: null,
+  sessionEndTime: null,
+  moderationQuestionCount: 0,
 
   setPanelists: (panelists) => set({ panelists }),
   addPanelist: (panelist) => set((s) => ({ panelists: [...s.panelists, panelist] })),
@@ -84,8 +91,9 @@ export const useFishbowlStore = create<FishbowlState>()(
       outputTokens: s.sessionCost.outputTokens + output,
     },
   })),
+  incrementModerationCount: () => set((s) => ({ moderationQuestionCount: s.moderationQuestionCount + 1 })),
 
-  startSession: () => set({ status: 'running', currentRound: 'initial-takes', transcript: [], summary: null, sessionCost: { inputTokens: 0, outputTokens: 0 } }),
+  startSession: () => set({ status: 'running', currentRound: 'initial-takes', transcript: [], summary: null, sessionCost: { inputTokens: 0, outputTokens: 0 }, sessionStartTime: Date.now(), sessionEndTime: null, moderationQuestionCount: 0 }),
   setCurrentRound: (currentRound) => set({ currentRound }),
   setActivePanelist: (activePanelistId) => set({ activePanelistId }),
   addTranscriptEntry: (entry) => set((s) => ({ transcript: [...s.transcript, entry] })),
@@ -100,7 +108,7 @@ export const useFishbowlStore = create<FishbowlState>()(
     }),
   setSummary: (summary) => set({ summary }),
   setTranscript: (transcript) => set({ transcript }),
-  completeSession: () => set({ status: 'completed', activePanelistId: null }),
+  completeSession: () => set({ status: 'completed', activePanelistId: null, sessionEndTime: Date.now() }),
   continueSession: () =>
     set({
       status: 'setup',
@@ -118,6 +126,9 @@ export const useFishbowlStore = create<FishbowlState>()(
       panelists: [],
       ideaText: '',
       ideaFiles: [],
+      sessionStartTime: null,
+      sessionEndTime: null,
+      moderationQuestionCount: 0,
     }),
 
   getSessionConfig: () => {
@@ -147,6 +158,9 @@ export const useFishbowlStore = create<FishbowlState>()(
         transcript: state.transcript,
         summary: state.summary,
         currentRound: state.currentRound,
+        sessionStartTime: state.sessionStartTime,
+        sessionEndTime: state.sessionEndTime,
+        moderationQuestionCount: state.moderationQuestionCount,
       }),
     },
   ),

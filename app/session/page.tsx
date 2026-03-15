@@ -288,6 +288,7 @@ export default function SessionPage() {
     const orchestrator = orchestratorRef.current;
     if (!orchestrator || !inModeration) return;
 
+    storeRef.current.incrementModerationCount();
     setIsSpeaking(true);
     isSpeakingRef.current = true;
     setHint('Panelists are responding...');
@@ -447,6 +448,7 @@ export default function SessionPage() {
                   totalPanelists={store.panelists.length}
                   onWrapUp={handleWrapUp}
                   canWrapUp={inModeration && !isSpeaking}
+                  modelLabel={model?.label}
                   costDollars={cost}
                   totalTokens={totalTokens}
                   isOllama={store.provider === 'ollama'}
