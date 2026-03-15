@@ -101,7 +101,7 @@ export class Character extends Container {
       this.sprite = new Sprite(texture);
       this.sprite.texture.source.scaleMode = 'nearest';
       this.sprite.anchor.set(0.5, 1.0);
-      this.sprite.scale.set(0.3);
+      this.sprite.scale.set(0.17);
       this.addChild(this.sprite);
     } else {
       // === FALLBACK: PROCEDURAL RENDERING ===

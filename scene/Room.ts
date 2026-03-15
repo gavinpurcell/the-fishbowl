@@ -42,8 +42,8 @@ export class Room extends Container {
         const tableSprite = new Sprite(tableTexture);
         tableSprite.texture.source.scaleMode = 'nearest';
         tableSprite.anchor.set(0.5, 0.5);
-        tableSprite.position.set(400, 390);
-        tableSprite.scale.set(0.35);
+        tableSprite.position.set(400, 400);
+        tableSprite.scale.set(0.15);
         tableSprite.zIndex = 1;
         this.addChild(tableSprite);
       }
