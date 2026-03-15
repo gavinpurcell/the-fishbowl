@@ -5,6 +5,7 @@ import { Container, Graphics, Text, TextStyle } from 'pixi.js';
  * Supports streaming text (appendText) and auto-sizing.
  */
 export class SpeechBubble extends Container {
+  private shadow: Graphics;
   private bubble: Graphics;
   private tail: Graphics;
   private textDisplay: Text;
@@ -20,13 +21,17 @@ export class SpeechBubble extends Container {
     super();
     this.visible = false;
 
+    // Drop shadow (drawn behind bubble)
+    this.shadow = new Graphics();
+    this.addChild(this.shadow);
+
     // Bubble background
     this.bubble = new Graphics();
     this.addChild(this.bubble);
 
     // Tail (drawn once, reused)
     this.tail = new Graphics();
-    this.tail.moveTo(-5, 0).lineTo(0, this.TAIL_HEIGHT).lineTo(5, 0).closePath()
+    this.tail.moveTo(-7, 0).lineTo(0, this.TAIL_HEIGHT + 1).lineTo(7, 0).closePath()
       .fill({ color: 0xffffff });
     this.addChild(this.tail);
 
@@ -80,9 +85,14 @@ export class SpeechBubble extends Container {
       -this.TAIL_HEIGHT - textH + this.PADDING
     );
 
+    // Draw drop shadow (offset by 1,2 behind the main bubble)
+    this.shadow.clear();
+    this.shadow.roundRect(-textW / 2 + 1, -this.TAIL_HEIGHT - textH + 2, textW, textH, 10)
+      .fill({ color: 0x000000, alpha: 0.06 });
+
     // Draw bubble background
     this.bubble.clear();
-    this.bubble.roundRect(-textW / 2, -this.TAIL_HEIGHT - textH, textW, textH, 6)
+    this.bubble.roundRect(-textW / 2, -this.TAIL_HEIGHT - textH, textW, textH, 10)
       .fill({ color: 0xffffff, alpha: 0.95 })
       .stroke({ color: 0xddd8d0, width: 1 });
 

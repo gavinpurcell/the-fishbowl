@@ -39,6 +39,9 @@ export class Room extends Container {
     // Subtle wall shadow at top
     wall.rect(50, 40, this.ROOM_WIDTH, 3)
       .fill({ color: 0xe8e0d0 });
+    // Ceiling shadow — thin black shadow line at top edge of wall
+    wall.rect(50, 40, this.ROOM_WIDTH, 3)
+      .fill({ color: 0x000000, alpha: 0.05 });
     this.addChild(wall);
   }
 
@@ -62,13 +65,15 @@ export class Room extends Container {
     // Window frame (outer)
     const frame = new Graphics();
     frame.roundRect(480, 70, 180, 140, 4)
-      .fill({ color: 0xc9b896 });
+      .fill({ color: 0xc9b896 })
+      .stroke({ color: 0xb0a080, width: 1 });
     windowGroup.addChild(frame);
 
     // Window glass — light blue sky
     const glass = new Graphics();
     glass.roundRect(488, 78, 164, 124, 2)
-      .fill({ color: 0xc5dff0 });
+      .fill({ color: 0xc5dff0 })
+      .stroke({ color: 0xa8c8e8, width: 1 });
     windowGroup.addChild(glass);
 
     // Window cross bars
@@ -114,16 +119,22 @@ export class Room extends Container {
     const floorTop = 40 + this.WALL_HEIGHT;
     const floorBottom = floorTop + this.FLOOR_Y_OFFSET + 40;
 
-    // Subtle horizontal floorboard lines
-    for (let y = floorTop + 20; y < floorBottom; y += 24) {
+    // Subtle horizontal floorboard lines with slightly varied spacing
+    const spacings = [22, 25, 23, 26, 24, 22, 25];
+    let y = floorTop + 20;
+    let spacingIndex = 0;
+    while (y < floorBottom) {
       grid.rect(50, y, this.ROOM_WIDTH, 1)
         .fill({ color: 0xd4c0a0, alpha: 0.3 });
+      y += spacings[spacingIndex % spacings.length];
+      spacingIndex++;
     }
 
-    // Subtle vertical grain lines (sparse)
-    for (let x = 90; x < 50 + this.ROOM_WIDTH; x += 70) {
+    // Subtle vertical grain lines — a few sparse ones at very low opacity
+    const grainXPositions = [130, 310, 530];
+    for (const x of grainXPositions) {
       grid.rect(x, floorTop, 1, floorBottom - floorTop)
-        .fill({ color: 0xd4c0a0, alpha: 0.15 });
+        .fill({ color: 0xd4c0a0, alpha: 0.04 });
     }
 
     this.addChild(grid);
@@ -135,10 +146,12 @@ export class Room extends Container {
     // Pot
     const pot = new Graphics();
     pot.roundRect(80, 350, 40, 50, 3)
-      .fill({ color: 0xc47a5a });
+      .fill({ color: 0xc47a5a })
+      .stroke({ color: 0xa0604a, width: 1 });
     // Pot rim
     pot.roundRect(75, 345, 50, 10, 2)
-      .fill({ color: 0xd4876a });
+      .fill({ color: 0xd4876a })
+      .stroke({ color: 0xa0604a, width: 1 });
     plant.addChild(pot);
 
     // Soil
