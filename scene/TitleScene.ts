@@ -58,6 +58,14 @@ export class TitleScene {
       });
       character.position.set(x, y);
       character.setState(cfg.state);
+
+      // Set facing based on position
+      if (x > this.CIRCLE_CX) {
+        character.setFacing('left');
+      } else {
+        character.setFacing('right');
+      }
+
       this.app.stage.addChild(character);
       this.characters.push(character);
     }

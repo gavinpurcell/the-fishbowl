@@ -3,6 +3,7 @@
 import { useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { TitleScene } from '@/scene/TitleScene';
+import { loadAllSprites } from '@/lib/spriteLoader';
 
 export default function TitlePage() {
   const router = useRouter();
@@ -13,7 +14,9 @@ export default function TitlePage() {
     if (!canvasRef.current || sceneRef.current) return;
     const scene = new TitleScene();
     sceneRef.current = scene;
-    scene.init(canvasRef.current);
+    loadAllSprites().then(() => {
+      if (canvasRef.current) scene.init(canvasRef.current);
+    });
 
     return () => {
       scene.destroy();

@@ -11,6 +11,7 @@ import StatusBar from '@/components/scene/StatusBar';
 import { getModelById } from '@/lib/models';
 // Note: PixiJS scene is managed directly via ref, not via FishbowlCanvas component
 import ModerationInput from '@/components/scene/ModerationInput';
+import { loadAllSprites } from '@/lib/spriteLoader';
 import type { RoundType, TranscriptEntry, Panelist } from '@/engine/types';
 
 type ViewMode = 'briefing' | 'transition' | 'roundtable';
@@ -98,17 +99,20 @@ export default function SessionPage() {
     const fishbowlScene = new FishbowlScene();
     sceneRef.current = fishbowlScene;
 
-    fishbowlScene.initWithContainer(sceneContainerRef.current, {
-      panelists: store.panelists,
-      onReady: () => {
-        // Start video recording
-        const canvas = fishbowlScene.getCanvas();
-        if (canvas) {
-          const recorder = new VideoRecorder();
-          recorderRef.current = recorder;
-          recorder.start(canvas);
-        }
-      },
+    loadAllSprites().then(() => {
+      if (!sceneContainerRef.current) return;
+      fishbowlScene.initWithContainer(sceneContainerRef.current, {
+        panelists: store.panelists,
+        onReady: () => {
+          // Start video recording
+          const canvas = fishbowlScene.getCanvas();
+          if (canvas) {
+            const recorder = new VideoRecorder();
+            recorderRef.current = recorder;
+            recorder.start(canvas);
+          }
+        },
+      });
     });
 
     return () => {
@@ -273,7 +277,7 @@ export default function SessionPage() {
         setCurrentRound('moderation');
         setInModeration(true);
         const scene = sceneRef.current;
-        if (scene) scene.moveObserverIn();
+        if (scene) await scene.addObserver();
         setHint('You\'re in the fishbowl. Type a question below, or press Wrap Up.');
 
       } catch (err) {

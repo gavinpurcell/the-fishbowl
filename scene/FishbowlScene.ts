@@ -20,6 +20,7 @@ export class FishbowlScene {
   private bubbles: Map<string, SpeechBubble> = new Map();
   private observerId: string | null = null;
   private destroyed = false;
+  private panelists: Panelist[] = [];
 
   // Fishbowl circle center and radius (matches Room's fishbowl ellipse)
   private readonly CIRCLE_CX = 400;
@@ -27,13 +28,10 @@ export class FishbowlScene {
   private readonly CIRCLE_RX = 180;
   private readonly CIRCLE_RY = 55;
 
-  // Observer position (outside the circle, bottom-right)
-  private readonly OBSERVER_X = 680;
-  private readonly OBSERVER_Y = 460;
-
   /** Initialize the scene, letting PixiJS create its own canvas inside a container div */
   async initWithContainer(container: HTMLElement, options: InitOptions): Promise<void> {
     const { panelists, onReady } = options;
+    this.panelists = panelists;
 
     this.app = new Application();
     await this.app.init({
@@ -72,6 +70,13 @@ export class FishbowlScene {
       const y = this.CIRCLE_CY + Math.sin(angle) * this.CIRCLE_RY;
       character.position.set(x, y);
 
+      // Set facing based on position in circle
+      if (x > this.CIRCLE_CX) {
+        character.setFacing('left');
+      } else {
+        character.setFacing('right');
+      }
+
       // Set z-index based on y position for proper depth sorting
       character.zIndex = Math.floor(character.position.y);
 
@@ -87,18 +92,7 @@ export class FishbowlScene {
       this.app!.stage.addChild(bubble);
     });
 
-    // Create the observer ("You") as a separate character outside the circle
-    const observer = new Character({
-      panelistId: '__observer__',
-      name: 'You',
-      color: '#eea444',
-      isObserver: true,
-    });
-    observer.position.set(this.OBSERVER_X, this.OBSERVER_Y);
-    observer.zIndex = Math.floor(this.OBSERVER_Y);
-    this.observerId = '__observer__';
-    this.characters.set('__observer__', observer);
-    this.app.stage.addChild(observer);
+    // NOTE: Observer is NOT created here — use addObserver() during moderation
 
     // Enable z-index sorting on stage
     this.app.stage.sortableChildren = true;
@@ -163,59 +157,141 @@ export class FishbowlScene {
     }
   }
 
-  /** Animate the observer character moving into the fishbowl circle */
+  /**
+   * Add the observer character to the fishbowl.
+   * Creates the observer, tweens existing panelists to 5-seat positions,
+   * and animates the observer walking in.
+   */
+  async addObserver(): Promise<void> {
+    if (!this.app || this.destroyed) return;
+    if (this.observerId) return; // Already added
+
+    const numPanelists = this.panelists.length;
+    const totalSeats = numPanelists + 1; // panelists + observer
+
+    // Create observer character
+    const observer = new Character({
+      panelistId: '__observer__',
+      name: 'You',
+      color: '#eea444',
+      spriteIndex: 0,
+      isObserver: true,
+    });
+
+    this.observerId = '__observer__';
+
+    // Observer starts off-screen right
+    const startX = 850;
+    const startY = this.CIRCLE_CY;
+    observer.position.set(startX, startY);
+    observer.zIndex = Math.floor(startY);
+    observer.setFacing('left');
+
+    this.characters.set('__observer__', observer);
+    this.app.stage.addChild(observer);
+
+    // Create speech bubble for observer
+    const bubble = new SpeechBubble();
+    bubble.position.set(startX, startY - 60);
+    bubble.zIndex = 1000;
+    this.bubbles.set('__observer__', bubble);
+    this.app.stage.addChild(bubble);
+
+    // Calculate new positions: panelists + observer spread across totalSeats
+    // Observer takes the bottom-center position (angle = PI/2, which is bottom of ellipse)
+    const observerAngle = Math.PI / 2;
+    const targetObserverX = this.CIRCLE_CX + Math.cos(observerAngle) * this.CIRCLE_RX;
+    const targetObserverY = this.CIRCLE_CY + Math.sin(observerAngle) * this.CIRCLE_RY;
+
+    // Recalculate panelist positions to make room for observer
+    const panelistTargets: { id: string; x: number; y: number }[] = [];
+    for (let i = 0; i < numPanelists; i++) {
+      // Spread panelists evenly, skipping the observer's slot
+      // Observer is at angle PI/2; distribute panelists in the remaining arc
+      const angle = (i / totalSeats) * Math.PI * 2 - Math.PI / 2;
+      const x = this.CIRCLE_CX + Math.cos(angle) * this.CIRCLE_RX;
+      const y = this.CIRCLE_CY + Math.sin(angle) * this.CIRCLE_RY;
+      panelistTargets.push({ id: this.panelists[i].id, x, y });
+    }
+
+    // Animate everything over ~60 frames
+    return new Promise<void>((resolve) => {
+      const duration = 60;
+      let frame = 0;
+
+      // Store starting positions
+      const panelistStarts = panelistTargets.map((t) => {
+        const char = this.characters.get(t.id);
+        return {
+          id: t.id,
+          startX: char?.position.x ?? 0,
+          startY: char?.position.y ?? 0,
+          targetX: t.x,
+          targetY: t.y,
+        };
+      });
+
+      const animate = () => {
+        if (this.destroyed || !this.app) { resolve(); return; }
+        frame++;
+        const progress = Math.min(frame / duration, 1);
+        const eased = 1 - Math.pow(1 - progress, 3); // ease-out cubic
+
+        // Tween panelists to new positions
+        for (const p of panelistStarts) {
+          const char = this.characters.get(p.id);
+          if (char) {
+            const newX = p.startX + (p.targetX - p.startX) * eased;
+            const newY = p.startY + (p.targetY - p.startY) * eased;
+            char.position.set(newX, newY);
+            char.zIndex = Math.floor(newY);
+
+            // Update facing
+            if (newX > this.CIRCLE_CX) {
+              char.setFacing('left');
+            } else {
+              char.setFacing('right');
+            }
+
+            // Update bubble
+            const b = this.bubbles.get(p.id);
+            if (b) b.position.set(newX, newY - 60);
+          }
+        }
+
+        // Tween observer from off-screen to its seat
+        const obsX = startX + (targetObserverX - startX) * eased;
+        const obsY = startY + (targetObserverY - startY) * eased;
+        observer.position.set(obsX, obsY);
+        observer.zIndex = Math.floor(obsY);
+        observer.alpha = 0.65 + 0.35 * eased; // fade to full opacity
+        bubble.position.set(obsX, obsY - 60);
+
+        this.app!.stage.sortChildren();
+
+        if (progress < 1) {
+          requestAnimationFrame(animate);
+        } else {
+          observer.isObserver = false;
+          // Set facing for observer at final position
+          if (targetObserverX > this.CIRCLE_CX) {
+            observer.setFacing('left');
+          } else {
+            observer.setFacing('right');
+          }
+          resolve();
+        }
+      };
+
+      requestAnimationFrame(animate);
+    });
+  }
+
+  /**
+   * @deprecated Use addObserver() instead. Kept for backward compatibility.
+   */
   moveObserverIn(): void {
-    if (!this.observerId) return;
-
-    const character = this.characters.get(this.observerId);
-    const bubble = this.bubbles.get(this.observerId);
-    if (!character) return;
-
-    // Target: an open position in the circle
-    const targetX = this.CIRCLE_CX;
-    const targetY = this.CIRCLE_CY + this.CIRCLE_RY + 10;
-
-    // Simple animated transition
-    const startX = character.position.x;
-    const startY = character.position.y;
-    const duration = 60; // frames
-    let frame = 0;
-
-    const originalAlpha = character.alpha;
-
-    const animate = () => {
-      if (this.destroyed || !this.app) return;
-      frame++;
-
-      const progress = Math.min(frame / duration, 1);
-      // Ease-out cubic
-      const eased = 1 - Math.pow(1 - progress, 3);
-
-      character.position.set(
-        startX + (targetX - startX) * eased,
-        startY + (targetY - startY) * eased
-      );
-
-      // Fade to full opacity as they join
-      character.alpha = originalAlpha + (1 - originalAlpha) * eased;
-
-      // Update bubble position
-      if (bubble) {
-        bubble.position.set(character.position.x, character.position.y - 60);
-      }
-
-      // Update z-index
-      character.zIndex = Math.floor(character.position.y);
-      this.app!.stage.sortChildren();
-
-      if (progress < 1) {
-        requestAnimationFrame(animate);
-      } else {
-        character.isObserver = false;
-      }
-    };
-
-    requestAnimationFrame(animate);
+    this.addObserver();
   }
 
   /** Get the canvas element (for video recording) */

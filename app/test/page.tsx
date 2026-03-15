@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { FishbowlScene } from '@/scene/FishbowlScene';
+import { loadAllSprites } from '@/lib/spriteLoader';
 import type { Panelist, RoundType, TranscriptEntry } from '@/engine/types';
 import StatusBar from '@/components/scene/StatusBar';
 import ModerationInput from '@/components/scene/ModerationInput';
@@ -90,9 +91,12 @@ export default function TestPage() {
     if (!containerRef.current || sceneRef.current) return;
     const s = new FishbowlScene();
     sceneRef.current = s;
-    s.initWithContainer(containerRef.current, {
-      panelists: FAKE_PANELISTS,
-      onReady: () => { setScene(s); sceneStateRef.current = s; },
+    loadAllSprites().then(() => {
+      if (!containerRef.current) return;
+      s.initWithContainer(containerRef.current, {
+        panelists: FAKE_PANELISTS,
+        onReady: () => { setScene(s); sceneStateRef.current = s; },
+      });
     });
     return () => { s.destroy(); sceneRef.current = null; };
   }, []);
@@ -312,7 +316,7 @@ export default function TestPage() {
     await waitForSpace();
     setCurrentRound('moderation');
     setPanelistsSpoken(0);
-    s.moveObserverIn();
+    await s.addObserver();
     setInModeration(true);
     setHint('You\'re in the fishbowl. Ask the panel a question below, or press Wrap Up.');
   }, [waitForSpace, streamBriefingText, streamRoundtableText, addTranscriptEntry, addFakeTokens]);
