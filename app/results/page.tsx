@@ -15,18 +15,18 @@ export default function ResultsPage() {
   // Redirect if no completed session
   useEffect(() => {
     if (store.status !== 'completed' || store.transcript.length === 0) {
-      router.replace('/');
+      router.replace('/setup');
     }
   }, [store.status, store.transcript.length, router]);
 
   const handleContinueSession = () => {
     store.continueSession();
-    router.push('/');
+    router.push('/setup');
   };
 
   const handleNewSession = () => {
     store.resetSession();
-    router.push('/');
+    router.push('/setup');
   };
 
   const handleImportSession = (

@@ -54,7 +54,7 @@ export default function SessionPage() {
   // Redirect to setup if no active session
   useEffect(() => {
     if (store.status !== 'running' || store.panelists.length < 3) {
-      router.replace('/');
+      router.replace('/setup');
     }
   }, [store.status, store.panelists.length, router]);
 
@@ -346,7 +346,7 @@ export default function SessionPage() {
         <div>
           <h2 className="text-xl font-700 mb-2" style={{ color: 'var(--text-primary)' }}>Open on desktop</h2>
           <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>The Fishbowl requires a larger screen.</p>
-          <button onClick={() => router.replace('/')} className="mt-4 px-4 py-2 rounded-lg text-sm" style={{ background: 'var(--accent-gold)', color: 'var(--bg-deep)' }}>Go Back</button>
+          <button onClick={() => router.replace('/setup')} className="mt-4 px-4 py-2 rounded-lg text-sm" style={{ background: 'var(--accent-gold)', color: 'var(--bg-deep)' }}>Go Back</button>
         </div>
       </div>
 
