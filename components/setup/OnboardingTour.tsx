@@ -128,12 +128,11 @@ export default function OnboardingTour({ setStep }: OnboardingTourProps) {
 
   return (
     <>
-      {/* Dark overlay */}
+      {/* Transparent click-catcher (no darkening) */}
       <div
         style={{
           position: 'fixed',
           inset: 0,
-          background: 'rgba(26, 23, 20, 0.4)',
           zIndex: 40,
           pointerEvents: showFinale ? 'none' : 'auto',
         }}

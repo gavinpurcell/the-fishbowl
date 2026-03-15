@@ -60,6 +60,7 @@ export class FishbowlScene {
       const character = new Character({
         panelistId: panelist.id,
         name: panelist.name,
+        role: panelist.role,
         color: panelist.color,
         spriteIndex: panelist.spriteIndex,
         isObserver: false,

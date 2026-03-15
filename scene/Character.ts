@@ -74,6 +74,7 @@ export class Character extends Container {
   constructor(options: {
     panelistId: string;
     name: string;
+    role?: string;
     color: string;
     spriteIndex?: number;
     isObserver?: boolean;
@@ -161,6 +162,22 @@ export class Character extends Container {
     this.nameLabel.anchor.set(0.5, 0);
     this.nameLabel.position.set(0, 36);
     this.addChild(this.nameLabel);
+
+    // 13. Role label (if provided)
+    if (options.role) {
+      const roleLabel = new Text({
+        text: options.role,
+        style: new TextStyle({
+          fontFamily: '"DM Mono", monospace',
+          fontSize: 8,
+          fill: 0x8a8078,
+          align: 'center',
+        }),
+      });
+      roleLabel.anchor.set(0.5, 0);
+      roleLabel.position.set(0, 48);
+      this.addChild(roleLabel);
+    }
 
     // Observer characters are slightly transparent
     if (this.isObserver) {

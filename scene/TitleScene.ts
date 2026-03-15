@@ -3,11 +3,11 @@ import { Character } from './Character';
 import { Room } from './Room';
 
 const DEMO_CHARACTERS = [
-  { id: 'maya', name: 'MAYA', color: '#4a9e6e', spriteIndex: 0, state: 'gesturing' as const },
-  { id: 'derek', name: 'DEREK', color: '#c45a5a', spriteIndex: 1, state: 'thinking' as const },
-  { id: 'priya', name: 'PRIYA', color: '#5a7ec4', spriteIndex: 2, state: 'talking' as const },
-  { id: 'sam', name: 'SAM', color: '#d4a040', spriteIndex: 3, state: 'reacting' as const },
-  { id: 'alex', name: 'ALEX', color: '#9a6ab4', spriteIndex: 4, state: 'skeptical' as const },
+  { id: 'maya', name: 'MAYA', role: 'Designer', color: '#4a9e6e', spriteIndex: 0, state: 'gesturing' as const },
+  { id: 'derek', name: 'DEREK', role: 'CFO', color: '#c45a5a', spriteIndex: 1, state: 'thinking' as const },
+  { id: 'priya', name: 'PRIYA', role: 'Engineer', color: '#5a7ec4', spriteIndex: 2, state: 'talking' as const },
+  { id: 'sam', name: 'SAM', role: 'Marketer', color: '#d4a040', spriteIndex: 3, state: 'reacting' as const },
+  { id: 'alex', name: 'ALEX', role: 'Strategist', color: '#9a6ab4', spriteIndex: 4, state: 'skeptical' as const },
 ];
 
 export class TitleScene {
@@ -52,6 +52,7 @@ export class TitleScene {
       const character = new Character({
         panelistId: cfg.id,
         name: cfg.name,
+        role: cfg.role,
         color: cfg.color,
         spriteIndex: cfg.spriteIndex,
       });
