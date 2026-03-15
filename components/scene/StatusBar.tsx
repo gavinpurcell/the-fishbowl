@@ -9,6 +9,7 @@ interface Props {
   totalPanelists: number;
   onWrapUp: () => void;
   canWrapUp: boolean;
+  modelLabel?: string;
   costDollars?: number;
   totalTokens?: number;
   isOllama?: boolean;
@@ -22,7 +23,7 @@ const ROUND_LABELS: Record<RoundType, string> = {
   'summary': 'Generating Summary...',
 };
 
-export default function StatusBar({ round, panelistsSpoken, totalPanelists, onWrapUp, canWrapUp, costDollars, totalTokens, isOllama }: Props) {
+export default function StatusBar({ round, panelistsSpoken, totalPanelists, onWrapUp, canWrapUp, modelLabel, costDollars, totalTokens, isOllama }: Props) {
   return (
     <div
       className="flex items-center justify-between px-5 py-2.5 max-w-[800px] mx-auto rounded-b-xl"
@@ -35,6 +36,11 @@ export default function StatusBar({ round, panelistsSpoken, totalPanelists, onWr
         </span>
       </div>
       <div className="flex items-center gap-4">
+        {modelLabel && (
+          <span className="text-xs font-mono" style={{ color: 'var(--text-muted)' }}>
+            {modelLabel}
+          </span>
+        )}
         {totalTokens != null && totalTokens > 0 && (
           <span className="text-xs font-mono" style={{ color: 'var(--text-muted)' }}>
             {isOllama ? 'Free (local)' : `${formatCost(costDollars || 0)} · ${formatTokens(totalTokens)} tokens`}
@@ -46,10 +52,20 @@ export default function StatusBar({ round, panelistsSpoken, totalPanelists, onWr
         {canWrapUp && (
           <button
             onClick={onWrapUp}
-            className="px-3 py-1 rounded-lg text-xs font-500 transition-all"
-            style={{ background: 'var(--accent-warm)', color: 'var(--bg-deep)' }}
+            style={{
+              background: 'var(--accent-gold)',
+              color: 'white',
+              fontFamily: "'Outfit', sans-serif",
+              fontSize: '13px',
+              fontWeight: 600,
+              padding: '8px 18px',
+              borderRadius: '8px',
+              border: 'none',
+              cursor: 'pointer',
+              boxShadow: '0 2px 8px rgba(196, 154, 42, 0.4)',
+            }}
           >
-            Wrap Up
+            I'm Done Asking Questions
           </button>
         )}
       </div>
