@@ -61,6 +61,7 @@ export class FishbowlScene {
         panelistId: panelist.id,
         name: panelist.name,
         color: panelist.color,
+        spriteIndex: panelist.spriteIndex,
         isObserver: false,
       });
 
