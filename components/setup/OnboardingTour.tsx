@@ -97,6 +97,8 @@ export default function OnboardingTour({ setStep }: OnboardingTourProps) {
     localStorage.setItem(STORAGE_KEY, '1');
     setVisible(false);
     setHighlightRect(null);
+    // Reset setup page back to template selection step
+    setStep('template');
   };
 
   const handleNext = () => {
