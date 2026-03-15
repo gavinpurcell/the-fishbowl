@@ -9,6 +9,7 @@ import TemplatePicker from '@/components/setup/TemplatePicker';
 import PanelistBuilder from '@/components/setup/PanelistBuilder';
 import IdeaInput from '@/components/setup/IdeaInput';
 import ApiKeyConfig from '@/components/setup/ApiKeyConfig';
+import OnboardingTour from '@/components/setup/OnboardingTour';
 import { estimateSessionCost, formatCost } from '@/lib/models';
 
 export default function SetupPage() {
@@ -39,6 +40,8 @@ export default function SetupPage() {
 
   return (
     <div className="min-h-screen">
+      <OnboardingTour setStep={setStep} />
+
       {/* Ambient glow */}
       <div className="fixed top-0 left-1/2 -translate-x-1/2 w-[600px] h-[400px] bg-[var(--accent-gold)] opacity-[0.08] rounded-full blur-[120px] pointer-events-none" />
 
@@ -55,7 +58,7 @@ export default function SetupPage() {
         </div>
 
         {step === 'template' && (
-          <div className="animate-fade-in">
+          <div className="animate-fade-in" id="section-templates">
             <TemplatePicker onSelect={handleTemplateSelect} />
             <div className="text-center mt-10">
               <button
@@ -73,26 +76,32 @@ export default function SetupPage() {
 
         {step === 'configure' && (
           <div className="space-y-10 animate-fade-in">
-            <PanelistBuilder
-              panelists={store.panelists}
-              onUpdate={store.setPanelists}
-            />
+            <div id="section-panelists">
+              <PanelistBuilder
+                panelists={store.panelists}
+                onUpdate={store.setPanelists}
+              />
+            </div>
 
-            <IdeaInput
-              ideaText={store.ideaText}
-              ideaFiles={store.ideaFiles}
-              onTextChange={store.setIdeaText}
-              onFilesChange={store.setIdeaFiles}
-            />
+            <div id="section-idea">
+              <IdeaInput
+                ideaText={store.ideaText}
+                ideaFiles={store.ideaFiles}
+                onTextChange={store.setIdeaText}
+                onFilesChange={store.setIdeaFiles}
+              />
+            </div>
 
-            <ApiKeyConfig
-              provider={store.provider}
-              apiKey={store.apiKey}
-              modelId={store.modelId}
-              onProviderChange={store.setProvider}
-              onApiKeyChange={store.setApiKey}
-              onModelChange={store.setModelId}
-            />
+            <div id="section-api">
+              <ApiKeyConfig
+                provider={store.provider}
+                apiKey={store.apiKey}
+                modelId={store.modelId}
+                onProviderChange={store.setProvider}
+                onApiKeyChange={store.setApiKey}
+                onModelChange={store.setModelId}
+              />
+            </div>
 
             {store.provider !== 'ollama' && store.panelists.length >= 3 && (
               <div className="text-xs" style={{ color: 'var(--text-muted)' }}>
