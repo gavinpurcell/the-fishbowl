@@ -79,6 +79,7 @@ export default function TestPage() {
   const [transcript, setTranscript] = useState<TranscriptEntry[]>([]);
   const [sessionComplete, setSessionComplete] = useState(false);
   const [fakeTokens, setFakeTokens] = useState({ input: 0, output: 0 });
+  const [testExportMode, setTestExportMode] = useState<'summary' | 'transcript'>('transcript');
 
   const advanceResolverRef = useRef<(() => void) | null>(null);
   const streamAbortRef = useRef(false);
@@ -456,6 +457,7 @@ export default function TestPage() {
                 totalPanelists={FAKE_PANELISTS.length}
                 onWrapUp={handleWrapUp}
                 canWrapUp={inModeration && !isSpeaking}
+                modelLabel="Sonnet 4.6"
                 costDollars={cost}
                 totalTokens={total}
               />
@@ -512,19 +514,161 @@ export default function TestPage() {
           </div>
         )}
 
-        {/* Session complete summary */}
-        {sessionComplete && (
-          <div className="max-w-[800px] mx-auto mt-6 text-center">
-            <button
-              onClick={() => window.location.reload()}
-              className="px-5 py-2 rounded-lg text-sm font-500 transition-all"
-              style={{ background: 'var(--accent-gold)', color: 'var(--bg-deep)' }}
-            >
-              Run Again
-            </button>
-          </div>
-        )}
       </div>
+
+      {/* === FULL-SCREEN SESSION COMPLETE OVERLAY === */}
+      {sessionComplete && (
+        <div className="fixed inset-0 z-50 overflow-y-auto" style={{ background: 'var(--bg-deep)' }}>
+          <div className="fixed top-0 left-1/2 -translate-x-1/2 w-[600px] h-[400px] opacity-[0.08] rounded-full blur-[120px] pointer-events-none"
+               style={{ background: 'var(--accent-gold)' }} />
+
+          <div className="max-w-3xl mx-auto px-6 py-16 relative animate-fade-in">
+            {/* Header */}
+            <div className="text-center mb-10">
+              <div className="label-mono text-[10px] mb-3" style={{ color: 'var(--text-muted)' }}>
+                Session Complete
+              </div>
+              <h1 className="text-3xl font-700" style={{ color: 'var(--text-primary)' }}>
+                Your Fishbowl Results
+              </h1>
+              <p className="text-sm mt-2" style={{ color: 'var(--text-secondary)' }}>
+                {FAKE_PANELISTS.length} panelists · {moderationQuestionCount} questions asked · Test Mode
+              </p>
+            </div>
+
+            {/* Export toggle */}
+            <div className="rounded-xl p-6 mb-5" style={{ background: 'var(--bg-surface)' }}>
+              <div className="label-mono text-[10px] mb-4" style={{ color: 'var(--text-muted)' }}>
+                What do you want to export?
+              </div>
+              <div className="flex gap-3 mb-5">
+                <button
+                  onClick={() => setTestExportMode('transcript')}
+                  className="flex-1 p-4 rounded-xl text-left cursor-pointer transition-colors duration-200"
+                  style={{
+                    background: testExportMode === 'transcript' ? 'var(--text-primary)' : 'var(--bg-deep)',
+                    color: testExportMode === 'transcript' ? 'var(--bg-deep)' : 'var(--text-primary)',
+                    border: testExportMode === 'transcript' ? '2px solid var(--text-primary)' : '2px solid var(--border)',
+                  }}
+                >
+                  <div className="font-semibold text-sm mb-1">Full Transcript</div>
+                  <div className="text-xs leading-relaxed" style={{ opacity: 0.7 }}>
+                    Every response from every panelist, in order.
+                  </div>
+                </button>
+                <button
+                  onClick={() => setTestExportMode('summary')}
+                  className="flex-1 p-4 rounded-xl text-left cursor-pointer transition-colors duration-200"
+                  style={{
+                    background: testExportMode === 'summary' ? 'var(--text-primary)' : 'var(--bg-deep)',
+                    color: testExportMode === 'summary' ? 'var(--bg-deep)' : 'var(--text-primary)',
+                    border: testExportMode === 'summary' ? '2px solid var(--text-primary)' : '2px solid var(--border)',
+                  }}
+                >
+                  <div className="font-semibold text-sm mb-1">AI Summary</div>
+                  <div className="text-xs leading-relaxed" style={{ opacity: 0.7 }}>
+                    Not available in test mode.
+                  </div>
+                </button>
+              </div>
+
+              {/* Download buttons */}
+              <div className="flex gap-3">
+                <button
+                  onClick={() => {
+                    let md = '# Fishbowl Test Session — Full Transcript\n\n';
+                    let currentRoundLabel = '';
+                    for (const entry of transcript) {
+                      if (entry.round !== currentRoundLabel) {
+                        currentRoundLabel = entry.round;
+                        md += `\n## ${currentRoundLabel.replace('-', ' ').replace(/\b\w/g, c => c.toUpperCase())}\n\n`;
+                      }
+                      md += `**${entry.panelistName}:** ${entry.content}\n\n`;
+                    }
+                    const blob = new Blob([md], { type: 'text/markdown' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `fishbowl-test-transcript-${Date.now()}.md`;
+                    a.click();
+                    URL.revokeObjectURL(url);
+                  }}
+                  className="flex-1 flex items-center justify-center gap-2.5 py-3.5 rounded-xl text-white font-semibold text-sm cursor-pointer transition-all duration-200 hover:brightness-110"
+                  style={{ background: 'var(--accent-gold)' }}
+                >
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+                  Download Markdown
+                </button>
+              </div>
+            </div>
+
+            {/* Preview */}
+            <div className="rounded-xl p-6 mb-5" style={{ background: 'white', border: '1px solid var(--border)' }}>
+              <div className="label-mono text-[10px] mb-4" style={{ color: 'var(--text-muted)' }}>
+                Preview — Full Transcript
+              </div>
+              <div className="max-h-96 overflow-y-auto space-y-3">
+                {transcript.map((entry) => {
+                  const panelist = FAKE_PANELISTS.find((p) => p.id === entry.panelistId);
+                  const isUser = entry.panelistId === 'user';
+                  const color = panelist?.color || (isUser ? 'var(--accent-gold)' : 'var(--text-muted)');
+                  return (
+                    <div key={entry.id} className="text-sm">
+                      <span className="font-600" style={{ color }}>{entry.panelistName}:</span>{' '}
+                      <span style={{ color: isUser ? 'var(--text-primary)' : 'var(--text-secondary)' }}>{entry.content}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Cost tally */}
+            <div className="rounded-xl p-5 flex items-center justify-between mb-5" style={{ background: 'var(--bg-surface)' }}>
+              <div>
+                <div className="label-mono text-[10px] mb-1.5" style={{ color: 'var(--text-muted)' }}>
+                  Session Cost (Simulated)
+                </div>
+                <div className="text-3xl font-700" style={{ color: 'var(--text-primary)' }}>
+                  ${((fakeTokens.input / 1_000_000) * 3.00 + (fakeTokens.output / 1_000_000) * 15.00).toFixed(2)}
+                </div>
+              </div>
+              <div className="text-right">
+                <div className="label-mono text-[11px]" style={{ color: 'var(--text-secondary)' }}>
+                  <span style={{ color: 'var(--text-muted)' }}>Input:</span>{' '}
+                  {fakeTokens.input.toLocaleString()} tokens ·{' '}
+                  <span style={{ color: 'var(--text-muted)' }}>Output:</span>{' '}
+                  {fakeTokens.output.toLocaleString()} tokens
+                </div>
+                <div className="label-mono text-[11px] mt-1" style={{ color: 'var(--text-secondary)' }}>
+                  <span style={{ color: 'var(--text-muted)' }}>Model:</span> Sonnet 4.6 (Simulated) ·{' '}
+                  <span style={{ color: 'var(--text-muted)' }}>Provider:</span> Test
+                </div>
+              </div>
+            </div>
+
+            {/* Divider */}
+            <div className="my-6" style={{ borderTop: '2px solid var(--border)' }} />
+
+            {/* Start New CTA */}
+            <div className="text-center">
+              <button
+                onClick={() => window.location.reload()}
+                className="inline-flex items-center gap-3 px-10 py-4 rounded-xl text-lg font-semibold text-white cursor-pointer transition-all duration-200 hover:brightness-110"
+                style={{
+                  background: 'var(--accent-gold)',
+                  boxShadow: '0 4px 16px rgba(196, 154, 42, 0.3)',
+                }}
+              >
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+                Run Test Again
+              </button>
+              <p className="label-mono text-[11px] mt-3 tracking-widest" style={{ color: 'var(--text-muted)' }}>
+                Test mode · No API calls made
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
