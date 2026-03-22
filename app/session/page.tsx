@@ -422,7 +422,7 @@ export default function SessionPage() {
         <div className="max-w-5xl mx-auto px-4 sm:px-6 py-4 sm:py-6">
           <div className="text-center mb-4">
             <div className="label-mono mb-1">Live Session</div>
-            <h1 className="text-xl sm:text-2xl font-700 tracking-tight" style={{ color: 'var(--text-primary)' }}>The Fishbowl</h1>
+            <h1 className="font-pixel text-lg sm:text-xl title-text">THE FISHBOWL</h1>
           </div>
 
           {/* === BRIEFING VIEW === */}

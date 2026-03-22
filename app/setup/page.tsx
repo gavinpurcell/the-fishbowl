@@ -49,8 +49,8 @@ export default function SetupPage() {
         {/* Header */}
         <div className="text-center mb-8 sm:mb-16 animate-fade-in">
           <div className="label-mono mb-3 sm:mb-4">AI Focus Group</div>
-          <h1 className="text-3xl sm:text-5xl font-800 tracking-tight" style={{ color: 'var(--text-primary)' }}>
-            The Fishbowl
+          <h1 className="font-pixel text-2xl sm:text-4xl tracking-tight title-text" style={{}}>
+            THE FISHBOWL
           </h1>
           <p className="mt-2 sm:mt-3 text-base sm:text-lg" style={{ color: 'var(--text-secondary)' }}>
             Watch AI experts debate your ideas. Then step in and ask questions.

@@ -116,10 +116,9 @@ export default function ResultsPage() {
             SESSION COMPLETE
           </div>
           <h1
-            className="text-2xl sm:text-3xl font-bold tracking-tight mb-3"
-            style={{ color: 'var(--text-primary)' }}
+            className="font-pixel text-xl sm:text-2xl title-text mb-3"
           >
-            Your Fishbowl Results
+            YOUR RESULTS
           </h1>
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm" style={{ color: 'var(--text-secondary)' }}>
             <span className="inline-flex items-center gap-1.5">

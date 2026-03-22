@@ -122,8 +122,9 @@ export default function TransitionOverlay({ panelists, onComplete }: TransitionO
         }
 
         .transition-heading {
-          font-size: clamp(1.75rem, 4vw, 2.5rem);
-          font-weight: 600;
+          font-family: 'Silkscreen', 'Courier New', monospace;
+          font-size: clamp(1.5rem, 3.5vw, 2.25rem);
+          font-weight: 400;
           color: #faf6ef;
           letter-spacing: 0.02em;
           opacity: 0;

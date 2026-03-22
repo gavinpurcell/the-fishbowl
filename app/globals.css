@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Outfit:wght@300;400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Outfit:wght@300;400;500;600;700;800&family=Silkscreen:wght@400;700&display=swap');
 @import "tailwindcss";
 
 :root {
@@ -126,4 +126,211 @@ html, body {
 
 .page-transition-wrapper {
   animation: pageEnter 0.35s ease-out;
+}
+
+/* ============================================================ */
+/*  Title Page — Game Title Screen Identity                      */
+/* ============================================================ */
+
+/* Pixel font utility class */
+.font-pixel {
+  font-family: 'Silkscreen', 'Courier New', monospace;
+}
+
+/* Scene viewport — retro CRT-style frame */
+.scene-viewport {
+  position: relative;
+  border: 3px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow:
+    0 2px 12px rgba(0, 0, 0, 0.08),
+    0 0 40px rgba(196, 154, 42, 0.06),
+    inset 0 0 30px rgba(0, 0, 0, 0.03);
+}
+
+/* Subtle scanline overlay on the scene — sells the pixel art vibe */
+.scene-viewport::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0, 0, 0, 0.015) 2px,
+    rgba(0, 0, 0, 0.015) 4px
+  );
+  z-index: 2;
+}
+
+/* Warm inner glow at the edges of the scene */
+.scene-viewport::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 3;
+  box-shadow: inset 0 0 60px rgba(196, 154, 42, 0.08);
+  border-radius: inherit;
+}
+
+/* Title text with warm gold gradient + text shadow */
+.title-text {
+  font-family: 'Silkscreen', 'Courier New', monospace;
+  background: linear-gradient(
+    180deg,
+    #e8c44a 0%,
+    #c49a2a 40%,
+    #a07818 100%
+  );
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  filter: drop-shadow(0 2px 4px rgba(164, 120, 24, 0.3));
+  line-height: 1.1;
+  image-rendering: auto;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Subtitle with a softer warm treatment */
+.title-subtitle {
+  font-family: 'DM Mono', monospace;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+/* Decorative gold rule below title */
+.title-rule {
+  width: 0;
+  height: 2px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    var(--accent-gold) 20%,
+    #f0c866 50%,
+    var(--accent-gold) 80%,
+    transparent 100%
+  );
+  animation: titleRuleExpand 0.8s cubic-bezier(0.22, 1, 0.36, 1) 0.5s forwards;
+}
+
+@keyframes titleRuleExpand {
+  from { width: 0; opacity: 0; }
+  to { width: min(240px, 60vw); opacity: 1; }
+}
+
+/* Scene "LIVE" badge with recording pulse */
+.scene-badge {
+  position: absolute;
+  top: 10px;
+  left: 12px;
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 8px;
+  border-radius: 6px;
+  background: rgba(26, 23, 20, 0.65);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+.scene-badge-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #e85a4a;
+  animation: badgePulse 2s ease-in-out infinite;
+}
+
+@keyframes badgePulse {
+  0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(232, 90, 74, 0.5); }
+  50% { opacity: 0.6; box-shadow: 0 0 6px 2px rgba(232, 90, 74, 0.3); }
+}
+
+/* Title entrance: scale up from slightly small + fade */
+@keyframes titleReveal {
+  from {
+    opacity: 0;
+    transform: scale(0.88) translateY(8px);
+    filter: drop-shadow(0 2px 4px rgba(164, 120, 24, 0)) blur(4px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+    filter: drop-shadow(0 2px 4px rgba(164, 120, 24, 0.3)) blur(0);
+  }
+}
+
+.animate-title-reveal {
+  animation: titleReveal 0.7s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+/* Subtitle letter-by-letter feel (staggered entrance) */
+@keyframes subtitleReveal {
+  from { opacity: 0; transform: translateY(6px); letter-spacing: 0.3em; }
+  to { opacity: 1; transform: translateY(0); letter-spacing: 0.18em; }
+}
+
+.animate-subtitle-reveal {
+  opacity: 0;
+  animation: subtitleReveal 0.6s cubic-bezier(0.22, 1, 0.36, 1) 0.35s forwards;
+}
+
+/* Character roster dots under the scene */
+.roster-dots {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  padding: 10px 0;
+}
+
+.roster-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  opacity: 0;
+  transform: scale(0);
+  animation: rosterDotPop 0.3s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+@keyframes rosterDotPop {
+  from { opacity: 0; transform: scale(0); }
+  60% { transform: scale(1.3); }
+  to { opacity: 0.7; transform: scale(1); }
+}
+
+/* CTA button — more tactile, game-button feel */
+.cta-game-button {
+  position: relative;
+  font-family: 'Silkscreen', 'Courier New', monospace;
+  font-size: 14px;
+  letter-spacing: 0.05em;
+  padding: 14px 32px;
+  border-radius: 10px;
+  border: none;
+  cursor: pointer;
+  background: linear-gradient(180deg, #d4aa3a 0%, #c49a2a 50%, #a88020 100%);
+  color: #1a1714;
+  box-shadow:
+    0 3px 0 #8a6a18,
+    0 4px 12px rgba(196, 154, 42, 0.35);
+  transition: all 0.15s ease;
+}
+
+.cta-game-button:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    0 5px 0 #8a6a18,
+    0 6px 18px rgba(196, 154, 42, 0.45);
+}
+
+.cta-game-button:active {
+  transform: translateY(2px);
+  box-shadow:
+    0 1px 0 #8a6a18,
+    0 2px 6px rgba(196, 154, 42, 0.25);
 }
