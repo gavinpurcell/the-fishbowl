@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
+import Link from 'next/link';
 import { useFishbowlStore } from '@/lib/store';
 
 /**
@@ -12,6 +13,7 @@ import { useFishbowlStore } from '@/lib/store';
 export default function ActiveSessionBanner() {
   const pathname = usePathname();
   const status = useFishbowlStore((s) => s.status);
+  const resetSession = useFishbowlStore((s) => s.resetSession);
   const [mounted, setMounted] = useState(false);
 
   // Avoid hydration mismatch — only read persisted store on the client
@@ -53,25 +55,52 @@ export default function ActiveSessionBanner() {
               SESSION IN PROGRESS
             </span>
           </div>
-          <a
-            href="/session"
-            className="flex-shrink-0 flex items-center gap-1.5 transition-all group"
-            style={{
-              fontFamily: "'DM Mono', monospace",
-              fontSize: '11px',
-              letterSpacing: '0.04em',
-              color: 'var(--accent-gold)',
-              textDecoration: 'none',
-            }}
-          >
-            <span className="group-hover:underline">Return to control room</span>
-            <span
-              className="inline-block transition-transform group-hover:translate-x-0.5"
-              style={{ fontSize: '13px' }}
+          <div className="flex items-center gap-3">
+            {/* Dismiss / end session button */}
+            <button
+              onClick={() => resetSession()}
+              className="flex-shrink-0 transition-all"
+              style={{
+                fontFamily: "'DM Mono', monospace",
+                fontSize: '11px',
+                letterSpacing: '0.04em',
+                color: 'rgba(255,255,255,0.4)',
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                padding: 0,
+              }}
+              onMouseEnter={(e) => {
+                (e.currentTarget as HTMLElement).style.color = 'var(--accent-red)';
+              }}
+              onMouseLeave={(e) => {
+                (e.currentTarget as HTMLElement).style.color = 'rgba(255,255,255,0.4)';
+              }}
+              title="End session"
             >
-              &rarr;
-            </span>
-          </a>
+              End session
+            </button>
+            {/* Client-side Link to /session — preserves React state */}
+            <Link
+              href="/session"
+              className="flex-shrink-0 flex items-center gap-1.5 transition-all group"
+              style={{
+                fontFamily: "'DM Mono', monospace",
+                fontSize: '11px',
+                letterSpacing: '0.04em',
+                color: 'var(--accent-gold)',
+                textDecoration: 'none',
+              }}
+            >
+              <span className="group-hover:underline">Return to control room</span>
+              <span
+                className="inline-block transition-transform group-hover:translate-x-0.5"
+                style={{ fontSize: '13px' }}
+              >
+                &rarr;
+              </span>
+            </Link>
+          </div>
         </div>
       </div>
     </div>
