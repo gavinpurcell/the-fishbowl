@@ -25,7 +25,7 @@ export default function PanelistBuilder({ panelists, onUpdate }: Props) {
 
   const addPanelist = async () => {
     if (!newName.trim() || !newRole.trim()) return;
-    if (panelists.length >= 5) return;
+    if (panelists.length >= 4) return;
 
     let panelist: Panelist;
 
@@ -57,15 +57,15 @@ export default function PanelistBuilder({ panelists, onUpdate }: Props) {
     setEditingId(null);
   };
 
-  // Empty slots to show minimum 3 requirement
-  const emptySlots = Math.max(0, 3 - panelists.length);
+  // Empty slots to show available seats (max 4)
+  const emptySlots = Math.max(0, 4 - panelists.length);
 
   return (
     <div>
       <div className="section-header">
         <div className="label-mono" style={{ flexShrink: 0 }}>Your Panel</div>
         <span className="text-xs" style={{ color: 'var(--text-muted)', flexShrink: 0 }}>
-          {panelists.length}/5 seats
+          {panelists.length}/4 seats
         </span>
       </div>
 
@@ -217,7 +217,7 @@ export default function PanelistBuilder({ panelists, onUpdate }: Props) {
       </div>
 
       {/* Add panelist form */}
-      {panelists.length < 5 && (
+      {panelists.length < 4 && (
         <div className="add-panelist-card p-4">
           <div className="label-mono mb-3">Add a panelist</div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
@@ -278,9 +278,9 @@ export default function PanelistBuilder({ panelists, onUpdate }: Props) {
         </div>
       )}
 
-      {panelists.length >= 5 && (
+      {panelists.length >= 4 && (
         <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
-          Panel is full (5/5 seats).
+          Panel is full (4/4 seats).
         </p>
       )}
       {panelists.length < 3 && panelists.length > 0 && (

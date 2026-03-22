@@ -69,7 +69,14 @@ export class PanelistTag extends Container {
     const gap = 3;
     const accentWidth = 3;
     const roleY = paddingTop + this.nameText.height + gap;
-    const contentWidth = Math.max(this.nameText.width, this.roleText.width);
+    const measuredWidth = Math.max(this.nameText.width, this.roleText.width);
+    // Ensure tag is wide enough for longer names — Silkscreen at 11px with
+    // letter-spacing 1 is roughly 9px per character.  Use a per-character
+    // estimate as a floor so names are never truncated even if PixiJS measures
+    // the text before the web font has fully loaded.
+    const nameChars = this.nameText.text.length;
+    const estimatedNameWidth = nameChars * 9;
+    const contentWidth = Math.max(measuredWidth, estimatedNameWidth);
     const width = contentWidth + paddingX * 2 + accentWidth;
     const height = roleY + this.roleText.height + 7;
     const left = this.align === 'right' ? -width : this.align === 'center' ? -width / 2 : 0;

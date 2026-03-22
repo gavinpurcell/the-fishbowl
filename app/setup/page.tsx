@@ -94,7 +94,7 @@ export default function SetupPage() {
                 </span>
                 <div className="flex items-center gap-3">
                   {[
-                    { done: hasPanelists, label: store.panelists.length === 0 ? 'Panel' : `${store.panelists.length}/3+` },
+                    { done: hasPanelists, label: store.panelists.length === 0 ? 'Panel' : `${store.panelists.length}/3-4` },
                     { done: hasIdea, label: 'Idea' },
                     { done: hasProvider, label: 'API' },
                   ].map((item) => (

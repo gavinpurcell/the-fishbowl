@@ -74,7 +74,10 @@ export const useFishbowlStore = create<FishbowlState>()(
   moderationQuestionCount: 0,
 
   setPanelists: (panelists) => set({ panelists }),
-  addPanelist: (panelist) => set((s) => ({ panelists: [...s.panelists, panelist] })),
+  addPanelist: (panelist) => set((s) => {
+    if (s.panelists.length >= 4) return s; // Max 4 panelists (matches seat layout)
+    return { panelists: [...s.panelists, panelist] };
+  }),
   removePanelist: (id) => set((s) => ({ panelists: s.panelists.filter((p) => p.id !== id) })),
   updatePanelist: (id, updates) =>
     set((s) => ({
