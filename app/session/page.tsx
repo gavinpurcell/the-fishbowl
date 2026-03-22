@@ -451,12 +451,9 @@ export default function SessionPage() {
                           <img
                             src={`/sprites/portraits/char_${p.spriteIndex}_portrait.png`}
                             alt={p.name}
-                            className="absolute inset-0 w-full h-full object-cover"
+                            className="absolute inset-0 w-full h-full object-contain"
                             style={{
                               imageRendering: 'pixelated',
-                              objectPosition: 'center 20%',
-                              transform: 'scale(1.18)',
-                              transformOrigin: 'center 20%',
                             }}
                           />
                         </div>
@@ -519,12 +516,9 @@ export default function SessionPage() {
                         <img
                           src={`/sprites/portraits/char_${currentPanelist.spriteIndex}_portrait.png`}
                           alt={currentPanelist.name}
-                          className="absolute inset-0 w-full h-full object-cover"
+                          className="absolute inset-0 w-full h-full object-contain"
                           style={{
                             imageRendering: 'pixelated',
-                            objectPosition: 'center 20%',
-                            transform: 'scale(1.14)',
-                            transformOrigin: 'center 20%',
                           }}
                         />
                       </div>

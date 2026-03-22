@@ -386,6 +386,12 @@ html, body {
   image-rendering: crisp-edges;
   background: var(--bg-elevated);
   flex-shrink: 0;
+  overflow: hidden;
+}
+
+.character-portrait img {
+  object-fit: contain;
+  image-rendering: pixelated;
 }
 
 /* Name plate — Silkscreen pixel font treatment */
@@ -718,6 +724,11 @@ html, body {
   overflow: hidden;
   border: 2px solid transparent;
   transition: border-color 0.2s ease, transform 0.2s ease;
+}
+
+.template-portrait img {
+  object-fit: contain;
+  image-rendering: pixelated;
 }
 
 .template-card:hover .template-portrait {
