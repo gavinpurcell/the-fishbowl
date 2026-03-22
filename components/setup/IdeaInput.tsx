@@ -38,6 +38,10 @@ export default function IdeaInput({ ideaText, ideaFiles, onTextChange, onFilesCh
   }, [handleFilesWithFeedback]);
 
   const hasContent = !!(ideaText.trim() || ideaFiles.length > 0);
+  const WARN_THRESHOLD = 1800;
+  const MAX_DISPLAY = 2000;
+  const charCount = ideaText.length;
+  const isNearLimit = charCount >= WARN_THRESHOLD;
 
   return (
     <div>
@@ -88,6 +92,18 @@ export default function IdeaInput({ ideaText, ideaFiles, onTextChange, onFilesCh
           >
             Your Idea
           </span>
+          <div style={{ flex: 1 }} />
+          {/* Character count */}
+          {charCount > 0 && (
+            <span
+              className="mission-briefing-charcount"
+              style={{
+                color: isNearLimit ? 'var(--accent-warm)' : 'rgba(26, 23, 20, 0.45)',
+              }}
+            >
+              {charCount.toLocaleString()}/{MAX_DISPLAY.toLocaleString()}
+            </span>
+          )}
         </div>
 
         {/* Textarea area */}
@@ -96,7 +112,8 @@ export default function IdeaInput({ ideaText, ideaFiles, onTextChange, onFilesCh
             value={ideaText}
             onChange={(e) => onTextChange(e.target.value)}
             placeholder="What do you want the panel to evaluate? Describe your startup idea, product feature, marketing campaign, creative concept... The more detail you give, the sharper the feedback."
-            className="w-full h-36 resize-none text-sm leading-relaxed"
+            className="w-full h-36 resize-none text-sm leading-relaxed mission-briefing-textarea"
+            maxLength={MAX_DISPLAY}
             style={{
               background: 'transparent',
               border: 'none',
@@ -109,6 +126,7 @@ export default function IdeaInput({ ideaText, ideaFiles, onTextChange, onFilesCh
 
         {/* File attachment area */}
         <div
+          className="mission-briefing-files"
           style={{
             borderTop: '1px solid var(--border)',
             background: 'var(--bg-surface)',

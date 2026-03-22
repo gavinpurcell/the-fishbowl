@@ -156,35 +156,47 @@ export default function PanelistBuilder({ panelists, onUpdate }: Props) {
               </div>
             </div>
 
-            {/* Edit prompt panel */}
+            {/* Edit prompt panel — character backstory editor */}
             {editingId === p.id && (
-              <div className="animate-slide-down px-3 pb-3" style={{ borderTop: `1px solid var(--border)` }}>
-                <textarea
-                  value={editPrompt}
-                  onChange={(e) => setEditPrompt(e.target.value)}
-                  className="w-full h-40 rounded-lg resize-y font-mono text-xs p-3 mt-3"
-                  style={{
-                    background: 'var(--bg-deep)',
-                    border: '1px solid var(--border)',
-                    color: 'var(--text-secondary)',
-                    outline: 'none',
-                  }}
-                />
-                <div className="flex gap-2 mt-2">
-                  <button
-                    onClick={savePrompt}
-                    className="px-3 py-1.5 rounded text-xs font-500"
-                    style={{ background: 'var(--accent-gold)', color: 'var(--bg-deep)' }}
-                  >
-                    Save
-                  </button>
-                  <button
-                    onClick={() => setEditingId(null)}
-                    className="px-3 py-1.5 rounded text-xs"
-                    style={{ background: 'var(--bg-elevated)', color: 'var(--text-secondary)' }}
-                  >
-                    Cancel
-                  </button>
+              <div className="animate-slide-down" style={{ borderTop: `1px solid var(--border)` }}>
+                <div className="prompt-editor-panel">
+                  {/* Header label */}
+                  <div className="prompt-editor-header">
+                    <svg width="12" height="12" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0 }}>
+                      <rect x="2" y="2" width="12" height="12" rx="2" stroke="currentColor" strokeWidth="1.5" fill="none" />
+                      <line x1="5" y1="5.5" x2="11" y2="5.5" stroke="currentColor" strokeWidth="1" />
+                      <line x1="5" y1="8" x2="11" y2="8" stroke="currentColor" strokeWidth="1" />
+                      <line x1="5" y1="10.5" x2="8" y2="10.5" stroke="currentColor" strokeWidth="1" />
+                    </svg>
+                    <span>System Prompt</span>
+                  </div>
+
+                  {/* Textarea */}
+                  <textarea
+                    value={editPrompt}
+                    onChange={(e) => setEditPrompt(e.target.value)}
+                    className="prompt-editor-textarea"
+                  />
+
+                  {/* Footer with actions */}
+                  <div className="prompt-editor-footer">
+                    <span className="prompt-editor-charcount">
+                      {editPrompt.length.toLocaleString()} chars
+                    </span>
+                    <div style={{ flex: 1 }} />
+                    <button
+                      onClick={() => setEditingId(null)}
+                      className="prompt-editor-btn-cancel"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={savePrompt}
+                      className="prompt-editor-btn-save"
+                    >
+                      Save
+                    </button>
+                  </div>
                 </div>
               </div>
             )}
