@@ -665,16 +665,12 @@ function TestPageContent() {
                           )}
                         </p>
                       ) : (
-                        <p
-                          className="text-sm"
-                          style={{
-                            fontFamily: "'DM Mono', monospace",
-                            color: 'rgba(255,255,255,0.3)',
-                            fontStyle: 'italic',
-                          }}
-                        >
-                          Preparing response...
-                        </p>
+                        <div className="thinking-dots">
+                          <span className="thinking-text">Preparing response</span>
+                          <span className="dot" />
+                          <span className="dot" />
+                          <span className="dot" />
+                        </div>
                       )}
                     </div>
                   </div>

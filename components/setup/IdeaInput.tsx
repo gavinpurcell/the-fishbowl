@@ -43,6 +43,25 @@ export default function IdeaInput({ ideaText, ideaFiles, onTextChange, onFilesCh
   const charCount = ideaText.length;
   const isNearLimit = charCount >= WARN_THRESHOLD;
 
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  }, []);
+
+  const handleDragEnter = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  }, []);
+
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
+    // Only set false if we're leaving the card entirely (not entering a child)
+    const relatedTarget = e.relatedTarget as Node | null;
+    const currentTarget = e.currentTarget as Node;
+    if (!relatedTarget || !currentTarget.contains(relatedTarget)) {
+      setIsDragging(false);
+    }
+  }, []);
+
   return (
     <div>
       <div className="section-header">
@@ -65,8 +84,25 @@ export default function IdeaInput({ ideaText, ideaFiles, onTextChange, onFilesCh
         )}
       </div>
 
-      {/* Mission briefing document */}
-      <div className="mission-briefing">
+      {/* Mission briefing document — entire card is a drop target */}
+      <div
+        className="mission-briefing"
+        style={{ position: 'relative' }}
+        onDragOver={handleDragOver}
+        onDragEnter={handleDragEnter}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
+      >
+        {/* Full-card drag overlay */}
+        {isDragging && (
+          <div className="mission-briefing-drag-overlay">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" style={{ marginBottom: '8px' }}>
+              <path d="M12 3v14M5 10l7 7 7-7" stroke="var(--accent-gold)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+            <span>Drop files here</span>
+          </div>
+        )}
+
         {/* Gold header bar with label */}
         <div
           className="px-4 py-2 flex items-center gap-2 relative z-[2]"
@@ -132,15 +168,7 @@ export default function IdeaInput({ ideaText, ideaFiles, onTextChange, onFilesCh
             background: 'var(--bg-surface)',
           }}
         >
-          <div
-            onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
-            onDragLeave={() => setIsDragging(false)}
-            onDrop={handleDrop}
-            className="px-4 py-3 transition-all duration-200"
-            style={{
-              background: isDragging ? 'rgba(196, 154, 42, 0.05)' : 'transparent',
-            }}
-          >
+          <div className="px-4 py-3">
             <div className="flex items-center gap-2">
               <svg width="12" height="12" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0, opacity: 0.4 }}>
                 <path d="M8 3v10M3 8h10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
