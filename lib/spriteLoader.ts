@@ -1,7 +1,7 @@
 import { Assets, Texture } from 'pixi.js';
 
 const POSES = ['idle', 'talking', 'thinking', 'reacting', 'gesturing', 'skeptical'] as const;
-const OBSERVER_POSES = ['standing_idle', 'standing_talking', 'walking', 'sitting_down', 'seated_idle', 'seated_talking'] as const;
+const OBSERVER_POSES = ['standing_idle', 'standing_talking'] as const;
 
 export type CharacterPose = (typeof POSES)[number];
 export type ObserverPose = (typeof OBSERVER_POSES)[number];
