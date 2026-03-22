@@ -3,7 +3,7 @@
 import { useEffect, useRef } from 'react';
 
 interface TransitionOverlayProps {
-  panelists: Array<{ id: string; name: string; color: string }>;
+  panelists: Array<{ id: string; name: string; role: string; color: string }>;
   onComplete: () => void;
 }
 
@@ -11,9 +11,10 @@ export default function TransitionOverlay({ panelists, onComplete }: TransitionO
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
+    // Single JS timer for onComplete — all visual choreography is pure CSS
     timerRef.current = setTimeout(() => {
       onComplete();
-    }, 3000);
+    }, 4500);
 
     return () => {
       if (timerRef.current) {
@@ -25,73 +26,128 @@ export default function TransitionOverlay({ panelists, onComplete }: TransitionO
   return (
     <>
       <style>{`
-        @keyframes transitionOverlayFadeIn {
-          from { opacity: 0; }
-          to { opacity: 1; }
+        /* ============================================================ */
+        /*  Film grain noise texture via SVG filter                     */
+        /* ============================================================ */
+        @keyframes grainDrift {
+          0%, 100% { transform: translate(0, 0); }
+          25% { transform: translate(-2%, 3%); }
+          50% { transform: translate(3%, -1%); }
+          75% { transform: translate(-1%, -2%); }
         }
 
-        @keyframes transitionOverlayFadeOut {
-          from { opacity: 1; }
-          to { opacity: 0; }
+        /* ============================================================ */
+        /*  STANDBY text                                                */
+        /* ============================================================ */
+        @keyframes standbyIn {
+          0% { opacity: 0; letter-spacing: 0.4em; }
+          30% { opacity: 1; letter-spacing: 0.2em; }
+          70% { opacity: 1; letter-spacing: 0.2em; }
+          100% { opacity: 0; letter-spacing: 0.1em; }
         }
 
-        @keyframes transitionLineExpand {
-          from {
-            width: 0;
+        /* ============================================================ */
+        /*  Panelist name cascade                                       */
+        /* ============================================================ */
+        @keyframes panelistSlideIn {
+          0% {
             opacity: 0;
+            transform: translateX(-24px);
           }
-          to {
-            width: min(320px, 60vw);
+          20% {
             opacity: 1;
+            transform: translateX(0);
           }
-        }
-
-        @keyframes transitionTextReveal {
-          from {
-            opacity: 0;
-            transform: scale(0.92) translateY(8px);
-          }
-          to {
+          75% {
             opacity: 1;
-            transform: scale(1) translateY(0);
+            transform: translateX(0);
+          }
+          100% {
+            opacity: 0;
+            transform: translateX(8px);
           }
         }
 
-        @keyframes transitionSubtitleReveal {
-          from {
-            opacity: 0;
-            transform: translateY(6px);
-          }
-          to {
-            opacity: 0.7;
-            transform: translateY(0);
-          }
+        @keyframes panelistBarExpand {
+          0% { width: 0; }
+          20% { width: 100%; }
+          75% { width: 100%; }
+          100% { width: 0; }
         }
 
-        @keyframes transitionDotAppear {
-          from {
+        /* ============================================================ */
+        /*  LIVE punch-in                                               */
+        /* ============================================================ */
+        @keyframes livePunchIn {
+          0% {
             opacity: 0;
-            transform: scale(0) translateY(4px);
+            transform: scale(2.5);
+            filter: blur(8px);
           }
-          60% {
-            transform: scale(1.2) translateY(0);
-          }
-          to {
+          40% {
             opacity: 1;
-            transform: scale(1) translateY(0);
+            transform: scale(0.95);
+            filter: blur(0px);
+          }
+          55% {
+            transform: scale(1.02);
+          }
+          70% {
+            transform: scale(1);
+          }
+          100% {
+            opacity: 1;
+            transform: scale(1);
           }
         }
 
-        @keyframes transitionDotPulse {
+        @keyframes liveGlow {
           0%, 100% {
-            box-shadow: 0 0 0 0 var(--dot-color);
+            text-shadow: 0 0 20px rgba(232, 90, 74, 0.4), 0 0 60px rgba(232, 90, 74, 0.15);
           }
           50% {
-            box-shadow: 0 0 12px 3px var(--dot-color);
+            text-shadow: 0 0 30px rgba(232, 90, 74, 0.6), 0 0 80px rgba(232, 90, 74, 0.25);
           }
         }
 
-        .transition-overlay {
+        @keyframes recDotPulse {
+          0%, 100% {
+            opacity: 1;
+            box-shadow: 0 0 6px rgba(232, 90, 74, 0.6);
+          }
+          50% {
+            opacity: 0.4;
+            box-shadow: 0 0 12px rgba(232, 90, 74, 0.9);
+          }
+        }
+
+        @keyframes scanlineMove {
+          0% { top: -2px; }
+          100% { top: 100%; }
+        }
+
+        /* ============================================================ */
+        /*  Full overlay fade out                                       */
+        /* ============================================================ */
+        @keyframes overlayFadeOut {
+          0% { opacity: 1; }
+          100% { opacity: 0; }
+        }
+
+        /* ============================================================ */
+        /*  Horizontal rule sweep                                       */
+        /* ============================================================ */
+        @keyframes hrSweep {
+          0% { width: 0; opacity: 0; }
+          50% { width: min(400px, 70vw); opacity: 1; }
+          85% { width: min(400px, 70vw); opacity: 1; }
+          100% { width: 0; opacity: 0; }
+        }
+
+        /* ============================================================ */
+        /*  Overlay container                                           */
+        /* ============================================================ */
+        .broadcast-overlay {
           position: fixed;
           inset: 0;
           z-index: 1000;
@@ -99,90 +155,116 @@ export default function TransitionOverlay({ panelists, onComplete }: TransitionO
           flex-direction: column;
           align-items: center;
           justify-content: center;
-          background: rgba(20, 12, 8, 0.85);
-          animation:
-            transitionOverlayFadeIn 300ms ease-out forwards,
-            transitionOverlayFadeOut 500ms ease-in 2500ms forwards;
-          font-family: 'Outfit', system-ui, sans-serif;
+          background: #0a0806;
+          animation: overlayFadeOut 500ms ease-in 4000ms forwards;
+          overflow: hidden;
         }
 
-        .transition-gold-line {
-          height: 1px;
-          background: linear-gradient(
-            90deg,
-            transparent 0%,
-            var(--accent-gold, #c49a2a) 20%,
-            #f0c866 50%,
-            var(--accent-gold, #c49a2a) 80%,
-            transparent 100%
-          );
-          opacity: 0;
-          animation: transitionLineExpand 600ms cubic-bezier(0.22, 1, 0.36, 1) 200ms forwards;
-          margin-bottom: 32px;
+        /* Film grain layer */
+        .broadcast-overlay::before {
+          content: '';
+          position: absolute;
+          inset: -20%;
+          z-index: 1;
+          opacity: 0.06;
+          pointer-events: none;
+          background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+          background-repeat: repeat;
+          background-size: 256px;
+          animation: grainDrift 0.8s steps(4) infinite;
         }
 
-        .transition-heading {
-          font-family: 'Silkscreen', 'Courier New', monospace;
-          font-size: clamp(1.5rem, 3.5vw, 2.25rem);
-          font-weight: 400;
-          color: #faf6ef;
-          letter-spacing: 0.02em;
-          opacity: 0;
-          animation: transitionTextReveal 600ms cubic-bezier(0.22, 1, 0.36, 1) 400ms forwards;
-          margin: 0;
-          text-align: center;
-          padding: 0 24px;
+        /* Scanline sweep */
+        .broadcast-overlay::after {
+          content: '';
+          position: absolute;
+          left: 0;
+          right: 0;
+          height: 2px;
+          z-index: 2;
+          background: linear-gradient(90deg, transparent, rgba(196, 154, 42, 0.15), transparent);
+          animation: scanlineMove 2s linear infinite;
+          pointer-events: none;
         }
 
-        .transition-subtitle {
-          font-size: clamp(0.85rem, 1.5vw, 1rem);
-          font-weight: 300;
-          color: #d4cdc2;
-          letter-spacing: 0.04em;
-          opacity: 0;
-          animation: transitionSubtitleReveal 500ms ease-out 600ms forwards;
-          margin: 12px 0 0 0;
-          text-align: center;
-          padding: 0 24px;
-        }
-
-        .transition-dots {
-          display: flex;
-          gap: 16px;
-          margin-top: 36px;
-          align-items: center;
-          justify-content: center;
-          flex-wrap: wrap;
-          padding: 0 24px;
-        }
-
-        .transition-dot-item {
+        /* All inner content above grain */
+        .broadcast-content {
+          position: relative;
+          z-index: 3;
           display: flex;
           flex-direction: column;
           align-items: center;
-          gap: 8px;
+          justify-content: center;
+          width: 100%;
+        }
+
+        /* ============================================================ */
+        /*  STANDBY                                                     */
+        /* ============================================================ */
+        .broadcast-standby {
+          font-family: 'Silkscreen', 'Courier New', monospace;
+          font-size: clamp(0.9rem, 2.5vw, 1.4rem);
+          color: #c49a2a;
+          letter-spacing: 0.3em;
+          text-transform: uppercase;
           opacity: 0;
-          animation: transitionDotAppear 400ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+          animation: standbyIn 900ms ease-out 200ms forwards;
+          position: absolute;
         }
 
-        .transition-dot {
-          width: 14px;
-          height: 14px;
-          border-radius: 50%;
-          animation: transitionDotPulse 2s ease-in-out infinite;
+        /* ============================================================ */
+        /*  Panelist lineup                                             */
+        /* ============================================================ */
+        .broadcast-lineup {
+          display: flex;
+          flex-direction: column;
+          gap: 6px;
+          width: min(460px, 85vw);
+          opacity: 0;
+          animation: panelistSlideIn 1800ms cubic-bezier(0.22, 1, 0.36, 1) 1000ms forwards;
         }
 
-        .transition-dot-name {
+        .broadcast-panelist {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          opacity: 0;
+          padding: 6px 0;
+        }
+
+        .broadcast-panelist-bar {
+          width: 0;
+          height: 2px;
+          flex-shrink: 0;
+        }
+
+        .broadcast-panelist-name {
+          font-family: 'Silkscreen', 'Courier New', monospace;
+          font-size: clamp(0.85rem, 2vw, 1.15rem);
+          white-space: nowrap;
+          letter-spacing: 0.04em;
+        }
+
+        .broadcast-panelist-role {
           font-family: 'DM Mono', monospace;
-          font-size: 0.6rem;
-          font-weight: 400;
+          font-size: clamp(0.55rem, 1.2vw, 0.7rem);
           letter-spacing: 0.1em;
           text-transform: uppercase;
-          color: rgba(212, 205, 194, 0.6);
+          color: rgba(212, 205, 194, 0.5);
           white-space: nowrap;
         }
 
-        .transition-gold-line-bottom {
+        .broadcast-panelist-divider {
+          font-family: 'DM Mono', monospace;
+          font-size: 0.6rem;
+          color: rgba(212, 205, 194, 0.2);
+          flex-shrink: 0;
+        }
+
+        /* ============================================================ */
+        /*  Horizontal rule                                             */
+        /* ============================================================ */
+        .broadcast-hr {
           height: 1px;
           background: linear-gradient(
             90deg,
@@ -192,41 +274,103 @@ export default function TransitionOverlay({ panelists, onComplete }: TransitionO
             var(--accent-gold, #c49a2a) 80%,
             transparent 100%
           );
+          animation: hrSweep 2000ms cubic-bezier(0.22, 1, 0.36, 1) 900ms forwards;
+          margin-bottom: 20px;
           opacity: 0;
-          animation: transitionLineExpand 600ms cubic-bezier(0.22, 1, 0.36, 1) 200ms forwards;
-          margin-top: 32px;
+        }
+
+        .broadcast-hr-bottom {
+          height: 1px;
+          background: linear-gradient(
+            90deg,
+            transparent 0%,
+            var(--accent-gold, #c49a2a) 20%,
+            #f0c866 50%,
+            var(--accent-gold, #c49a2a) 80%,
+            transparent 100%
+          );
+          animation: hrSweep 2000ms cubic-bezier(0.22, 1, 0.36, 1) 900ms forwards;
+          margin-top: 20px;
+          opacity: 0;
+        }
+
+        /* ============================================================ */
+        /*  LIVE badge                                                  */
+        /* ============================================================ */
+        .broadcast-live-container {
+          display: flex;
+          align-items: center;
+          gap: 14px;
+          opacity: 0;
+          position: absolute;
+          animation: livePunchIn 600ms cubic-bezier(0.16, 1, 0.3, 1) 2700ms forwards;
+        }
+
+        .broadcast-live-dot {
+          width: 12px;
+          height: 12px;
+          border-radius: 50%;
+          background: #e85a4a;
+          flex-shrink: 0;
+          animation: recDotPulse 1s ease-in-out infinite;
+          animation-delay: 2700ms;
+        }
+
+        .broadcast-live-text {
+          font-family: 'Silkscreen', 'Courier New', monospace;
+          font-size: clamp(2rem, 6vw, 3.5rem);
+          color: #faf6ef;
+          letter-spacing: 0.15em;
+          animation: liveGlow 1.5s ease-in-out infinite;
+          animation-delay: 3000ms;
         }
       `}</style>
 
-      <div className="transition-overlay">
-        <div className="transition-gold-line" />
+      <div className="broadcast-overlay">
+        <div className="broadcast-content">
+          {/* Phase 1: STANDBY — 0.2s to 1.1s */}
+          <div className="broadcast-standby">STANDBY</div>
 
-        <h2 className="transition-heading">The Discussion Begins</h2>
-        <p className="transition-subtitle">Your panel will now debate with each other</p>
+          {/* Phase 2: Panelist lineup — 1.0s to 2.6s */}
+          <div className="broadcast-hr" />
 
-        <div className="transition-dots">
-          {panelists.map((panelist, index) => (
-            <div
-              key={panelist.id}
-              className="transition-dot-item"
-              style={{
-                animationDelay: `${800 + index * 100}ms`,
-              }}
-            >
+          <div className="broadcast-lineup">
+            {panelists.map((panelist, index) => (
               <div
-                className="transition-dot"
+                key={panelist.id}
+                className="broadcast-panelist"
                 style={{
-                  backgroundColor: panelist.color,
-                  ['--dot-color' as string]: `${panelist.color}66`,
-                  animationDelay: `${800 + index * 100 + 200}ms`,
+                  animation: `panelistSlideIn 1500ms cubic-bezier(0.22, 1, 0.36, 1) ${1000 + index * 200}ms forwards`,
                 }}
-              />
-              <span className="transition-dot-name">{panelist.name}</span>
-            </div>
-          ))}
-        </div>
+              >
+                <div
+                  className="broadcast-panelist-bar"
+                  style={{
+                    background: panelist.color,
+                    animation: `panelistBarExpand 1500ms cubic-bezier(0.22, 1, 0.36, 1) ${1000 + index * 200}ms forwards`,
+                    minWidth: '24px',
+                  }}
+                />
+                <span
+                  className="broadcast-panelist-name"
+                  style={{ color: panelist.color }}
+                >
+                  {panelist.name}
+                </span>
+                <span className="broadcast-panelist-divider">//</span>
+                <span className="broadcast-panelist-role">{panelist.role}</span>
+              </div>
+            ))}
+          </div>
 
-        <div className="transition-gold-line-bottom" />
+          <div className="broadcast-hr-bottom" />
+
+          {/* Phase 3: LIVE punch-in — 2.7s to 3.5s */}
+          <div className="broadcast-live-container">
+            <div className="broadcast-live-dot" />
+            <span className="broadcast-live-text">LIVE</span>
+          </div>
+        </div>
       </div>
     </>
   );

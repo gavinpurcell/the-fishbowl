@@ -513,7 +513,7 @@ export default function SessionPage() {
           {/* === TRANSITION === */}
           {viewMode === 'transition' && (
             <TransitionOverlay
-              panelists={store.panelists.map((p) => ({ id: p.id, name: p.name, color: p.color }))}
+              panelists={store.panelists.map((p) => ({ id: p.id, name: p.name, role: p.role, color: p.color }))}
               onComplete={handleTransitionComplete}
             />
           )}

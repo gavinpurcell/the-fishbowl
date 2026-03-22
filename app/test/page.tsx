@@ -540,7 +540,7 @@ function TestPageContent() {
         {/* === TRANSITION SCREEN === */}
         {viewMode === 'transition' && (
           <TransitionOverlay
-            panelists={FAKE_PANELISTS.map((p) => ({ id: p.id, name: p.name, color: p.color }))}
+            panelists={FAKE_PANELISTS.map((p) => ({ id: p.id, name: p.name, role: p.role, color: p.color }))}
             onComplete={handleTransitionComplete}
           />
         )}
