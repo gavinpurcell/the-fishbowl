@@ -27,7 +27,7 @@ export default function ActiveSessionBanner() {
       {/* Dark broadcast strip */}
       <div
         style={{
-          background: '#1a1714',
+          background: 'var(--dark-surface)',
           borderBottom: '2px solid var(--accent-gold)',
         }}
       >
@@ -37,7 +37,7 @@ export default function ActiveSessionBanner() {
             <span
               className="flex-shrink-0 w-2 h-2 rounded-full"
               style={{
-                background: '#e85a4a',
+                background: 'var(--accent-red)',
                 boxShadow: '0 0 6px rgba(232, 90, 74, 0.6)',
                 animation: 'badgePulse 2s ease-in-out infinite',
               }}

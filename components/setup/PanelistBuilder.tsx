@@ -148,7 +148,7 @@ export default function PanelistBuilder({ panelists, onUpdate }: Props) {
                   onClick={() => removePanelist(p.id)}
                   className="text-[10px] px-2 py-1 rounded transition-colors"
                   style={{ color: 'var(--text-muted)' }}
-                  onMouseEnter={(e) => e.currentTarget.style.color = '#e74c4c'}
+                  onMouseEnter={(e) => e.currentTarget.style.color = 'var(--accent-red)'}
                   onMouseLeave={(e) => e.currentTarget.style.color = 'var(--text-muted)'}
                 >
                   Remove

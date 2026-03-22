@@ -424,9 +424,9 @@ export default function SessionPage() {
           <div className="flex items-center justify-center gap-3 mb-4">
             <div className="h-px flex-1 max-w-16" style={{ background: 'linear-gradient(90deg, transparent, var(--border))' }} />
             <div className="flex items-center gap-2">
-              <span className="w-1.5 h-1.5 rounded-full" style={{ background: '#e85a4a', boxShadow: '0 0 4px rgba(232,90,74,0.5)', animation: 'statusPulse 2s ease-in-out infinite' }} />
+              <span className="w-1.5 h-1.5 rounded-full" style={{ background: 'var(--accent-red)', boxShadow: '0 0 4px rgba(232,90,74,0.5)', animation: 'statusPulse 2s ease-in-out infinite' }} />
               <h1 className="font-pixel text-sm sm:text-base title-text" style={{ letterSpacing: '0.06em' }}>THE FISHBOWL</h1>
-              <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '9px', color: 'var(--text-muted)', letterSpacing: '0.06em', textTransform: 'uppercase' }}>LIVE</span>
+              <span className="font-mono-ui" style={{ fontSize: '9px', color: 'var(--text-muted)', letterSpacing: '0.06em', textTransform: 'uppercase' }}>LIVE</span>
             </div>
             <div className="h-px flex-1 max-w-16" style={{ background: 'linear-gradient(90deg, var(--border), transparent)' }} />
           </div>
@@ -445,7 +445,7 @@ export default function SessionPage() {
                           style={{
                             border: `2px solid ${p.color}`,
                             borderRadius: '6px',
-                            background: '#0d0b09',
+                            background: 'var(--dark-deep)',
                           }}
                         >
                           <img
@@ -471,8 +471,8 @@ export default function SessionPage() {
                   className="dossier-slide-in overflow-hidden"
                   key={currentPanelist.id}
                   style={{
-                    background: '#1a1714',
-                    border: '1px solid #2a2520',
+                    background: 'var(--dark-surface)',
+                    border: '1px solid var(--dark-border)',
                     borderLeft: `3px solid ${currentPanelist.color}`,
                     borderRadius: '10px',
                     boxShadow: '0 4px 24px rgba(0,0,0,0.3), 0 0 40px rgba(196,154,42,0.04)',
@@ -504,7 +504,7 @@ export default function SessionPage() {
                     {/* Left: Portrait + Identity */}
                     <div
                       className="sm:w-64 flex-shrink-0 flex flex-col items-center justify-center py-6 sm:py-10 px-4 sm:px-6 border-b sm:border-b-0 sm:border-r"
-                      style={{ borderColor: '#2a2520' }}
+                      style={{ borderColor: 'var(--dark-border)' }}
                     >
                       {/* Pixel art portrait */}
                       <div
@@ -512,7 +512,7 @@ export default function SessionPage() {
                         style={{
                           border: `2px solid ${currentPanelist.color}`,
                           borderRadius: '8px',
-                          background: '#0d0b09',
+                          background: 'var(--dark-deep)',
                           boxShadow: `0 0 16px ${currentPanelist.color}20`,
                         }}
                       >
@@ -696,15 +696,15 @@ export default function SessionPage() {
             <div
               className="max-w-[800px] mx-auto mt-3 text-sm error-slide-in"
               style={{
-                background: '#1a1714',
-                border: '1px solid #3a2520',
+                background: 'var(--dark-surface)',
+                border: '1px solid var(--dark-border)',
                 borderRadius: '10px',
                 overflow: 'hidden',
                 boxShadow: '0 4px 20px rgba(0,0,0,0.3), 0 0 40px rgba(232,90,74,0.06)',
               }}
             >
               {/* Top accent — red/amber warning stripe */}
-              <div style={{ height: '2px', background: 'linear-gradient(90deg, transparent 5%, #e85a4a 30%, #d4843a 50%, #e85a4a 70%, transparent 95%)' }} />
+              <div style={{ height: '2px', background: 'linear-gradient(90deg, transparent 5%, var(--accent-red) 30%, #d4843a 50%, var(--accent-red) 70%, transparent 95%)' }} />
 
               <div className="flex items-start gap-3 px-4 py-3">
                 {/* Warning triangle icon */}
@@ -713,7 +713,7 @@ export default function SessionPage() {
                   height="16"
                   viewBox="0 0 24 24"
                   fill="none"
-                  stroke="#e85a4a"
+                  stroke="var(--accent-red)"
                   strokeWidth="2"
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -729,7 +729,7 @@ export default function SessionPage() {
                     style={{
                       fontSize: '10px',
                       letterSpacing: '0.1em',
-                      color: '#e85a4a',
+                      color: 'var(--accent-red)',
                     }}
                   >
                     TECHNICAL DIFFICULTY
@@ -774,7 +774,7 @@ export default function SessionPage() {
               </div>
               {/* Auto-dismiss progress bar — red line that shrinks over 10s */}
               <div style={{ height: '2px', background: 'rgba(255,255,255,0.05)' }}>
-                <div className="error-dismiss-bar" style={{ height: '100%', background: '#e85a4a' }} />
+                <div className="error-dismiss-bar" style={{ height: '100%', background: 'var(--accent-red)' }} />
               </div>
             </div>
           )}

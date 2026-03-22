@@ -51,7 +51,7 @@ export default function Transcript({ transcript, panelists }: Props) {
       <div
         className="flex items-center gap-2.5 px-4 py-3"
         style={{
-          borderBottom: '1px solid #2a2520',
+          borderBottom: '1px solid var(--dark-border)',
         }}
       >
         <svg

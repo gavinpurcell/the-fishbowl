@@ -46,8 +46,8 @@ export default function StatusBar({ round, panelistsSpoken, totalPanelists, onWr
     <div
       className="max-w-[800px] mx-auto rounded-b-xl overflow-hidden"
       style={{
-        background: '#1a1714',
-        borderTop: '2px solid #2a2520',
+        background: 'var(--dark-surface)',
+        borderTop: '2px solid var(--dark-border)',
       }}
     >
       {/* Thin gold accent line at top */}
@@ -66,7 +66,7 @@ export default function StatusBar({ round, panelistsSpoken, totalPanelists, onWr
             <span
               className="w-2 h-2 rounded-full flex-shrink-0"
               style={{
-                background: isActive ? '#e85a4a' : '#666',
+                background: isActive ? 'var(--accent-red)' : '#666',
                 boxShadow: isActive ? '0 0 6px rgba(232, 90, 74, 0.6)' : 'none',
                 animation: isActive ? 'statusPulse 2s ease-in-out infinite' : 'none',
               }}
@@ -76,7 +76,7 @@ export default function StatusBar({ round, panelistsSpoken, totalPanelists, onWr
                 fontFamily: "'Silkscreen', monospace",
                 fontSize: '9px',
                 letterSpacing: '0.08em',
-                color: isActive ? '#e85a4a' : '#666',
+                color: isActive ? 'var(--accent-red)' : '#666',
               }}
             >
               {isActive ? 'REC' : 'END'}
@@ -84,7 +84,7 @@ export default function StatusBar({ round, panelistsSpoken, totalPanelists, onWr
           </div>
 
           {/* Divider */}
-          <div style={{ width: '1px', height: '16px', background: '#333' }} />
+          <div style={{ width: '1px', height: '16px', background: 'var(--dark-divider)' }} />
 
           {/* Round label */}
           <span
@@ -186,7 +186,7 @@ export default function StatusBar({ round, panelistsSpoken, totalPanelists, onWr
                 border: '1px solid rgba(232, 90, 74, 0.4)',
                 cursor: 'pointer',
                 background: 'rgba(232, 90, 74, 0.12)',
-                color: '#e85a4a',
+                color: 'var(--accent-red)',
                 transition: 'all 0.15s ease',
                 textTransform: 'uppercase',
               }}

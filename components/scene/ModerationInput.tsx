@@ -72,8 +72,8 @@ export default function ModerationInput({ onSubmit, disabled }: Props) {
       <div
         className="rounded-xl overflow-hidden"
         style={{
-          background: '#1a1714',
-          border: '1px solid #2a2520',
+          background: 'var(--dark-surface)',
+          border: '1px solid var(--dark-border)',
           boxShadow: '0 4px 24px rgba(0,0,0,0.15), 0 0 1px rgba(196,154,42,0.2)',
         }}
       >
@@ -112,7 +112,7 @@ export default function ModerationInput({ onSubmit, disabled }: Props) {
                 <span
                   className="w-2 h-2 rounded-full"
                   style={{
-                    background: '#e85a4a',
+                    background: 'var(--accent-red)',
                     boxShadow: '0 0 6px rgba(232, 90, 74, 0.6)',
                     animation: 'statusPulse 1.5s ease-in-out infinite',
                   }}
@@ -122,7 +122,7 @@ export default function ModerationInput({ onSubmit, disabled }: Props) {
                     fontFamily: "'Silkscreen', monospace",
                     fontSize: '8px',
                     letterSpacing: '0.08em',
-                    color: '#e85a4a',
+                    color: 'var(--accent-red)',
                   }}
                 >
                   ON AIR
@@ -135,7 +135,7 @@ export default function ModerationInput({ onSubmit, disabled }: Props) {
                     fontFamily: "'DM Mono', monospace",
                     fontSize: '10px',
                     fontWeight: 500,
-                    color: isAtLimit ? '#e85a4a' : 'rgba(255,255,255,0.3)',
+                    color: isAtLimit ? 'var(--accent-red)' : 'rgba(255,255,255,0.3)',
                     transition: 'color 0.2s',
                     fontVariantNumeric: 'tabular-nums',
                   }}
@@ -205,7 +205,7 @@ export default function ModerationInput({ onSubmit, disabled }: Props) {
                   ? 'rgba(232, 90, 74, 0.08)'
                   : 'rgba(255,255,255,0.06)',
               color: canSubmit
-                ? '#1a1714'
+                ? 'var(--dark-surface)'
                 : disabled
                   ? 'rgba(232, 90, 74, 0.5)'
                   : 'rgba(255,255,255,0.2)',

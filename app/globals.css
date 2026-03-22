@@ -11,10 +11,17 @@
   --text-muted: #8a8078;
   --accent-gold: #c49a2a;
   --accent-gold-dim: #a88020;
+  --accent-gold-light: #f0c866;
   --accent-amber: #d4a840;
   --accent-warm: #c47a4a;
+  --accent-red: #e85a4a;
   --border: #d4cdc2;
   --border-light: #c8c0b4;
+  /* Dark surfaces — control room / broadcast panels */
+  --dark-surface: #1a1714;
+  --dark-deep: #0d0b09;
+  --dark-border: #2a2520;
+  --dark-divider: #333333;
 }
 
 @theme inline {
@@ -137,6 +144,11 @@ html, body {
   font-family: 'Silkscreen', 'Courier New', monospace;
 }
 
+/* Mono font utility class — DM Mono for data, labels, code */
+.font-mono-ui {
+  font-family: 'DM Mono', monospace;
+}
+
 /* Scene viewport — retro CRT-style frame */
 .scene-viewport {
   position: relative;
@@ -210,7 +222,7 @@ html, body {
     90deg,
     transparent 0%,
     var(--accent-gold) 20%,
-    #f0c866 50%,
+    var(--accent-gold-light) 50%,
     var(--accent-gold) 80%,
     transparent 100%
   );
@@ -242,7 +254,7 @@ html, body {
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: #e85a4a;
+  background: var(--accent-red);
   animation: badgePulse 2s ease-in-out infinite;
 }
 
@@ -314,7 +326,7 @@ html, body {
   border: none;
   cursor: pointer;
   background: linear-gradient(180deg, #d4aa3a 0%, #c49a2a 50%, #a88020 100%);
-  color: #1a1714;
+  color: var(--dark-surface);
   box-shadow:
     0 3px 0 #8a6a18,
     0 4px 12px rgba(196, 154, 42, 0.35);
@@ -497,7 +509,7 @@ html, body {
   border: none;
   cursor: pointer;
   background: linear-gradient(180deg, #e8c44a 0%, #c49a2a 40%, #a88020 100%);
-  color: #1a1714;
+  color: var(--dark-surface);
   box-shadow:
     0 4px 0 #8a6a18,
     0 6px 20px rgba(196, 154, 42, 0.35),
@@ -764,7 +776,7 @@ html, body {
 
 /* Tour tooltip — dark panel with gold border */
 .tour-tooltip {
-  background: #1a1714;
+  background: var(--dark-surface);
   border: 2px solid var(--accent-gold);
   border-radius: 10px;
   padding: 18px 20px;
@@ -887,7 +899,7 @@ html, body {
 
 .tour-btn-next {
   background: linear-gradient(180deg, #d4aa3a 0%, #c49a2a 100%);
-  color: #1a1714;
+  color: var(--dark-surface);
   box-shadow: 0 2px 0 #8a6a18;
 }
 
@@ -907,7 +919,7 @@ html, body {
   bottom: -10px;
   width: 16px;
   height: 16px;
-  background: #1a1714;
+  background: var(--dark-surface);
   border-right: 2px solid var(--accent-gold);
   border-bottom: 2px solid var(--accent-gold);
   transform: rotate(45deg);
@@ -949,7 +961,7 @@ html, body {
 
 /* Tour finale card — "MISSION BRIEFING COMPLETE" */
 .tour-finale {
-  background: #1a1714;
+  background: var(--dark-surface);
   border: 2px solid var(--accent-gold);
   border-radius: 14px;
   padding: 36px 40px;
@@ -974,7 +986,7 @@ html, body {
     90deg,
     transparent 0%,
     var(--accent-gold) 20%,
-    #f0c866 50%,
+    var(--accent-gold-light) 50%,
     var(--accent-gold) 80%,
     transparent 100%
   );
@@ -1006,7 +1018,7 @@ html, body {
   border: none;
   cursor: pointer;
   background: linear-gradient(180deg, #d4aa3a 0%, #c49a2a 50%, #a88020 100%);
-  color: #1a1714;
+  color: var(--dark-surface);
   box-shadow: 0 3px 0 #8a6a18, 0 4px 12px rgba(196, 154, 42, 0.35);
   transition: all 0.15s ease;
 }
@@ -1153,25 +1165,16 @@ html, body {
   50% { color: rgba(255,255,255,0.5); }
 }
 
-/* Moderation input dark theme scrollbar */
-.moderation-input-form textarea::-webkit-scrollbar {
-  width: 4px;
-}
-.moderation-input-form textarea::-webkit-scrollbar-track {
-  background: transparent;
-}
-.moderation-input-form textarea::-webkit-scrollbar-thumb {
-  background: rgba(255,255,255,0.1);
-  border-radius: 2px;
-}
-
-/* Dark transcript scrollbar */
+/* Dark panel scrollbar — shared by moderation input + transcript */
+.moderation-input-form textarea::-webkit-scrollbar,
 .transcript-dark-scroll::-webkit-scrollbar {
   width: 4px;
 }
+.moderation-input-form textarea::-webkit-scrollbar-track,
 .transcript-dark-scroll::-webkit-scrollbar-track {
   background: transparent;
 }
+.moderation-input-form textarea::-webkit-scrollbar-thumb,
 .transcript-dark-scroll::-webkit-scrollbar-thumb {
   background: rgba(255,255,255,0.1);
   border-radius: 2px;
@@ -1183,8 +1186,8 @@ html, body {
 
 /* Dark report header — classified document feel */
 .report-header {
-  background: #1a1714;
-  border: 1px solid #2a2520;
+  background: var(--dark-surface);
+  border: 1px solid var(--dark-border);
   border-radius: 12px;
   overflow: hidden;
   position: relative;
@@ -1198,7 +1201,7 @@ html, body {
   left: 0;
   right: 0;
   height: 2px;
-  background: linear-gradient(90deg, transparent 5%, var(--accent-gold) 30%, #f0c866 50%, var(--accent-gold) 70%, transparent 95%);
+  background: linear-gradient(90deg, transparent 5%, var(--accent-gold) 30%, var(--accent-gold-light) 50%, var(--accent-gold) 70%, transparent 95%);
 }
 
 /* Stamp for completion status */
@@ -1277,7 +1280,7 @@ html, body {
 
 .doc-tab.active {
   background: var(--accent-gold);
-  color: #1a1714;
+  color: var(--dark-surface);
   border-color: var(--accent-gold);
   box-shadow: 0 2px 8px rgba(196, 154, 42, 0.25);
 }
@@ -1324,7 +1327,7 @@ html, body {
 .action-badge.success {
   background: var(--accent-gold);
   border-color: var(--accent-gold);
-  color: #1a1714;
+  color: var(--dark-surface);
 }
 
 /* Document content area — the report body */
@@ -1412,8 +1415,8 @@ html, body {
 
 /* Transcript in report mode — dark teleprompter style */
 .transcript-report {
-  background: #1a1714;
-  border: 1px solid #2a2520;
+  background: var(--dark-surface);
+  border: 1px solid var(--dark-border);
   border-radius: 12px;
   overflow: hidden;
 }
@@ -1553,7 +1556,7 @@ html, body {
   border: none;
   cursor: pointer;
   background: linear-gradient(180deg, #d4aa3a 0%, #c49a2a 50%, #a88020 100%);
-  color: #1a1714;
+  color: var(--dark-surface);
   box-shadow:
     0 3px 0 #8a6a18,
     0 4px 12px rgba(196, 154, 42, 0.35);

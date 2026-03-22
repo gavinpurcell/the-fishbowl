@@ -452,7 +452,7 @@ function TestPageContent() {
           <div className="flex items-center justify-center gap-3 mb-4">
             <div className="h-px flex-1 max-w-16" style={{ background: 'linear-gradient(90deg, transparent, var(--border))' }} />
             <div className="flex items-center gap-2">
-              <span className="w-1.5 h-1.5 rounded-full" style={{ background: '#e85a4a', boxShadow: '0 0 4px rgba(232,90,74,0.5)', animation: 'statusPulse 2s ease-in-out infinite' }} />
+              <span className="w-1.5 h-1.5 rounded-full" style={{ background: 'var(--accent-red)', boxShadow: '0 0 4px rgba(232,90,74,0.5)', animation: 'statusPulse 2s ease-in-out infinite' }} />
               <h1 className="font-pixel text-sm sm:text-base title-text" style={{ letterSpacing: '0.06em' }}>THE FISHBOWL</h1>
               <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '9px', color: 'var(--text-muted)', letterSpacing: '0.06em', textTransform: 'uppercase' }}>DEMO</span>
             </div>
@@ -474,7 +474,7 @@ function TestPageContent() {
                           style={{
                             border: `2px solid ${p.color}`,
                             borderRadius: '6px',
-                            background: '#0d0b09',
+                            background: 'var(--dark-deep)',
                           }}
                         >
                           <img
@@ -500,8 +500,8 @@ function TestPageContent() {
                   className="dossier-slide-in overflow-hidden"
                   key={currentPanelist.id}
                   style={{
-                    background: '#1a1714',
-                    border: '1px solid #2a2520',
+                    background: 'var(--dark-surface)',
+                    border: '1px solid var(--dark-border)',
                     borderLeft: `3px solid ${currentPanelist.color}`,
                     borderRadius: '10px',
                     boxShadow: '0 4px 24px rgba(0,0,0,0.3), 0 0 40px rgba(196,154,42,0.04)',
@@ -533,7 +533,7 @@ function TestPageContent() {
                     {/* Left: Portrait + Identity */}
                     <div
                       className="sm:w-64 flex-shrink-0 flex flex-col items-center justify-center py-6 sm:py-10 px-4 sm:px-6 border-b sm:border-b-0 sm:border-r"
-                      style={{ borderColor: '#2a2520' }}
+                      style={{ borderColor: 'var(--dark-border)' }}
                     >
                       {/* Pixel art portrait */}
                       <div
@@ -541,7 +541,7 @@ function TestPageContent() {
                         style={{
                           border: `2px solid ${currentPanelist.color}`,
                           borderRadius: '8px',
-                          background: '#0d0b09',
+                          background: 'var(--dark-deep)',
                           boxShadow: `0 0 16px ${currentPanelist.color}20`,
                         }}
                       >

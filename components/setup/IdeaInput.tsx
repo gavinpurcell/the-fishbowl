@@ -83,7 +83,7 @@ export default function IdeaInput({ ideaText, ideaFiles, onTextChange, onFilesCh
               fontWeight: 500,
               letterSpacing: '0.1em',
               textTransform: 'uppercase',
-              color: '#1a1714',
+              color: 'var(--dark-surface)',
             }}
           >
             Your Idea
@@ -141,7 +141,7 @@ export default function IdeaInput({ ideaText, ideaFiles, onTextChange, onFilesCh
           </div>
 
           {fileError && (
-            <p className="text-xs px-4 pb-2" style={{ color: '#e74c4c' }}>{fileError}</p>
+            <p className="text-xs px-4 pb-2" style={{ color: 'var(--accent-red)' }}>{fileError}</p>
           )}
 
           {ideaFiles.length > 0 && (
@@ -163,7 +163,7 @@ export default function IdeaInput({ ideaText, ideaFiles, onTextChange, onFilesCh
                     onClick={() => onFilesChange(ideaFiles.filter((_, j) => j !== i))}
                     className="text-[10px] transition-colors"
                     style={{ color: 'var(--text-muted)' }}
-                    onMouseEnter={(e) => e.currentTarget.style.color = '#e74c4c'}
+                    onMouseEnter={(e) => e.currentTarget.style.color = 'var(--accent-red)'}
                     onMouseLeave={(e) => e.currentTarget.style.color = 'var(--text-muted)'}
                   >
                     Remove

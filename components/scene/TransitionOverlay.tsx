@@ -155,7 +155,7 @@ export default function TransitionOverlay({ panelists, onComplete }: TransitionO
           flex-direction: column;
           align-items: center;
           justify-content: center;
-          background: #0a0806;
+          background: var(--dark-deep);
           animation: overlayFadeOut 500ms ease-in 4000ms forwards;
           overflow: hidden;
         }
@@ -204,7 +204,7 @@ export default function TransitionOverlay({ panelists, onComplete }: TransitionO
         .broadcast-standby {
           font-family: 'Silkscreen', 'Courier New', monospace;
           font-size: clamp(0.9rem, 2.5vw, 1.4rem);
-          color: #c49a2a;
+          color: var(--accent-gold);
           letter-spacing: 0.3em;
           text-transform: uppercase;
           opacity: 0;
@@ -270,7 +270,7 @@ export default function TransitionOverlay({ panelists, onComplete }: TransitionO
             90deg,
             transparent 0%,
             var(--accent-gold, #c49a2a) 20%,
-            #f0c866 50%,
+            var(--accent-gold-light) 50%,
             var(--accent-gold, #c49a2a) 80%,
             transparent 100%
           );
@@ -285,7 +285,7 @@ export default function TransitionOverlay({ panelists, onComplete }: TransitionO
             90deg,
             transparent 0%,
             var(--accent-gold, #c49a2a) 20%,
-            #f0c866 50%,
+            var(--accent-gold-light) 50%,
             var(--accent-gold, #c49a2a) 80%,
             transparent 100%
           );
@@ -310,7 +310,7 @@ export default function TransitionOverlay({ panelists, onComplete }: TransitionO
           width: 12px;
           height: 12px;
           border-radius: 50%;
-          background: #e85a4a;
+          background: var(--accent-red);
           flex-shrink: 0;
           animation: recDotPulse 1s ease-in-out infinite;
           animation-delay: 2700ms;
@@ -319,7 +319,7 @@ export default function TransitionOverlay({ panelists, onComplete }: TransitionO
         .broadcast-live-text {
           font-family: 'Silkscreen', 'Courier New', monospace;
           font-size: clamp(2rem, 6vw, 3.5rem);
-          color: #faf6ef;
+          color: var(--bg-deep);
           letter-spacing: 0.15em;
           animation: liveGlow 1.5s ease-in-out infinite;
           animation-delay: 3000ms;

@@ -119,9 +119,9 @@ export default function LiveTranscript({
       <div
         className="flex items-center justify-between px-4 py-2.5"
         style={{
-          background: '#1a1714',
-          border: '1px solid #2a2520',
-          borderBottom: isCollapsed ? '1px solid #2a2520' : 'none',
+          background: 'var(--dark-surface)',
+          border: '1px solid var(--dark-border)',
+          borderBottom: isCollapsed ? '1px solid var(--dark-border)' : 'none',
           borderRadius: isCollapsed ? '10px' : '10px 10px 0 0',
         }}
       >
@@ -164,7 +164,7 @@ export default function LiveTranscript({
             <span
               className="w-1.5 h-1.5 rounded-full"
               style={{
-                background: '#e85a4a',
+                background: 'var(--accent-red)',
                 boxShadow: '0 0 4px rgba(232, 90, 74, 0.5)',
                 animation: 'statusPulse 1.5s ease-in-out infinite',
               }}
@@ -216,7 +216,7 @@ export default function LiveTranscript({
           className="px-4 py-3 rounded-b-lg mt-px"
           style={{
             background: 'rgba(26, 23, 20, 0.7)',
-            border: '1px solid #2a2520',
+            border: '1px solid var(--dark-border)',
             borderTop: 'none',
           }}
         >
@@ -273,7 +273,7 @@ export default function LiveTranscript({
             className="overflow-y-auto"
             style={{
               background: 'rgba(26, 23, 20, 0.85)',
-              border: '1px solid #2a2520',
+              border: '1px solid var(--dark-border)',
               borderTop: 'none',
               maxHeight: '25vh',
               borderRadius: '0 0 10px 10px',
@@ -325,7 +325,7 @@ export default function LiveTranscript({
             className="px-3 py-1 rounded-b-lg transition-colors"
             style={{
               background: 'var(--accent-gold)',
-              color: '#1a1714',
+              color: 'var(--dark-surface)',
               border: 'none',
               cursor: 'pointer',
               fontFamily: "'Silkscreen', monospace",
