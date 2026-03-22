@@ -264,11 +264,13 @@ export default function SessionPage() {
             localTranscript[localTranscript.length - 1].content += chunk;
           }
 
+          const isFirstChunk = !firstChunkReceivedRef.current;
+
           // Drive scene bubbles during roundtable
           const scene = sceneRef.current;
           if (scene) {
             // On first chunk: transition from thinking to talking
-            if (!firstChunkReceivedRef.current) {
+            if (isFirstChunk) {
               firstChunkReceivedRef.current = true;
               scene.hideThinkingIndicator(_panelistId);
               scene.setCharacterState(_panelistId, 'talking');
@@ -281,6 +283,20 @@ export default function SessionPage() {
               });
             }
             scene.appendToBubble(_panelistId, chunk);
+          } else if (isFirstChunk) {
+            firstChunkReceivedRef.current = true;
+          }
+
+          // On first chunk during briefing, immediately update text (skip throttle)
+          // so the briefing card transitions from thinking dots to text right away
+          if (isFirstChunk && viewModeRef.current === 'briefing') {
+            if (textUpdateTimerRef.current) {
+              clearTimeout(textUpdateTimerRef.current);
+              textUpdateTimerRef.current = null;
+            }
+            setBriefingText(speakerTextRef.current);
+            setLiveTranscript([...localTranscript]);
+            return;
           }
 
           // Throttle React updates

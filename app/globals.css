@@ -578,12 +578,14 @@ html, body {
   align-items: center;
   gap: 12px;
   margin-bottom: 16px;
+  overflow: hidden;
 }
 
 .section-header::after {
   content: '';
   flex: 1;
   height: 1px;
+  max-width: 200px;
   background: linear-gradient(
     90deg,
     var(--border) 0%,
@@ -1235,6 +1237,7 @@ html, body {
   display: inline-flex;
   align-items: center;
   gap: 4px;
+  min-height: 24px;
 }
 
 .thinking-dots .thinking-text {
@@ -1254,11 +1257,12 @@ html, body {
   animation: thinkingBounce 1.4s ease-in-out infinite;
 }
 
-.thinking-dots .dot:nth-child(2) {
+/* nth-child accounts for the .thinking-text span as child 1 */
+.thinking-dots .dot:nth-child(3) {
   animation-delay: 0.2s;
 }
 
-.thinking-dots .dot:nth-child(3) {
+.thinking-dots .dot:nth-child(4) {
   animation-delay: 0.4s;
 }
 
