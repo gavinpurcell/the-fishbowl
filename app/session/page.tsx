@@ -38,6 +38,13 @@ export default function SessionPage() {
   const textUpdateTimerRef = useRef<NodeJS.Timeout | null>(null);
   const localTranscriptRef = useRef<TranscriptEntry[]>([]);
   const firstChunkReceivedRef = useRef(false);
+  const isMountedRef = useRef(true);
+
+  // Clean up isMountedRef on unmount to prevent stale closures from calling setState
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => { isMountedRef.current = false; };
+  }, []);
 
   // UI state
   const [viewMode, setViewMode] = useState<ViewMode>('briefing');
@@ -97,8 +104,9 @@ export default function SessionPage() {
     }
   }, []);
 
-  // Transition overlay complete handler
+  // Transition overlay complete handler — guarded against unmount
   const handleTransitionComplete = useCallback(() => {
+    if (!isMountedRef.current) return;
     if (transitionResolverRef.current) {
       const resolver = transitionResolverRef.current;
       transitionResolverRef.current = null;

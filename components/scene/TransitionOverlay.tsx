@@ -9,11 +9,16 @@ interface TransitionOverlayProps {
 
 export default function TransitionOverlay({ panelists, onComplete }: TransitionOverlayProps) {
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const hasCompletedRef = useRef(false);
 
   useEffect(() => {
     // Single JS timer for onComplete — all visual choreography is pure CSS
+    // Guard ensures onComplete fires at most once even if the effect re-runs
     timerRef.current = setTimeout(() => {
-      onComplete();
+      if (!hasCompletedRef.current) {
+        hasCompletedRef.current = true;
+        onComplete();
+      }
     }, 4500);
 
     return () => {

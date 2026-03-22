@@ -54,6 +54,11 @@ export default function WrapUpOverlay({
     return () => timers.forEach(clearTimeout);
   }, []);
 
+  // Reset summaryStartedRef on mount so re-renders in a new session work correctly
+  useEffect(() => {
+    summaryStartedRef.current = false;
+  }, []);
+
   // Trigger summary generation when compiling phase begins
   useEffect(() => {
     if (phase === 'compiling' && !summaryStartedRef.current) {

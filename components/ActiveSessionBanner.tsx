@@ -58,7 +58,11 @@ export default function ActiveSessionBanner() {
           <div className="flex items-center gap-3">
             {/* Dismiss / end session button */}
             <button
-              onClick={() => resetSession()}
+              onClick={() => {
+                if (window.confirm('Are you sure you want to end the current session? All progress will be lost.')) {
+                  resetSession();
+                }
+              }}
               className="flex-shrink-0 transition-all"
               style={{
                 fontFamily: "'DM Mono', monospace",

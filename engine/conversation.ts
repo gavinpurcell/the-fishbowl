@@ -147,8 +147,12 @@ export class ConversationOrchestrator {
         { role: 'user', content: prompt },
       ];
 
-      // Fire and forget — runs in background
-      this.prefetchWithRetry(panelist, messages, prefetched);
+      // Fire and forget — runs in background, catch to prevent unhandled rejection
+      this.prefetchWithRetry(panelist, messages, prefetched).catch((err) => {
+        console.error(`[prefetch] Unhandled error for panelist ${panelist.id}:`, err);
+        prefetched.error = err instanceof Error ? err.message : String(err);
+        prefetched.ready = true;
+      });
     }
   }
 
