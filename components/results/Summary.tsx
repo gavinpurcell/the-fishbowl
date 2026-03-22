@@ -11,8 +11,13 @@ interface Props {
 export default function Summary({ summary }: Props) {
   if (!summary) {
     return (
-      <div className="text-center text-gray-400 py-8">
-        No summary available.
+      <div className="text-center py-12">
+        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="mx-auto mb-3" style={{ color: 'var(--text-muted)' }}>
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+          <path d="M14 2v6h6" />
+        </svg>
+        <p className="text-sm" style={{ color: 'var(--text-muted)' }}>No summary available.</p>
+        <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>Switch to Full Transcript to see the raw discussion.</p>
       </div>
     );
   }
@@ -32,7 +37,7 @@ export default function Summary({ summary }: Props) {
     // ## Heading
     if (trimmed.startsWith('## ')) {
       elements.push(
-        <h3 key={i} className="text-base font-bold text-gray-800 mt-4 mb-2">
+        <h3 key={i} className="text-base font-bold mt-5 mb-2" style={{ color: 'var(--text-primary)' }}>
           {trimmed.slice(3)}
         </h3>
       );
@@ -42,7 +47,7 @@ export default function Summary({ summary }: Props) {
     // # Heading
     if (trimmed.startsWith('# ')) {
       elements.push(
-        <h2 key={i} className="text-lg font-bold text-gray-900 mt-4 mb-2">
+        <h2 key={i} className="text-lg font-bold mt-5 mb-2" style={{ color: 'var(--text-primary)' }}>
           {trimmed.slice(2)}
         </h2>
       );
@@ -53,7 +58,7 @@ export default function Summary({ summary }: Props) {
     if (trimmed.startsWith('- ') || trimmed.startsWith('* ')) {
       const bulletText = trimmed.slice(2);
       elements.push(
-        <li key={i} className="text-sm text-gray-700 ml-4 list-disc leading-relaxed">
+        <li key={i} className="text-sm ml-4 list-disc leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
           {renderInlineFormatting(bulletText)}
         </li>
       );
@@ -64,7 +69,7 @@ export default function Summary({ summary }: Props) {
     if (/^\d+\.\s/.test(trimmed)) {
       const text = trimmed.replace(/^\d+\.\s/, '');
       elements.push(
-        <li key={i} className="text-sm text-gray-700 ml-4 list-decimal leading-relaxed">
+        <li key={i} className="text-sm ml-4 list-decimal leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
           {renderInlineFormatting(text)}
         </li>
       );
@@ -73,7 +78,7 @@ export default function Summary({ summary }: Props) {
 
     // Regular paragraph
     elements.push(
-      <p key={i} className="text-sm text-gray-700 leading-relaxed mb-2">
+      <p key={i} className="text-sm leading-relaxed mb-2" style={{ color: 'var(--text-secondary)' }}>
         {renderInlineFormatting(trimmed)}
       </p>
     );
@@ -90,7 +95,7 @@ function renderInlineFormatting(text: string): React.ReactNode {
   return parts.map((part, i) => {
     // Odd indices are the bold content (captured group)
     if (i % 2 === 1) {
-      return <strong key={i} className="font-semibold">{part}</strong>;
+      return <strong key={i} className="font-semibold" style={{ color: 'var(--text-primary)' }}>{part}</strong>;
     }
     return part || null;
   });

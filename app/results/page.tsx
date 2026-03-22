@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useFishbowlStore } from '@/lib/store';
 import { exportSession } from '@/lib/session';
@@ -14,6 +14,8 @@ export default function ResultsPage() {
   const store = useFishbowlStore();
   const [exportMode, setExportMode] = useState<'summary' | 'transcript'>('summary');
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
+  const [jsonSaved, setJsonSaved] = useState(false);
+  const [viewTransition, setViewTransition] = useState(false);
 
   // Redirect if no completed session
   useEffect(() => {
@@ -33,9 +35,11 @@ export default function ResultsPage() {
     router.push('/setup');
   };
 
-  const handleSaveJson = () => {
+  const handleSaveJson = useCallback(() => {
     exportSession(store.getSessionConfig(), store.transcript, store.summary);
-  };
+    setJsonSaved(true);
+    setTimeout(() => setJsonSaved(false), 2000);
+  }, [store]);
 
   const handleDownloadVideo = () => {
     if (!videoUrl) return;
@@ -45,8 +49,45 @@ export default function ResultsPage() {
     a.click();
   };
 
+  // Smooth mode toggle with crossfade
+  const handleModeChange = useCallback((mode: 'summary' | 'transcript') => {
+    if (mode === exportMode) return;
+    setViewTransition(true);
+    setTimeout(() => {
+      setExportMode(mode);
+      setTimeout(() => setViewTransition(false), 30);
+    }, 150);
+  }, [exportMode]);
+
   if (store.status !== 'completed' || store.transcript.length === 0) {
-    return null;
+    return (
+      <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--bg-deep)' }}>
+        <div className="text-center animate-fade-in">
+          <div className="text-4xl mb-4" style={{ color: 'var(--text-muted)' }}>
+            <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="mx-auto mb-4" style={{ color: 'var(--accent-gold)' }}>
+              <circle cx="12" cy="12" r="10" />
+              <path d="M12 6v6l4 2" />
+            </svg>
+          </div>
+          <h2 className="text-xl font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>
+            No Session Results
+          </h2>
+          <p className="text-sm mb-6" style={{ color: 'var(--text-secondary)' }}>
+            Complete a focus group session to see results here.
+          </p>
+          <button
+            onClick={() => router.push('/setup')}
+            className="px-8 py-3 rounded-xl text-sm font-semibold cursor-pointer transition-all duration-200 hover:brightness-110 cta-glow"
+            style={{
+              background: 'var(--accent-gold)',
+              color: 'var(--bg-deep)',
+            }}
+          >
+            Start a New Fishbowl
+          </button>
+        </div>
+      </div>
+    );
   }
 
   // Session stats
@@ -65,9 +106,9 @@ export default function ResultsPage() {
         style={{ background: 'var(--accent-gold)' }}
       />
 
-      <div className="max-w-3xl mx-auto px-6 py-12 animate-fade-in">
+      <div className="max-w-3xl mx-auto px-6 py-12">
         {/* Header */}
-        <div className="mb-8">
+        <div className="mb-8 animate-fade-in">
           <div
             className="label-mono text-[10px] mb-2 tracking-widest"
             style={{ color: 'var(--text-muted)' }}
@@ -80,45 +121,99 @@ export default function ResultsPage() {
           >
             Your Fishbowl Results
           </h1>
-          <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-            {panelistCount} panelist{panelistCount !== 1 ? 's' : ''}
-            {duration !== null && <> &middot; {duration} min</>}
-            {questionCount > 0 && (
-              <> &middot; {questionCount} question{questionCount !== 1 ? 's' : ''}</>
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm" style={{ color: 'var(--text-secondary)' }}>
+            <span className="inline-flex items-center gap-1.5">
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: 'var(--accent-gold)' }}>
+                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+                <circle cx="9" cy="7" r="4" />
+                <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+                <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+              </svg>
+              {panelistCount} panelist{panelistCount !== 1 ? 's' : ''}
+            </span>
+            {duration !== null && (
+              <span className="inline-flex items-center gap-1.5">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: 'var(--accent-gold)' }}>
+                  <circle cx="12" cy="12" r="10" />
+                  <path d="M12 6v6l4 2" />
+                </svg>
+                {duration} min
+              </span>
             )}
-          </p>
+            {questionCount > 0 && (
+              <span className="inline-flex items-center gap-1.5">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: 'var(--accent-gold)' }}>
+                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                </svg>
+                {questionCount} question{questionCount !== 1 ? 's' : ''}
+              </span>
+            )}
+          </div>
         </div>
 
         {/* ExportPanel */}
-        <div className="mb-6">
+        <div className="mb-6 animate-fade-in animate-fade-in-delay-1">
           <ExportPanel
             transcript={store.transcript}
             summary={store.summary}
             mode={exportMode}
-            onModeChange={setExportMode}
+            onModeChange={handleModeChange}
           />
         </div>
 
         {/* Preview area */}
         <div
-          className="rounded-xl p-6 mb-6"
-          style={{ background: '#ffffff' }}
+          className="rounded-xl mb-6 overflow-hidden animate-fade-in animate-fade-in-delay-2"
+          style={{
+            background: 'var(--bg-card)',
+            border: '1px solid var(--border)',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+          }}
         >
-          {exportMode === 'summary' && store.summary ? (
-            <Summary summary={store.summary} />
-          ) : (
-            <Transcript transcript={store.transcript} panelists={store.panelists} />
-          )}
+          {/* Section label inside the card */}
+          <div
+            className="px-6 pt-5 pb-3 flex items-center gap-2"
+            style={{ borderBottom: '1px solid var(--border)' }}
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: 'var(--accent-gold)' }}>
+              {exportMode === 'summary' ? (
+                <>
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                  <path d="M14 2v6h6" />
+                  <path d="M16 13H8" />
+                  <path d="M16 17H8" />
+                  <path d="M10 9H8" />
+                </>
+              ) : (
+                <>
+                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                </>
+              )}
+            </svg>
+            <span className="label-mono text-[10px] tracking-widest" style={{ color: 'var(--text-muted)' }}>
+              {exportMode === 'summary' ? 'AI SUMMARY' : 'FULL TRANSCRIPT'}
+            </span>
+          </div>
+          <div
+            className="p-6 transition-opacity duration-150 ease-in-out"
+            style={{ opacity: viewTransition ? 0 : 1 }}
+          >
+            {exportMode === 'summary' && store.summary ? (
+              <Summary summary={store.summary} />
+            ) : (
+              <Transcript transcript={store.transcript} panelists={store.panelists} />
+            )}
+          </div>
         </div>
 
         {/* CostTally */}
-        <div className="mb-6">
+        <div className="mb-6 animate-fade-in animate-fade-in-delay-3">
           <CostTally />
         </div>
 
         {/* Save JSON row */}
         <div
-          className="rounded-xl p-5 mb-6 flex items-center justify-between gap-4"
+          className="rounded-xl p-5 mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 animate-fade-in animate-fade-in-delay-3"
           style={{ background: 'var(--bg-surface)' }}
         >
           <div>
@@ -138,14 +233,23 @@ export default function ResultsPage() {
           <div className="flex gap-3 shrink-0">
             <button
               onClick={handleSaveJson}
-              className="px-4 py-2 rounded-lg text-sm font-semibold cursor-pointer transition-all hover:brightness-110"
+              className="px-4 py-2 rounded-lg text-sm font-semibold cursor-pointer transition-all hover:brightness-110 inline-flex items-center gap-2"
               style={{
                 background: 'var(--bg-deep)',
-                color: 'var(--text-primary)',
-                border: '1px solid var(--border)',
+                color: jsonSaved ? 'var(--accent-gold)' : 'var(--text-primary)',
+                border: `1px solid ${jsonSaved ? 'var(--accent-gold)' : 'var(--border)'}`,
               }}
             >
-              Save JSON
+              {jsonSaved ? (
+                <>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M20 6L9 17l-5-5" />
+                  </svg>
+                  Saved!
+                </>
+              ) : (
+                'Save JSON'
+              )}
             </button>
             {videoUrl && (
               <button
@@ -163,17 +267,16 @@ export default function ResultsPage() {
         </div>
 
         {/* Divider */}
-        <div className="mb-8" style={{ borderTop: '2px solid var(--border)' }} />
+        <div className="mb-8 animate-fade-in animate-fade-in-delay-4" style={{ borderTop: '2px solid var(--border)' }} />
 
         {/* New Fishbowl CTA */}
-        <div className="flex flex-col items-center">
+        <div className="flex flex-col items-center animate-fade-in animate-fade-in-delay-4">
           <button
             onClick={handleNewSession}
-            className="px-12 py-4 rounded-xl text-lg font-semibold cursor-pointer transition-all duration-200 hover:brightness-110 flex items-center gap-2"
+            className="px-12 py-4 rounded-xl text-lg font-semibold cursor-pointer transition-all duration-200 flex items-center gap-2 cta-glow"
             style={{
               background: 'var(--accent-gold)',
               color: 'var(--bg-deep)',
-              boxShadow: '0 4px 16px rgba(196, 154, 42, 0.3)',
             }}
           >
             <svg
@@ -190,7 +293,7 @@ export default function ResultsPage() {
               <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
               <path d="M3 3v5h5" />
             </svg>
-            Start a New Fishbowl!
+            Start a New Fishbowl
           </button>
           <p
             className="label-mono mt-4 text-[11px] tracking-widest"
