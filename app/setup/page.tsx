@@ -33,6 +33,11 @@ export default function SetupPage() {
   const hasProvider = store.provider === 'ollama' || store.provider === 'claude-code' || !!store.apiKey.trim();
   const canStart = hasPanelists && hasIdea && hasProvider;
 
+  // Progress calculation for readiness bar
+  const readinessSteps = [hasPanelists, hasIdea, hasProvider];
+  const completedSteps = readinessSteps.filter(Boolean).length;
+  const readinessPercent = (completedSteps / readinessSteps.length) * 100;
+
   const handleStart = () => {
     store.startSession();
     router.push('/session');
@@ -45,15 +50,15 @@ export default function SetupPage() {
       {/* Ambient glow */}
       <div className="fixed top-0 left-1/2 -translate-x-1/2 w-[600px] h-[400px] bg-[var(--accent-gold)] opacity-[0.08] rounded-full blur-[120px] pointer-events-none" />
 
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8 sm:py-16 relative">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8 sm:py-12 relative">
         {/* Header */}
-        <div className="text-center mb-8 sm:mb-16 animate-fade-in">
+        <div className="text-center mb-8 sm:mb-12 animate-fade-in">
           <div className="label-mono mb-3 sm:mb-4">AI Focus Group</div>
           <h1 className="font-pixel text-2xl sm:text-4xl tracking-tight title-text" style={{}}>
             THE FISHBOWL
           </h1>
-          <p className="mt-2 sm:mt-3 text-base sm:text-lg" style={{ color: 'var(--text-secondary)' }}>
-            Watch AI experts debate your ideas. Then step in and ask questions.
+          <p className="mt-2 sm:mt-3 text-sm sm:text-base" style={{ color: 'var(--text-secondary)' }}>
+            Assemble your panel. Brief them. Watch them debate.
           </p>
         </div>
 
@@ -64,7 +69,12 @@ export default function SetupPage() {
               <button
                 onClick={handleBuildOwn}
                 className="text-sm transition-colors"
-                style={{ color: 'var(--accent-gold)' }}
+                style={{
+                  color: 'var(--accent-gold)',
+                  fontFamily: "'DM Mono', monospace",
+                  fontSize: '12px',
+                  letterSpacing: '0.04em',
+                }}
                 onMouseEnter={(e) => e.currentTarget.style.color = 'var(--accent-amber)'}
                 onMouseLeave={(e) => e.currentTarget.style.color = 'var(--accent-gold)'}
               >
@@ -75,95 +85,133 @@ export default function SetupPage() {
         )}
 
         {step === 'configure' && (
-          <div className="space-y-10 animate-fade-in">
-            <div id="section-panelists">
-              <PanelistBuilder
-                panelists={store.panelists}
-                onUpdate={store.setPanelists}
-              />
-            </div>
-
-            <div id="section-idea">
-              <IdeaInput
-                ideaText={store.ideaText}
-                ideaFiles={store.ideaFiles}
-                onTextChange={store.setIdeaText}
-                onFilesChange={store.setIdeaFiles}
-              />
-            </div>
-
-            <div id="section-api">
-              <ApiKeyConfig
-                provider={store.provider}
-                apiKey={store.apiKey}
-                modelId={store.modelId}
-                onProviderChange={store.setProvider}
-                onApiKeyChange={store.setApiKey}
-                onModelChange={store.setModelId}
-              />
-            </div>
-
-            {store.provider !== 'ollama' && store.panelists.length >= 3 && (
-              <div className="text-xs" style={{ color: 'var(--text-muted)' }}>
-                {(() => {
-                  const est = estimateSessionCost(store.modelId, store.panelists.length);
-                  return `Estimated session cost: ~${formatCost(est.low)} – ${formatCost(est.high)}`;
-                })()}
-              </div>
-            )}
-
-            {/* Readiness checklist */}
-            {!canStart && (
-              <div className="flex flex-wrap gap-x-6 gap-y-2 py-4 animate-fade-in">
-                {[
-                  { done: hasPanelists, label: store.panelists.length === 0 ? 'Add 3+ panelists' : `${store.panelists.length}/3 panelists` },
-                  { done: hasIdea, label: 'Describe your idea' },
-                  { done: hasProvider, label: store.provider === 'ollama' || store.provider === 'claude-code' ? 'Provider selected' : 'API key entered' },
-                ].map((item) => (
-                  <span
-                    key={item.label}
-                    className="flex items-center gap-1.5 text-xs transition-colors duration-300"
-                    style={{ color: item.done ? 'var(--accent-gold)' : 'var(--text-muted)' }}
-                  >
+          <div className="animate-fade-in">
+            {/* Readiness progress bar */}
+            <div className="mb-8">
+              <div className="flex items-center justify-between mb-2">
+                <span className="label-mono">
+                  {canStart ? 'Ready to go' : `${completedSteps} of ${readinessSteps.length} steps complete`}
+                </span>
+                <div className="flex items-center gap-3">
+                  {[
+                    { done: hasPanelists, label: store.panelists.length === 0 ? 'Panel' : `${store.panelists.length}/3+` },
+                    { done: hasIdea, label: 'Idea' },
+                    { done: hasProvider, label: 'API' },
+                  ].map((item) => (
                     <span
-                      className="inline-flex items-center justify-center rounded-full text-[9px] font-600 transition-all duration-300"
+                      key={item.label}
+                      className="flex items-center gap-1 text-[10px] transition-colors duration-300"
                       style={{
-                        width: 16,
-                        height: 16,
-                        background: item.done ? 'var(--accent-gold)' : 'transparent',
-                        color: item.done ? 'var(--bg-deep)' : 'var(--text-muted)',
-                        border: item.done ? '1px solid var(--accent-gold)' : '1px solid var(--border)',
+                        color: item.done ? 'var(--accent-gold)' : 'var(--text-muted)',
+                        fontFamily: "'DM Mono', monospace",
+                        letterSpacing: '0.04em',
+                        textTransform: 'uppercase',
                       }}
                     >
-                      {item.done ? '\u2713' : ''}
+                      <span
+                        className="step-dot"
+                        style={{
+                          background: item.done ? 'var(--accent-gold)' : 'var(--border)',
+                          boxShadow: item.done ? '0 0 6px rgba(196, 154, 42, 0.4)' : 'none',
+                        }}
+                      />
+                      {item.label}
                     </span>
-                    {item.label}
-                  </span>
-                ))}
+                  ))}
+                </div>
               </div>
-            )}
+              <div className="readiness-bar">
+                <div
+                  className="readiness-bar-fill"
+                  style={{ width: `${readinessPercent}%` }}
+                />
+              </div>
+            </div>
 
-            <div className="flex flex-col-reverse sm:flex-row items-center justify-between gap-3 pt-6" style={{ borderTop: '1px solid var(--border)' }}>
-              <button
-                onClick={() => setStep('template')}
-                className="text-sm transition-colors"
-                style={{ color: 'var(--text-muted)' }}
-                onMouseEnter={(e) => e.currentTarget.style.color = 'var(--text-secondary)'}
-                onMouseLeave={(e) => e.currentTarget.style.color = 'var(--text-muted)'}
-              >
-                Back to templates
-              </button>
+            {/* Two-column layout on desktop */}
+            <div className="configure-grid">
+              {/* Left column: Panel + Provider */}
+              <div className="space-y-8">
+                <div id="section-panelists">
+                  <PanelistBuilder
+                    panelists={store.panelists}
+                    onUpdate={store.setPanelists}
+                  />
+                </div>
+
+                <div id="section-api">
+                  <ApiKeyConfig
+                    provider={store.provider}
+                    apiKey={store.apiKey}
+                    modelId={store.modelId}
+                    onProviderChange={store.setProvider}
+                    onApiKeyChange={store.setApiKey}
+                    onModelChange={store.setModelId}
+                  />
+                </div>
+              </div>
+
+              {/* Right column: Idea */}
+              <div className="space-y-8">
+                <div id="section-idea">
+                  <IdeaInput
+                    ideaText={store.ideaText}
+                    ideaFiles={store.ideaFiles}
+                    onTextChange={store.setIdeaText}
+                    onFilesChange={store.setIdeaFiles}
+                  />
+                </div>
+
+                {/* Cost estimate */}
+                {store.provider !== 'ollama' && store.panelists.length >= 3 && (
+                  <div
+                    className="rounded-lg p-3 flex items-center gap-2"
+                    style={{
+                      background: 'var(--bg-surface)',
+                      border: '1px solid var(--border)',
+                    }}
+                  >
+                    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0, opacity: 0.5 }}>
+                      <circle cx="8" cy="8" r="6" stroke="currentColor" strokeWidth="1.5" fill="none" />
+                      <path d="M8 5v4M6.5 7h3" stroke="currentColor" strokeWidth="1" strokeLinecap="round" />
+                    </svg>
+                    <span className="text-xs" style={{ color: 'var(--text-muted)' }}>
+                      {(() => {
+                        const est = estimateSessionCost(store.modelId, store.panelists.length);
+                        return `Est. cost: ${formatCost(est.low)} - ${formatCost(est.high)}`;
+                      })()}
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Bottom bar: back + start */}
+            <div className="mt-10 pt-8" style={{ borderTop: '1px solid var(--border)' }}>
+              {/* Start button - full width dramatic CTA */}
               <button
                 onClick={handleStart}
                 disabled={!canStart}
-                className="w-full sm:w-auto px-8 py-3 rounded-lg font-600 text-sm transition-all disabled:opacity-30 disabled:cursor-not-allowed glow-gold"
-                style={{
-                  background: canStart ? 'var(--accent-gold)' : 'var(--border)',
-                  color: canStart ? 'var(--bg-deep)' : 'var(--text-muted)',
-                }}
+                className="start-button-dramatic"
               >
-                Start the Fishbowl
+                {canStart ? 'Start the Fishbowl' : 'Complete setup to begin'}
               </button>
+
+              <div className="text-center mt-4">
+                <button
+                  onClick={() => setStep('template')}
+                  className="text-xs transition-colors"
+                  style={{
+                    color: 'var(--text-muted)',
+                    fontFamily: "'DM Mono', monospace",
+                    letterSpacing: '0.04em',
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.color = 'var(--text-secondary)'}
+                  onMouseLeave={(e) => e.currentTarget.style.color = 'var(--text-muted)'}
+                >
+                  Back to templates
+                </button>
+              </div>
             </div>
           </div>
         )}

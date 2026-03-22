@@ -334,3 +334,377 @@ html, body {
     0 1px 0 #8a6a18,
     0 2px 6px rgba(196, 154, 42, 0.25);
 }
+
+/* ============================================================ */
+/*  Setup Page — Character Card & Mission Briefing Styles        */
+/* ============================================================ */
+
+/* Character card — tactile, collectible feel */
+.character-card {
+  position: relative;
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--bg-card);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  box-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.06),
+    0 4px 12px rgba(0, 0, 0, 0.04);
+}
+
+.character-card:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    0 4px 12px rgba(0, 0, 0, 0.08),
+    0 8px 24px rgba(0, 0, 0, 0.06);
+}
+
+/* Colored top border on character cards — like card rarity */
+.character-card-border {
+  height: 4px;
+  width: 100%;
+}
+
+/* Character portrait frame — pixel art friendly */
+.character-portrait {
+  width: 56px;
+  height: 56px;
+  border-radius: 8px;
+  image-rendering: pixelated;
+  image-rendering: -moz-crisp-edges;
+  image-rendering: crisp-edges;
+  background: var(--bg-elevated);
+  flex-shrink: 0;
+}
+
+/* Name plate — Silkscreen pixel font treatment */
+.character-nameplate {
+  font-family: 'Silkscreen', 'Courier New', monospace;
+  font-size: 13px;
+  line-height: 1.2;
+  letter-spacing: 0.02em;
+}
+
+/* Role badge — small pill with accent color */
+.role-badge {
+  display: inline-flex;
+  align-items: center;
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  font-weight: 400;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 2px 8px;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+
+/* Card entrance animation — staggered pop-in */
+@keyframes cardPopIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.9) translateY(16px);
+  }
+  60% {
+    transform: scale(1.02) translateY(-2px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.animate-card-pop {
+  animation: cardPopIn 0.45s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  opacity: 0;
+}
+
+/* Mission briefing — dossier/clipboard feel */
+.mission-briefing {
+  position: relative;
+  background: var(--bg-card);
+  border: 2px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.mission-briefing::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 36px;
+  background: linear-gradient(
+    180deg,
+    var(--accent-gold) 0%,
+    var(--accent-gold-dim) 100%
+  );
+}
+
+.mission-briefing-textarea {
+  background: transparent !important;
+  border: none !important;
+  resize: none;
+  outline: none;
+  position: relative;
+  z-index: 1;
+}
+
+/* Stamp effect for completed sections */
+@keyframes stampIn {
+  0% {
+    opacity: 0;
+    transform: scale(2) rotate(-15deg);
+  }
+  50% {
+    opacity: 0.9;
+    transform: scale(0.95) rotate(0deg);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) rotate(-2deg);
+  }
+}
+
+.stamp-approved {
+  animation: stampIn 0.4s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+/* Readiness progress bar */
+.readiness-bar {
+  height: 4px;
+  background: var(--bg-elevated);
+  border-radius: 2px;
+  overflow: hidden;
+  position: relative;
+}
+
+.readiness-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent-gold), var(--accent-amber));
+  border-radius: 2px;
+  transition: width 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Start button — dramatic CTA */
+.start-button-dramatic {
+  position: relative;
+  font-family: 'Silkscreen', 'Courier New', monospace;
+  font-size: 16px;
+  letter-spacing: 0.08em;
+  padding: 18px 40px;
+  border-radius: 12px;
+  border: none;
+  cursor: pointer;
+  background: linear-gradient(180deg, #e8c44a 0%, #c49a2a 40%, #a88020 100%);
+  color: #1a1714;
+  box-shadow:
+    0 4px 0 #8a6a18,
+    0 6px 20px rgba(196, 154, 42, 0.35),
+    0 0 60px rgba(196, 154, 42, 0.15);
+  transition: all 0.15s ease;
+  text-transform: uppercase;
+  width: 100%;
+}
+
+.start-button-dramatic:hover:not(:disabled) {
+  transform: translateY(-3px);
+  box-shadow:
+    0 7px 0 #8a6a18,
+    0 8px 24px rgba(196, 154, 42, 0.45),
+    0 0 80px rgba(196, 154, 42, 0.2);
+}
+
+.start-button-dramatic:active:not(:disabled) {
+  transform: translateY(2px);
+  box-shadow:
+    0 1px 0 #8a6a18,
+    0 2px 6px rgba(196, 154, 42, 0.25);
+}
+
+.start-button-dramatic:disabled {
+  background: var(--bg-elevated);
+  color: var(--text-muted);
+  box-shadow: none;
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+/* Pulsing glow when button is enabled */
+@keyframes startButtonPulse {
+  0%, 100% {
+    box-shadow:
+      0 4px 0 #8a6a18,
+      0 6px 20px rgba(196, 154, 42, 0.35),
+      0 0 60px rgba(196, 154, 42, 0.15);
+  }
+  50% {
+    box-shadow:
+      0 4px 0 #8a6a18,
+      0 6px 24px rgba(196, 154, 42, 0.5),
+      0 0 80px rgba(196, 154, 42, 0.25);
+  }
+}
+
+.start-button-dramatic:not(:disabled) {
+  animation: startButtonPulse 3s ease-in-out infinite;
+}
+
+.start-button-dramatic:hover:not(:disabled) {
+  animation: none;
+}
+
+/* Section header with decorative line */
+.section-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.section-header::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    var(--border) 0%,
+    transparent 100%
+  );
+}
+
+/* Provider pill toggle */
+.provider-pill {
+  position: relative;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  transition: all 0.2s ease;
+  border: 1px solid var(--border);
+  background: var(--bg-surface);
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.provider-pill:hover {
+  border-color: var(--accent-gold);
+}
+
+.provider-pill.active {
+  background: var(--accent-gold);
+  color: var(--bg-deep);
+  border-color: var(--accent-gold);
+  box-shadow: 0 2px 8px rgba(196, 154, 42, 0.25);
+}
+
+/* "Add panelist" card — dashed border invite */
+.add-panelist-card {
+  border: 2px dashed var(--border-light);
+  border-radius: 12px;
+  background: transparent;
+  transition: all 0.2s ease;
+}
+
+.add-panelist-card:hover,
+.add-panelist-card:focus-within {
+  border-color: var(--accent-gold);
+  background: rgba(196, 154, 42, 0.03);
+}
+
+/* Template card hover glow */
+.template-card {
+  position: relative;
+  text-align: left;
+  padding: 20px;
+  border-radius: 12px;
+  transition: all 0.2s ease;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  cursor: pointer;
+}
+
+.template-card:hover {
+  border-color: var(--accent-gold);
+  background: var(--bg-elevated);
+  box-shadow: 0 4px 16px rgba(196, 154, 42, 0.1);
+  transform: translateY(-2px);
+}
+
+/* Stagger delays for cards */
+.stagger-1 { animation-delay: 0.05s; }
+.stagger-2 { animation-delay: 0.1s; }
+.stagger-3 { animation-delay: 0.15s; }
+.stagger-4 { animation-delay: 0.2s; }
+.stagger-5 { animation-delay: 0.25s; }
+.stagger-6 { animation-delay: 0.3s; }
+
+/* Slide-down reveal for edit panel */
+@keyframes slideDown {
+  from { opacity: 0; max-height: 0; }
+  to { opacity: 1; max-height: 300px; }
+}
+
+.animate-slide-down {
+  animation: slideDown 0.3s ease-out forwards;
+  overflow: hidden;
+}
+
+/* Two-column layout for configure step */
+@media (min-width: 768px) {
+  .configure-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 32px;
+    align-items: start;
+  }
+}
+
+/* File drop zone enhanced */
+.file-drop-zone {
+  border: 2px dashed var(--border);
+  border-radius: 8px;
+  padding: 16px;
+  text-align: center;
+  transition: all 0.2s ease;
+}
+
+.file-drop-zone.dragging {
+  border-color: var(--accent-gold);
+  background: rgba(196, 154, 42, 0.05);
+}
+
+/* Step indicator dots */
+.step-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  transition: all 0.3s ease;
+}
+
+.step-dot.complete {
+  background: var(--accent-gold);
+  box-shadow: 0 0 8px rgba(196, 154, 42, 0.4);
+}
+
+.step-dot.incomplete {
+  background: var(--border);
+}
+
+/* Empty slot placeholder for panelists */
+.empty-slot {
+  border: 2px dashed var(--border);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 80px;
+  opacity: 0.4;
+  transition: opacity 0.2s ease;
+}
+
+.empty-slot:hover {
+  opacity: 0.6;
+}

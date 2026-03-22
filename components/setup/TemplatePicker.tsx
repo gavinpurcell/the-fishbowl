@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import { PANEL_TEMPLATES } from '@/lib/templates';
 import type { PanelTemplate } from '@/engine/types';
 
@@ -10,43 +11,76 @@ interface Props {
 export default function TemplatePicker({ onSelect }: Props) {
   return (
     <div>
-      <div className="label-mono mb-4">Choose a Panel</div>
+      <div className="section-header">
+        <div className="label-mono" style={{ flexShrink: 0 }}>Choose Your Panel</div>
+      </div>
+
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {PANEL_TEMPLATES.map((template, i) => (
           <button
             key={template.id}
             onClick={() => onSelect(template)}
-            className={`group text-left p-5 rounded-xl transition-all duration-200 animate-fade-in`}
-            style={{
-              background: 'var(--bg-surface)',
-              border: '1px solid var(--border)',
-              animationDelay: `${i * 0.08}s`,
-              opacity: 0,
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.borderColor = 'var(--accent-gold)';
-              e.currentTarget.style.background = 'var(--bg-elevated)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.borderColor = 'var(--border)';
-              e.currentTarget.style.background = 'var(--bg-surface)';
-            }}
+            className={`template-card animate-card-pop stagger-${i + 1}`}
           >
-            <h3 className="font-600 text-base" style={{ color: 'var(--text-primary)' }}>
+            {/* Template name */}
+            <h3
+              className="character-nameplate text-sm"
+              style={{ color: 'var(--text-primary)' }}
+            >
               {template.name}
             </h3>
-            <p className="text-sm mt-1.5 leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
+
+            {/* Description */}
+            <p
+              className="text-xs mt-1.5 leading-relaxed"
+              style={{ color: 'var(--text-secondary)' }}
+            >
               {template.description}
             </p>
-            <div className="flex gap-1.5 mt-4 flex-wrap">
+
+            {/* Character portrait row */}
+            <div className="flex items-center gap-1 mt-4">
+              {template.panelists.map((p, pi) => (
+                <div
+                  key={p.name}
+                  className="relative"
+                  style={{
+                    width: 36,
+                    height: 36,
+                    borderRadius: '6px',
+                    overflow: 'hidden',
+                    border: `2px solid ${p.color}50`,
+                    background: p.color + '15',
+                  }}
+                >
+                  <Image
+                    src={`/sprites/portraits/char_${pi % 8}_portrait.png`}
+                    alt={p.name}
+                    width={36}
+                    height={36}
+                    style={{
+                      imageRendering: 'pixelated',
+                    }}
+                  />
+                </div>
+              ))}
+              <div className="ml-2">
+                <div className="text-[10px] font-500" style={{ color: 'var(--text-muted)' }}>
+                  {template.panelists.length} experts
+                </div>
+              </div>
+            </div>
+
+            {/* Name tags */}
+            <div className="flex gap-1 mt-2 flex-wrap">
               {template.panelists.map((p) => (
                 <span
                   key={p.name}
-                  className="text-[10px] px-2 py-0.5 rounded-full font-500"
+                  className="role-badge"
                   style={{
-                    backgroundColor: p.color + '20',
+                    backgroundColor: p.color + '15',
                     color: p.color,
-                    border: `1px solid ${p.color}40`,
+                    border: `1px solid ${p.color}30`,
                   }}
                 >
                   {p.name}

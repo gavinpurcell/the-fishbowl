@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Image from 'next/image';
 import type { Panelist } from '@/engine/types';
 import { createCustomPanelist, createPanelistFromTemplate } from '@/engine/panelist';
 import { createProvider } from '@/providers';
@@ -56,83 +57,224 @@ export default function PanelistBuilder({ panelists, onUpdate }: Props) {
     setEditingId(null);
   };
 
-  const inputStyle = {
-    background: 'var(--bg-elevated)',
-    border: '1px solid var(--border)',
-    color: 'var(--text-primary)',
-    borderRadius: '8px',
-    padding: '8px 12px',
-    fontSize: '13px',
-    outline: 'none',
-    width: '100%',
-  };
+  // Empty slots to show minimum 3 requirement
+  const emptySlots = Math.max(0, 3 - panelists.length);
 
   return (
     <div>
-      <div className="label-mono mb-4">Your Panel</div>
+      <div className="section-header">
+        <div className="label-mono" style={{ flexShrink: 0 }}>Your Panel</div>
+        <span className="text-xs" style={{ color: 'var(--text-muted)', flexShrink: 0 }}>
+          {panelists.length}/5 seats
+        </span>
+      </div>
 
-      <div className="space-y-2 mb-4">
-        {panelists.map((p) => (
-          <div key={p.id} className="rounded-xl overflow-hidden" style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)' }}>
-            <div className="flex items-center gap-2 sm:gap-3 p-3 sm:p-4 flex-wrap">
-              <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-600 shrink-0" style={{ backgroundColor: p.color + '25', color: p.color, border: `1px solid ${p.color}50` }}>
-                {p.name.charAt(0)}
+      {/* Character cards grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-4">
+        {panelists.map((p, i) => (
+          <div
+            key={p.id}
+            className={`character-card animate-card-pop stagger-${i + 1}`}
+          >
+            {/* Color bar at top */}
+            <div className="character-card-border" style={{ background: p.color }} />
+
+            {/* Card body */}
+            <div className="p-3">
+              <div className="flex items-start gap-3">
+                {/* Portrait */}
+                <div
+                  className="character-portrait"
+                  style={{ border: `2px solid ${p.color}40` }}
+                >
+                  <Image
+                    src={`/sprites/portraits/char_${p.spriteIndex}_portrait.png`}
+                    alt={p.name}
+                    width={56}
+                    height={56}
+                    style={{
+                      imageRendering: 'pixelated',
+                      borderRadius: '6px',
+                    }}
+                  />
+                </div>
+
+                {/* Name and role */}
+                <div className="flex-1 min-w-0">
+                  <div className="character-nameplate" style={{ color: 'var(--text-primary)' }}>
+                    {p.name}
+                  </div>
+                  <div
+                    className="role-badge mt-1"
+                    style={{
+                      backgroundColor: p.color + '18',
+                      color: p.color,
+                      border: `1px solid ${p.color}30`,
+                    }}
+                  >
+                    {p.role}
+                  </div>
+                </div>
               </div>
-              <div className="flex-1 min-w-0">
-                <span className="font-500 text-sm sm:text-base" style={{ color: 'var(--text-primary)' }}>{p.name}</span>
-                <span className="ml-2 text-xs sm:text-sm" style={{ color: 'var(--text-muted)' }}>— {p.role}</span>
+
+              {/* Description */}
+              <p
+                className="text-xs mt-2 leading-relaxed"
+                style={{
+                  color: 'var(--text-muted)',
+                  display: '-webkit-box',
+                  WebkitLineClamp: 2,
+                  WebkitBoxOrient: 'vertical',
+                  overflow: 'hidden',
+                }}
+              >
+                {p.description}
+              </p>
+
+              {/* Actions */}
+              <div className="flex items-center gap-2 mt-3 pt-2" style={{ borderTop: `1px solid var(--border)` }}>
+                <button
+                  onClick={() => editingId === p.id ? setEditingId(null) : startEditing(p)}
+                  className="text-[10px] font-500 px-2 py-1 rounded transition-colors"
+                  style={{
+                    color: 'var(--accent-gold)',
+                    background: editingId === p.id ? 'rgba(196, 154, 42, 0.1)' : 'transparent',
+                  }}
+                >
+                  {editingId === p.id ? 'Close' : 'Edit Prompt'}
+                </button>
+                <div style={{ flex: 1 }} />
+                <button
+                  onClick={() => removePanelist(p.id)}
+                  className="text-[10px] px-2 py-1 rounded transition-colors"
+                  style={{ color: 'var(--text-muted)' }}
+                  onMouseEnter={(e) => e.currentTarget.style.color = '#e74c4c'}
+                  onMouseLeave={(e) => e.currentTarget.style.color = 'var(--text-muted)'}
+                >
+                  Remove
+                </button>
               </div>
-              <button onClick={() => editingId === p.id ? setEditingId(null) : startEditing(p)} className="text-xs transition-colors shrink-0" style={{ color: 'var(--accent-gold)' }}>
-                {editingId === p.id ? 'Close' : 'Edit'}
-              </button>
-              <button onClick={() => removePanelist(p.id)} className="text-xs transition-colors shrink-0" style={{ color: 'var(--text-muted)' }}>
-                Remove
-              </button>
             </div>
-            {editingId === p.id ? (
-              <div className="px-4 pb-4">
+
+            {/* Edit prompt panel */}
+            {editingId === p.id && (
+              <div className="animate-slide-down px-3 pb-3" style={{ borderTop: `1px solid var(--border)` }}>
                 <textarea
                   value={editPrompt}
                   onChange={(e) => setEditPrompt(e.target.value)}
-                  className="w-full h-48 rounded-lg resize-y font-mono text-xs p-3"
-                  style={{ background: 'var(--bg-deep)', border: '1px solid var(--border)', color: 'var(--text-secondary)', outline: 'none' }}
+                  className="w-full h-40 rounded-lg resize-y font-mono text-xs p-3 mt-3"
+                  style={{
+                    background: 'var(--bg-deep)',
+                    border: '1px solid var(--border)',
+                    color: 'var(--text-secondary)',
+                    outline: 'none',
+                  }}
                 />
                 <div className="flex gap-2 mt-2">
-                  <button onClick={savePrompt} className="px-3 py-1.5 rounded text-xs font-500" style={{ background: 'var(--accent-gold)', color: 'var(--bg-deep)' }}>Save</button>
-                  <button onClick={() => setEditingId(null)} className="px-3 py-1.5 rounded text-xs" style={{ background: 'var(--bg-elevated)', color: 'var(--text-secondary)' }}>Cancel</button>
+                  <button
+                    onClick={savePrompt}
+                    className="px-3 py-1.5 rounded text-xs font-500"
+                    style={{ background: 'var(--accent-gold)', color: 'var(--bg-deep)' }}
+                  >
+                    Save
+                  </button>
+                  <button
+                    onClick={() => setEditingId(null)}
+                    className="px-3 py-1.5 rounded text-xs"
+                    style={{ background: 'var(--bg-elevated)', color: 'var(--text-secondary)' }}
+                  >
+                    Cancel
+                  </button>
                 </div>
-              </div>
-            ) : (
-              <div className="px-4 pb-3">
-                <p className="text-xs truncate" style={{ color: 'var(--text-muted)' }}>{p.description}</p>
               </div>
             )}
           </div>
         ))}
+
+        {/* Empty slots showing minimum requirement */}
+        {Array.from({ length: emptySlots }).map((_, i) => (
+          <div key={`empty-${i}`} className="empty-slot">
+            <div className="text-center">
+              <div style={{ fontSize: '20px', color: 'var(--border)', marginBottom: '4px' }}>+</div>
+              <div className="text-[10px]" style={{ color: 'var(--text-muted)' }}>
+                Seat {panelists.length + i + 1}
+              </div>
+            </div>
+          </div>
+        ))}
       </div>
 
+      {/* Add panelist form */}
       {panelists.length < 5 && (
-        <div className="rounded-xl p-4" style={{ background: 'var(--bg-surface)', border: '1px dashed var(--border-light)' }}>
+        <div className="add-panelist-card p-4">
           <div className="label-mono mb-3">Add a panelist</div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
-            <input value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="Name" style={inputStyle} />
-            <input value={newRole} onChange={(e) => setNewRole(e.target.value)} placeholder="Role" style={inputStyle} />
+            <input
+              value={newName}
+              onChange={(e) => setNewName(e.target.value)}
+              placeholder="Name"
+              className="rounded-lg text-sm p-2.5"
+              style={{
+                background: 'var(--bg-elevated)',
+                border: '1px solid var(--border)',
+                color: 'var(--text-primary)',
+                outline: 'none',
+                width: '100%',
+              }}
+            />
+            <input
+              value={newRole}
+              onChange={(e) => setNewRole(e.target.value)}
+              placeholder="Role (e.g. UX Designer)"
+              className="rounded-lg text-sm p-2.5"
+              style={{
+                background: 'var(--bg-elevated)',
+                border: '1px solid var(--border)',
+                color: 'var(--text-primary)',
+                outline: 'none',
+                width: '100%',
+              }}
+            />
           </div>
-          <input value={newDesc} onChange={(e) => setNewDesc(e.target.value)} placeholder="Personality (optional — e.g., Data-driven, blunt, skeptical)" style={{ ...inputStyle, marginBottom: '12px' }} />
+          <input
+            value={newDesc}
+            onChange={(e) => setNewDesc(e.target.value)}
+            placeholder="Personality (optional — e.g., Data-driven, blunt, skeptical)"
+            className="rounded-lg text-sm p-2.5 mb-3"
+            style={{
+              background: 'var(--bg-elevated)',
+              border: '1px solid var(--border)',
+              color: 'var(--text-primary)',
+              outline: 'none',
+              width: '100%',
+            }}
+          />
           <button
             onClick={addPanelist}
             disabled={!newName.trim() || !newRole.trim() || isExpanding}
-            className="px-4 py-2 rounded-lg text-xs font-500 transition-all disabled:opacity-30"
-            style={{ background: 'var(--accent-gold)', color: 'var(--bg-deep)' }}
+            className="px-4 py-2.5 rounded-lg text-xs font-500 transition-all disabled:opacity-30"
+            style={{
+              background: 'var(--accent-gold)',
+              color: 'var(--bg-deep)',
+              fontFamily: "'DM Mono', monospace",
+              letterSpacing: '0.04em',
+              textTransform: 'uppercase',
+            }}
           >
             {isExpanding ? 'Building persona...' : 'Add to Panel'}
           </button>
         </div>
       )}
 
-      {panelists.length >= 5 && <p className="text-xs" style={{ color: 'var(--text-muted)' }}>Maximum of 5 panelists.</p>}
+      {panelists.length >= 5 && (
+        <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
+          Panel is full (5/5 seats).
+        </p>
+      )}
       {panelists.length < 3 && panelists.length > 0 && (
-        <p className="text-xs mt-2" style={{ color: 'var(--accent-warm)' }}>Add at least {3 - panelists.length} more (minimum 3).</p>
+        <p className="text-xs mt-2" style={{ color: 'var(--accent-warm)' }}>
+          Add at least {3 - panelists.length} more (minimum 3 for a panel).
+        </p>
       )}
     </div>
   );
