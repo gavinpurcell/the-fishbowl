@@ -21,11 +21,97 @@ interface PrefetchedResponse {
   error?: string;
 }
 
+/** Maximum retries for transient failures */
+const MAX_RETRIES = 2;
+
+/** Base delay for exponential backoff (ms) */
+const RETRY_BASE_DELAY_MS = 1500;
+
+/** Timeout for a single LLM streaming call (ms) — 90 seconds */
+const STREAM_TIMEOUT_MS = 90_000;
+
+/** Timeout for a non-streaming generate call (ms) — 60 seconds */
+const GENERATE_TIMEOUT_MS = 60_000;
+
+/**
+ * Classify an error and return a user-friendly message.
+ * Returns { message, retryable } so the caller knows whether to retry.
+ */
+function classifyError(error: unknown): { message: string; retryable: boolean } {
+  const raw = error instanceof Error ? error.message : String(error);
+  const lower = raw.toLowerCase();
+
+  // Rate limit / overloaded
+  if (lower.includes('429') || lower.includes('rate limit') || lower.includes('too many requests')) {
+    return { message: 'The AI service is rate-limited. Retrying shortly...', retryable: true };
+  }
+  if (lower.includes('529') || lower.includes('overloaded')) {
+    return { message: 'The AI service is temporarily overloaded. Retrying...', retryable: true };
+  }
+
+  // Timeout
+  if (lower.includes('timeout') || lower.includes('timed out') || lower.includes('aborted')) {
+    return { message: 'The request timed out. The AI service may be slow right now.', retryable: true };
+  }
+
+  // Network errors
+  if (lower.includes('fetch failed') || lower.includes('network') || lower.includes('econnrefused')
+    || lower.includes('econnreset') || lower.includes('enotfound') || lower.includes('failed to fetch')) {
+    return { message: 'Network connection error. Check your internet connection.', retryable: true };
+  }
+
+  // Server errors (500, 502, 503)
+  if (lower.includes('500') || lower.includes('502') || lower.includes('503') || lower.includes('internal server error')
+    || lower.includes('bad gateway') || lower.includes('service unavailable')) {
+    return { message: 'The AI service encountered a temporary error. Retrying...', retryable: true };
+  }
+
+  // Auth errors — not retryable
+  if (lower.includes('401') || lower.includes('403') || lower.includes('unauthorized') || lower.includes('forbidden')
+    || lower.includes('invalid.*key') || lower.includes('authentication')) {
+    return { message: 'API authentication failed. Please check your API key in Settings.', retryable: false };
+  }
+
+  // Invalid request — not retryable
+  if (lower.includes('400') || lower.includes('invalid request') || lower.includes('bad request')) {
+    return { message: 'The request was invalid. This may be a configuration issue.', retryable: false };
+  }
+
+  // Context length exceeded — not retryable
+  if (lower.includes('context length') || lower.includes('too long') || lower.includes('max.*tokens')) {
+    return { message: 'The conversation is too long for the model. Try wrapping up or starting a new session.', retryable: false };
+  }
+
+  // Generic fallback — retry once in case it's transient
+  return { message: `An unexpected error occurred: ${raw.slice(0, 150)}`, retryable: true };
+}
+
+/**
+ * Sleep for a given number of milliseconds.
+ */
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/**
+ * Create an AbortController that auto-aborts after a timeout.
+ */
+function createTimeoutController(timeoutMs: number): { controller: AbortController; clear: () => void } {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  return {
+    controller,
+    clear: () => clearTimeout(timer),
+  };
+}
+
 export class ConversationOrchestrator {
   private transcript: TranscriptEntry[] = [];
   private aborted = false;
   private prefetchedInitialTakes: Map<string, PrefetchedResponse> = new Map();
   private prefetching = false;
+  /** Count of consecutive panelist failures — used to abort if everything is broken */
+  private consecutiveFailures = 0;
 
   constructor(
     private panelists: Panelist[],
@@ -62,24 +148,58 @@ export class ConversationOrchestrator {
       ];
 
       // Fire and forget — runs in background
-      (async () => {
-        try {
-          for await (const event of this.provider.stream(messages)) {
-            if (this.aborted) break;
-            if (event.type === 'text') {
-              prefetched.text += event.text;
-              prefetched.chunks.push(event.text);
-            } else if (event.type === 'usage') {
-              prefetched.inputTokens = event.inputTokens;
-              prefetched.outputTokens = event.outputTokens;
-            }
-          }
-        } catch (err) {
-          prefetched.error = err instanceof Error ? err.message : String(err);
-        }
-        prefetched.ready = true;
-      })();
+      this.prefetchWithRetry(panelist, messages, prefetched);
     }
+  }
+
+  /**
+   * Prefetch a single panelist's response with retry logic.
+   */
+  private async prefetchWithRetry(
+    panelist: Panelist,
+    messages: Message[],
+    prefetched: PrefetchedResponse
+  ): Promise<void> {
+    for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+      if (this.aborted) break;
+
+      try {
+        // Reset state for retry
+        if (attempt > 0) {
+          prefetched.text = '';
+          prefetched.chunks = [];
+          prefetched.inputTokens = 0;
+          prefetched.outputTokens = 0;
+          await sleep(RETRY_BASE_DELAY_MS * Math.pow(2, attempt - 1));
+        }
+
+        for await (const event of this.provider.stream(messages)) {
+          if (this.aborted) break;
+          if (event.type === 'text') {
+            prefetched.text += event.text;
+            prefetched.chunks.push(event.text);
+          } else if (event.type === 'usage') {
+            prefetched.inputTokens = event.inputTokens;
+            prefetched.outputTokens = event.outputTokens;
+          }
+        }
+
+        // Success — break out of retry loop
+        prefetched.ready = true;
+        return;
+      } catch (err) {
+        const classified = classifyError(err);
+
+        if (!classified.retryable || attempt === MAX_RETRIES) {
+          prefetched.error = classified.message;
+          prefetched.ready = true;
+          return;
+        }
+        // Will retry on next iteration
+      }
+    }
+
+    prefetched.ready = true;
   }
 
   private buildIdeaContext(): string {
@@ -102,6 +222,10 @@ export class ConversationOrchestrator {
     return text;
   }
 
+  /**
+   * Stream a single panelist response with retry logic and timeout.
+   * On failure after retries, records a skip message instead of aborting the session.
+   */
   private async streamPanelistResponse(
     panelist: Panelist,
     userPrompt: string,
@@ -128,25 +252,97 @@ export class ConversationOrchestrator {
     this.callbacks.onTranscriptEntry(entry);
 
     let fullResponse = '';
-    try {
-      for await (const event of this.provider.stream(messages)) {
-        if (this.aborted) break;
-        if (event.type === 'text') {
-          fullResponse += event.text;
-          this.callbacks.onStreamChunk(panelist.id, event.text);
-        } else if (event.type === 'usage') {
-          this.callbacks.onTokenUsage(event.inputTokens, event.outputTokens);
+    let lastError: { message: string; retryable: boolean } | null = null;
+
+    for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+      if (this.aborted) break;
+
+      try {
+        // On retry, wait with exponential backoff and reset accumulated text
+        if (attempt > 0) {
+          const delay = RETRY_BASE_DELAY_MS * Math.pow(2, attempt - 1);
+          await sleep(delay);
+          fullResponse = '';
         }
+
+        // Create a timeout race
+        const { controller: timeoutCtrl, clear: clearTimeout_ } = createTimeoutController(STREAM_TIMEOUT_MS);
+
+        try {
+          const streamPromise = this.consumeStream(panelist.id, messages, timeoutCtrl.signal);
+          fullResponse = await streamPromise;
+          clearTimeout_();
+        } catch (innerErr) {
+          clearTimeout_();
+          throw innerErr;
+        }
+
+        // Success
+        this.consecutiveFailures = 0;
+        entry.content = fullResponse;
+        this.transcript.push(entry);
+        this.callbacks.onPanelistDeactivated();
+        return fullResponse;
+      } catch (error) {
+        lastError = classifyError(error);
+
+        // Don't retry non-retryable errors
+        if (!lastError.retryable) break;
       }
-    } catch (error) {
-      this.callbacks.onError(error instanceof Error ? error : new Error(String(error)));
-      fullResponse = '[Error generating response]';
-      this.aborted = true;
     }
 
+    // All retries exhausted — graceful degradation
+    const errorMsg = lastError?.message || 'Failed to generate response';
+    this.consecutiveFailures++;
+
+    // If 3+ panelists fail in a row, something systemic is wrong — abort
+    if (this.consecutiveFailures >= 3) {
+      this.callbacks.onError(new Error(`Multiple panelists failed in a row. ${errorMsg}`));
+      fullResponse = `[Could not generate response: ${errorMsg}]`;
+      entry.content = fullResponse;
+      this.transcript.push(entry);
+      this.callbacks.onPanelistDeactivated();
+      this.aborted = true;
+      return fullResponse;
+    }
+
+    // Skip this panelist but continue the session
+    this.callbacks.onError(
+      new Error(`${panelist.name} couldn't respond — skipping. ${errorMsg}`)
+    );
+    fullResponse = `[Skipped: ${errorMsg}]`;
     entry.content = fullResponse;
     this.transcript.push(entry);
     this.callbacks.onPanelistDeactivated();
+    return fullResponse;
+  }
+
+  /**
+   * Consume the provider stream, yielding chunks via callbacks.
+   * Respects an AbortSignal for timeout cancellation.
+   */
+  private async consumeStream(
+    panelistId: string,
+    messages: Message[],
+    signal: AbortSignal
+  ): Promise<string> {
+    let fullResponse = '';
+
+    // Wrap the stream iteration with timeout awareness
+    const streamIterator = this.provider.stream(messages);
+
+    for await (const event of streamIterator) {
+      if (this.aborted) break;
+      if (signal.aborted) {
+        throw new Error('Request timed out');
+      }
+      if (event.type === 'text') {
+        fullResponse += event.text;
+        this.callbacks.onStreamChunk(panelistId, event.text);
+      } else if (event.type === 'usage') {
+        this.callbacks.onTokenUsage(event.inputTokens, event.outputTokens);
+      }
+    }
 
     return fullResponse;
   }
@@ -168,6 +364,7 @@ export class ConversationOrchestrator {
   /**
    * Replay a prefetched response — waits for it to finish if still generating,
    * then streams chunks with a small delay so it looks like live streaming.
+   * If the prefetch failed, falls back to a live request with retry.
    */
   private async replayPrefetched(
     panelist: Panelist,
@@ -175,6 +372,18 @@ export class ConversationOrchestrator {
     round: RoundType
   ): Promise<void> {
     if (this.aborted) return;
+
+    // Wait for prefetch to finish
+    while (!prefetched.ready && !this.aborted) {
+      await sleep(50);
+    }
+
+    // If prefetch failed, fall back to a fresh live request with retry
+    if (prefetched.error) {
+      this.prefetchedInitialTakes.delete(panelist.id);
+      await this._runSinglePanelist(panelist, round);
+      return;
+    }
 
     this.callbacks.onPanelistActivated(panelist.id);
 
@@ -207,12 +416,8 @@ export class ConversationOrchestrator {
       await new Promise((r) => setTimeout(r, 50));
     }
 
-    if (prefetched.error) {
-      this.callbacks.onError(new Error(prefetched.error));
-      entry.content = '[Error generating response]';
-    } else {
-      entry.content = prefetched.text;
-    }
+    entry.content = prefetched.text;
+    this.consecutiveFailures = 0;
 
     if (prefetched.inputTokens || prefetched.outputTokens) {
       this.callbacks.onTokenUsage(prefetched.inputTokens, prefetched.outputTokens);
@@ -302,24 +507,46 @@ export class ConversationOrchestrator {
     }
   }
 
+  /**
+   * Generate the session summary with retry logic and timeout.
+   */
   async generateSummary(): Promise<string> {
     this.callbacks.onRoundChange('summary');
     const transcriptContext = this.buildTranscriptContext();
 
     const prompt = `${transcriptContext}\n\nSynthesize this discussion into a structured summary with these sections:\n\n## Key Insights\nBulleted list of the most important points raised.\n\n## Points of Agreement\nWhere the panelists aligned.\n\n## Points of Disagreement\nWhere they diverged and why.\n\n## Top Recommendations\nThe 3-5 most actionable next steps, in priority order.\n\nBe specific and reference which panelists made which points.`;
 
-    try {
-      const result = await this.provider.generate([
-        { role: 'user', content: prompt },
-      ]);
-      if (result.usage) {
-        this.callbacks.onTokenUsage(result.usage.inputTokens, result.usage.outputTokens);
+    for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+      try {
+        if (attempt > 0) {
+          await sleep(RETRY_BASE_DELAY_MS * Math.pow(2, attempt - 1));
+        }
+
+        const result = await Promise.race([
+          this.provider.generate([{ role: 'user', content: prompt }]),
+          sleep(GENERATE_TIMEOUT_MS).then(() => {
+            throw new Error('Summary generation timed out');
+          }),
+        ]);
+
+        // result is GenerateResult since the timeout path throws
+        const generateResult = result as { text: string; usage?: { inputTokens: number; outputTokens: number } };
+        if (generateResult.usage) {
+          this.callbacks.onTokenUsage(generateResult.usage.inputTokens, generateResult.usage.outputTokens);
+        }
+        return generateResult.text;
+      } catch (error) {
+        const classified = classifyError(error);
+
+        if (!classified.retryable || attempt === MAX_RETRIES) {
+          this.callbacks.onError(new Error(classified.message));
+          return 'Unable to generate summary. You can still review the full transcript above.';
+        }
+        // Will retry on next iteration
       }
-      return result.text;
-    } catch (error) {
-      this.callbacks.onError(error instanceof Error ? error : new Error(String(error)));
-      return 'Error generating summary.';
     }
+
+    return 'Unable to generate summary. You can still review the full transcript above.';
   }
 
   async runAutoRounds(): Promise<void> {
