@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useEffect, useRef } from 'react';
 import type { RoundType } from '@/engine/types';
 import { formatCost, formatTokens } from '@/lib/models';
 
@@ -16,59 +17,197 @@ interface Props {
 }
 
 const ROUND_LABELS: Record<RoundType, string> = {
-  'initial-takes': 'Round 1 — Initial Takes',
-  'cross-talk': 'Round 2 — Cross-Talk',
-  'moderation': 'Round 3 — Moderation',
-  'wrap-up': 'Final Takeaways',
-  'summary': 'Generating Summary...',
+  'initial-takes': 'ROUND 1 — INITIAL TAKES',
+  'cross-talk': 'ROUND 2 — CROSS-TALK',
+  'moderation': 'ROUND 3 — Q&A',
+  'wrap-up': 'FINAL TAKEAWAYS',
+  'summary': 'GENERATING SUMMARY...',
 };
 
 export default function StatusBar({ round, panelistsSpoken, totalPanelists, onWrapUp, canWrapUp, modelLabel, costDollars, totalTokens, isOllama }: Props) {
+  // Timer: counts up from session start
+  const [elapsed, setElapsed] = useState(0);
+  const startTimeRef = useRef(Date.now());
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setElapsed(Math.floor((Date.now() - startTimeRef.current) / 1000));
+    }, 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const minutes = Math.floor(elapsed / 60);
+  const seconds = elapsed % 60;
+  const timeStr = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+
+  const isActive = round !== 'summary' && round !== 'wrap-up';
+
   return (
     <div
-      className="flex flex-wrap items-center justify-between gap-2 px-3 sm:px-5 py-2.5 max-w-[800px] mx-auto rounded-b-xl"
-      style={{ background: 'var(--bg-surface)', borderTop: '1px solid var(--border)' }}
+      className="max-w-[800px] mx-auto rounded-b-xl overflow-hidden"
+      style={{
+        background: '#1a1714',
+        borderTop: '2px solid #2a2520',
+      }}
     >
-      <div className="flex items-center gap-2.5">
-        <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: 'var(--accent-gold)' }} />
-        <span className="label-mono" style={{ fontSize: '10px', color: 'var(--accent-gold)' }}>
-          {ROUND_LABELS[round]}
-        </span>
-      </div>
-      <div className="flex flex-wrap items-center gap-2 sm:gap-4">
-        {modelLabel && (
-          <span className="hidden sm:inline text-xs font-mono" style={{ color: 'var(--text-muted)' }}>
-            {modelLabel}
-          </span>
-        )}
-        {totalTokens != null && totalTokens > 0 && (
-          <span className="hidden sm:inline text-xs font-mono" style={{ color: 'var(--text-muted)' }}>
-            {isOllama ? 'Free (local)' : `${formatCost(costDollars || 0)} · ${formatTokens(totalTokens)} tokens`}
-          </span>
-        )}
-        <span className="text-xs" style={{ color: 'var(--text-muted)' }}>
-          {panelistsSpoken}/{totalPanelists} spoke
-        </span>
-        {canWrapUp && (
-          <button
-            onClick={onWrapUp}
+      {/* Thin gold accent line at top */}
+      <div
+        style={{
+          height: '1px',
+          background: 'linear-gradient(90deg, transparent, rgba(196, 154, 42, 0.5), transparent)',
+        }}
+      />
+
+      <div className="flex flex-wrap items-center justify-between gap-2 px-3 sm:px-4 py-2">
+        {/* Left: Round indicator + timer */}
+        <div className="flex items-center gap-3">
+          {/* Live/recording indicator */}
+          <div className="flex items-center gap-1.5">
+            <span
+              className="w-2 h-2 rounded-full flex-shrink-0"
+              style={{
+                background: isActive ? '#e85a4a' : '#666',
+                boxShadow: isActive ? '0 0 6px rgba(232, 90, 74, 0.6)' : 'none',
+                animation: isActive ? 'statusPulse 2s ease-in-out infinite' : 'none',
+              }}
+            />
+            <span
+              style={{
+                fontFamily: "'Silkscreen', monospace",
+                fontSize: '9px',
+                letterSpacing: '0.08em',
+                color: isActive ? '#e85a4a' : '#666',
+              }}
+            >
+              {isActive ? 'REC' : 'END'}
+            </span>
+          </div>
+
+          {/* Divider */}
+          <div style={{ width: '1px', height: '16px', background: '#333' }} />
+
+          {/* Round label */}
+          <span
             style={{
-              background: 'var(--accent-gold)',
-              color: 'white',
-              fontFamily: "'Outfit', sans-serif",
-              fontSize: '13px',
-              fontWeight: 600,
-              padding: '8px 14px',
-              borderRadius: '8px',
-              border: 'none',
-              cursor: 'pointer',
-              boxShadow: '0 2px 8px rgba(196, 154, 42, 0.4)',
+              fontFamily: "'Silkscreen', monospace",
+              fontSize: '9px',
+              letterSpacing: '0.06em',
+              color: 'var(--accent-gold)',
             }}
           >
-            <span className="hidden sm:inline">I&apos;m Done Asking Questions</span>
-            <span className="sm:hidden">Wrap Up</span>
-          </button>
-        )}
+            {ROUND_LABELS[round]}
+          </span>
+        </div>
+
+        {/* Right: Stats + wrap up */}
+        <div className="flex items-center gap-2 sm:gap-3">
+          {/* Timer */}
+          <div
+            className="flex items-center gap-1.5 px-2 py-1 rounded"
+            style={{
+              background: 'rgba(255,255,255,0.05)',
+              border: '1px solid rgba(255,255,255,0.06)',
+            }}
+          >
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="rgba(196,154,42,0.7)" strokeWidth="2" strokeLinecap="round">
+              <circle cx="12" cy="12" r="10" />
+              <polyline points="12 6 12 12 16 14" />
+            </svg>
+            <span
+              style={{
+                fontFamily: "'DM Mono', monospace",
+                fontSize: '11px',
+                fontWeight: 500,
+                color: 'rgba(255,255,255,0.7)',
+                fontVariantNumeric: 'tabular-nums',
+                animation: isActive ? 'timerPulse 2s ease-in-out infinite' : 'none',
+              }}
+            >
+              {timeStr}
+            </span>
+          </div>
+
+          {/* Model badge */}
+          {modelLabel && (
+            <span
+              className="hidden sm:inline-flex items-center px-2 py-0.5 rounded"
+              style={{
+                background: 'rgba(196, 154, 42, 0.12)',
+                border: '1px solid rgba(196, 154, 42, 0.2)',
+                fontFamily: "'DM Mono', monospace",
+                fontSize: '9px',
+                fontWeight: 500,
+                letterSpacing: '0.04em',
+                color: 'rgba(196, 154, 42, 0.8)',
+                textTransform: 'uppercase',
+              }}
+            >
+              {modelLabel}
+            </span>
+          )}
+
+          {/* Token/cost counter */}
+          {totalTokens != null && totalTokens > 0 && (
+            <span
+              className="hidden sm:inline"
+              style={{
+                fontFamily: "'DM Mono', monospace",
+                fontSize: '10px',
+                color: 'rgba(255,255,255,0.4)',
+              }}
+            >
+              {isOllama ? 'FREE' : `${formatCost(costDollars || 0)} / ${formatTokens(totalTokens)} tk`}
+            </span>
+          )}
+
+          {/* Panelist count */}
+          <span
+            className="hidden sm:inline"
+            style={{
+              fontFamily: "'DM Mono', monospace",
+              fontSize: '10px',
+              color: 'rgba(255,255,255,0.4)',
+            }}
+          >
+            {panelistsSpoken}/{totalPanelists}
+          </span>
+
+          {/* Wrap Up button — broadcast END SHOW style */}
+          {canWrapUp && (
+            <button
+              onClick={onWrapUp}
+              className="status-bar-wrap-btn"
+              style={{
+                fontFamily: "'Silkscreen', monospace",
+                fontSize: '9px',
+                letterSpacing: '0.06em',
+                padding: '6px 12px',
+                borderRadius: '4px',
+                border: '1px solid rgba(232, 90, 74, 0.4)',
+                cursor: 'pointer',
+                background: 'rgba(232, 90, 74, 0.12)',
+                color: '#e85a4a',
+                transition: 'all 0.15s ease',
+                textTransform: 'uppercase',
+              }}
+              onMouseEnter={(e) => {
+                const el = e.currentTarget;
+                el.style.background = 'rgba(232, 90, 74, 0.25)';
+                el.style.borderColor = 'rgba(232, 90, 74, 0.6)';
+                el.style.boxShadow = '0 0 12px rgba(232, 90, 74, 0.2)';
+              }}
+              onMouseLeave={(e) => {
+                const el = e.currentTarget;
+                el.style.background = 'rgba(232, 90, 74, 0.12)';
+                el.style.borderColor = 'rgba(232, 90, 74, 0.4)';
+                el.style.boxShadow = 'none';
+              }}
+            >
+              <span className="hidden sm:inline">WRAP SESSION</span>
+              <span className="sm:hidden">WRAP</span>
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );

@@ -61,125 +61,199 @@ export default function ModerationInput({ onSubmit, disabled }: Props) {
   return (
     <form
       onSubmit={handleSubmit}
-      className="flex flex-col gap-2"
+      className="moderation-input-form"
       style={{
         opacity: mounted ? 1 : 0,
-        transform: mounted ? 'translateY(0)' : 'translateY(12px)',
-        transition: 'opacity 0.4s ease-out, transform 0.4s ease-out',
+        transform: mounted ? 'translateY(0)' : 'translateY(20px)',
+        transition: 'opacity 0.5s cubic-bezier(0.22, 1, 0.36, 1), transform 0.5s cubic-bezier(0.22, 1, 0.36, 1)',
       }}
     >
-      {/* Label */}
-      <div className="flex items-center justify-between px-1">
-        <span
-          className="label-mono"
-          style={{ color: disabled ? 'var(--text-muted)' : 'var(--accent-gold)' }}
-        >
-          {disabled ? 'Panelists are responding...' : 'Your question'}
-        </span>
-        {isNearLimit && (
-          <span
-            className="label-mono"
-            style={{
-              color: isAtLimit ? 'var(--accent-warm)' : 'var(--text-muted)',
-              transition: 'color 0.2s',
-            }}
-          >
-            {charCount}/{MAX_LENGTH}
-          </span>
-        )}
-      </div>
-
-      {/* Input row */}
+      {/* Control panel frame */}
       <div
-        className="flex gap-2 items-end rounded-xl transition-all"
+        className="rounded-xl overflow-hidden"
         style={{
-          background: 'var(--bg-surface)',
-          border: disabled
-            ? '1px solid var(--border)'
-            : '1px solid var(--border-light)',
-          padding: '4px 4px 4px 0',
-          boxShadow: disabled
-            ? 'none'
-            : '0 1px 4px rgba(0,0,0,0.04), inset 0 1px 2px rgba(0,0,0,0.02)',
+          background: '#1a1714',
+          border: '1px solid #2a2520',
+          boxShadow: '0 4px 24px rgba(0,0,0,0.15), 0 0 1px rgba(196,154,42,0.2)',
         }}
       >
-        <textarea
-          ref={textareaRef}
-          value={question}
-          onChange={(e) => {
-            if (e.target.value.length <= MAX_LENGTH) {
-              setQuestion(e.target.value);
-            }
-          }}
-          onKeyDown={handleKeyDown}
-          placeholder={
-            disabled
-              ? 'Waiting for panelists to finish...'
-              : 'Ask the panelists a follow-up question...'
-          }
-          disabled={disabled}
-          rows={1}
-          className="flex-1 px-4 py-3 text-sm resize-none disabled:opacity-40"
+        {/* Header strip — MODERATOR label */}
+        <div
+          className="flex items-center justify-between px-4 py-2"
           style={{
-            background: 'transparent',
-            border: 'none',
-            color: 'var(--text-primary)',
-            outline: 'none',
-            lineHeight: '1.5',
-            fontFamily: 'inherit',
-            minHeight: '44px',
-            maxHeight: '120px',
-          }}
-        />
-
-        <button
-          type="submit"
-          disabled={!canSubmit}
-          className="flex-shrink-0 flex items-center justify-center gap-2 px-5 py-3 rounded-lg text-sm font-500 transition-all cursor-pointer"
-          style={{
-            background: canSubmit ? 'var(--accent-gold)' : 'var(--bg-elevated)',
-            color: canSubmit ? 'var(--bg-deep)' : 'var(--text-muted)',
-            opacity: canSubmit ? 1 : 0.5,
-            minWidth: '72px',
-            height: '40px',
-          }}
-          onMouseEnter={(e) => {
-            if (canSubmit) {
-              (e.currentTarget as HTMLElement).style.background = 'var(--accent-gold-dim)';
-              (e.currentTarget as HTMLElement).style.transform = 'translateY(-1px)';
-            }
-          }}
-          onMouseLeave={(e) => {
-            if (canSubmit) {
-              (e.currentTarget as HTMLElement).style.background = 'var(--accent-gold)';
-              (e.currentTarget as HTMLElement).style.transform = 'translateY(0)';
-            }
+            background: 'linear-gradient(90deg, rgba(196,154,42,0.15), rgba(196,154,42,0.05))',
+            borderBottom: '1px solid rgba(196,154,42,0.15)',
           }}
         >
-          {disabled ? (
-            // Loading spinner
-            <svg
-              width="16"
-              height="16"
-              viewBox="0 0 16 16"
-              fill="none"
-              style={{ animation: 'spin 1s linear infinite' }}
-            >
-              <circle
-                cx="8"
-                cy="8"
-                r="6"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeDasharray="28"
-                strokeDashoffset="8"
-              />
+          <div className="flex items-center gap-2">
+            {/* Intercom icon */}
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--accent-gold)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" />
+              <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+              <line x1="12" y1="19" x2="12" y2="23" />
+              <line x1="8" y1="23" x2="16" y2="23" />
             </svg>
-          ) : (
-            <>
-              Ask
-              {/* Send arrow icon */}
+            <span
+              style={{
+                fontFamily: "'Silkscreen', monospace",
+                fontSize: '9px',
+                letterSpacing: '0.1em',
+                color: 'var(--accent-gold)',
+              }}
+            >
+              MODERATOR
+            </span>
+          </div>
+
+          {/* Right side: status indicator or char count */}
+          <div className="flex items-center gap-2">
+            {disabled ? (
+              <div className="flex items-center gap-1.5">
+                <span
+                  className="w-2 h-2 rounded-full"
+                  style={{
+                    background: '#e85a4a',
+                    boxShadow: '0 0 6px rgba(232, 90, 74, 0.6)',
+                    animation: 'statusPulse 1.5s ease-in-out infinite',
+                  }}
+                />
+                <span
+                  style={{
+                    fontFamily: "'Silkscreen', monospace",
+                    fontSize: '8px',
+                    letterSpacing: '0.08em',
+                    color: '#e85a4a',
+                  }}
+                >
+                  ON AIR
+                </span>
+              </div>
+            ) : (
+              isNearLimit && (
+                <span
+                  style={{
+                    fontFamily: "'DM Mono', monospace",
+                    fontSize: '10px',
+                    fontWeight: 500,
+                    color: isAtLimit ? '#e85a4a' : 'rgba(255,255,255,0.3)',
+                    transition: 'color 0.2s',
+                    fontVariantNumeric: 'tabular-nums',
+                  }}
+                >
+                  {charCount}/{MAX_LENGTH}
+                </span>
+              )
+            )}
+          </div>
+        </div>
+
+        {/* Textarea + button row */}
+        <div className="flex gap-2 items-end p-3">
+          <textarea
+            ref={textareaRef}
+            value={question}
+            onChange={(e) => {
+              if (e.target.value.length <= MAX_LENGTH) {
+                setQuestion(e.target.value);
+              }
+            }}
+            onKeyDown={handleKeyDown}
+            placeholder={
+              disabled
+                ? 'Panelists are responding...'
+                : 'Pass a note to the panel...'
+            }
+            disabled={disabled}
+            rows={1}
+            className="flex-1 resize-none"
+            style={{
+              background: 'rgba(255,255,255,0.04)',
+              border: '1px solid rgba(255,255,255,0.08)',
+              borderRadius: '8px',
+              color: disabled ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.85)',
+              padding: '10px 14px',
+              fontSize: '14px',
+              fontFamily: "'DM Mono', monospace",
+              lineHeight: '1.5',
+              outline: 'none',
+              minHeight: '44px',
+              maxHeight: '120px',
+              transition: 'border-color 0.2s, background 0.2s',
+              ...(disabled ? {} : {}),
+            }}
+            onFocus={(e) => {
+              if (!disabled) {
+                e.currentTarget.style.borderColor = 'rgba(196,154,42,0.3)';
+                e.currentTarget.style.background = 'rgba(255,255,255,0.06)';
+              }
+            }}
+            onBlur={(e) => {
+              e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)';
+              e.currentTarget.style.background = 'rgba(255,255,255,0.04)';
+            }}
+          />
+
+          {/* Send button */}
+          <button
+            type="submit"
+            disabled={!canSubmit}
+            className="flex-shrink-0 flex items-center justify-center gap-1.5 transition-all"
+            style={{
+              background: canSubmit
+                ? 'var(--accent-gold)'
+                : disabled
+                  ? 'rgba(232, 90, 74, 0.08)'
+                  : 'rgba(255,255,255,0.06)',
+              color: canSubmit
+                ? '#1a1714'
+                : disabled
+                  ? 'rgba(232, 90, 74, 0.5)'
+                  : 'rgba(255,255,255,0.2)',
+              border: canSubmit
+                ? '1px solid var(--accent-gold)'
+                : disabled
+                  ? '1px solid rgba(232, 90, 74, 0.15)'
+                  : '1px solid rgba(255,255,255,0.08)',
+              borderRadius: '8px',
+              padding: '10px 16px',
+              fontFamily: "'Silkscreen', monospace",
+              fontSize: '9px',
+              letterSpacing: '0.06em',
+              cursor: canSubmit ? 'pointer' : 'default',
+              minWidth: '72px',
+              height: '44px',
+              transition: 'all 0.15s ease',
+              boxShadow: canSubmit ? '0 0 12px rgba(196, 154, 42, 0.25)' : 'none',
+            }}
+            onMouseEnter={(e) => {
+              if (canSubmit) {
+                const el = e.currentTarget;
+                el.style.background = 'var(--accent-gold-dim)';
+                el.style.transform = 'translateY(-1px)';
+                el.style.boxShadow = '0 0 20px rgba(196, 154, 42, 0.4)';
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (canSubmit) {
+                const el = e.currentTarget;
+                el.style.background = 'var(--accent-gold)';
+                el.style.transform = 'translateY(0)';
+                el.style.boxShadow = '0 0 12px rgba(196, 154, 42, 0.25)';
+              }
+            }}
+            onMouseDown={(e) => {
+              if (canSubmit) {
+                (e.currentTarget as HTMLElement).style.transform = 'translateY(1px)';
+              }
+            }}
+            onMouseUp={(e) => {
+              if (canSubmit) {
+                (e.currentTarget as HTMLElement).style.transform = 'translateY(-1px)';
+              }
+            }}
+          >
+            {disabled ? (
+              // Pulsing mic icon when on air
               <svg
                 width="14"
                 height="14"
@@ -188,21 +262,48 @@ export default function ModerationInput({ onSubmit, disabled }: Props) {
                 stroke="currentColor"
                 strokeWidth="2"
                 strokeLinecap="round"
-                strokeLinejoin="round"
+                style={{ animation: 'statusPulse 1.5s ease-in-out infinite' }}
               >
-                <line x1="22" y1="2" x2="11" y2="13" />
-                <polygon points="22 2 15 22 11 13 2 9 22 2" />
+                <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" />
+                <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
               </svg>
-            </>
-          )}
-        </button>
-      </div>
+            ) : (
+              <>
+                SEND
+                {/* Arrow icon */}
+                <svg
+                  width="10"
+                  height="10"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <line x1="5" y1="12" x2="19" y2="12" />
+                  <polyline points="12 5 19 12 12 19" />
+                </svg>
+              </>
+            )}
+          </button>
+        </div>
 
-      {/* Keyboard hint */}
-      <div className="flex justify-end px-1">
-        <span className="label-mono" style={{ fontSize: '9px', color: 'var(--text-muted)' }}>
-          Enter to send &middot; Shift+Enter for new line
-        </span>
+        {/* Footer hint */}
+        <div
+          className="flex items-center justify-between px-4 pb-2"
+        >
+          <span
+            style={{
+              fontFamily: "'DM Mono', monospace",
+              fontSize: '9px',
+              color: 'rgba(255,255,255,0.2)',
+              letterSpacing: '0.04em',
+            }}
+          >
+            {disabled ? 'Waiting for panel response...' : 'Enter to send / Shift+Enter for new line'}
+          </span>
+        </div>
       </div>
     </form>
   );

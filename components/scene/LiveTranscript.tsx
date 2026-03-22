@@ -34,11 +34,11 @@ interface LiveTranscriptProps {
 /* ------------------------------------------------------------------ */
 
 const ROUND_LABELS: Record<string, string> = {
-  'initial-takes': 'Initial Takes',
-  'cross-talk': 'Cross-Talk',
-  'moderation': 'Moderation',
-  'wrap-up': 'Wrap-Up',
-  'summary': 'Summary',
+  'initial-takes': 'INITIAL TAKES',
+  'cross-talk': 'CROSS-TALK',
+  'moderation': 'Q&A',
+  'wrap-up': 'WRAP-UP',
+  'summary': 'SUMMARY',
 };
 
 /* ------------------------------------------------------------------ */
@@ -115,59 +115,84 @@ export default function LiveTranscript({
 
   return (
     <div className="max-w-[800px] mx-auto mt-6">
-      {/* Header bar */}
+      {/* Header bar — broadcast feed style */}
       <div
-        className="flex items-center justify-between px-4 py-2 rounded-t-xl"
+        className="flex items-center justify-between px-4 py-2.5"
         style={{
-          background: 'var(--bg-elevated)',
-          border: '1px solid var(--border)',
-          borderBottom: isCollapsed ? '1px solid var(--border)' : 'none',
-          borderRadius: isCollapsed ? '12px' : undefined,
+          background: '#1a1714',
+          border: '1px solid #2a2520',
+          borderBottom: isCollapsed ? '1px solid #2a2520' : 'none',
+          borderRadius: isCollapsed ? '10px' : '10px 10px 0 0',
         }}
       >
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2.5">
+          {/* Feed icon */}
           <svg
-            width="14"
-            height="14"
+            width="12"
+            height="12"
             viewBox="0 0 24 24"
             fill="none"
-            stroke="var(--text-muted)"
+            stroke="var(--accent-gold)"
             strokeWidth="2"
             strokeLinecap="round"
             strokeLinejoin="round"
+            style={{ opacity: 0.7 }}
           >
             <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
           </svg>
-          <span className="label-mono">Transcript</span>
           <span
-            className="text-xs font-mono"
-            style={{ color: 'var(--text-muted)', fontSize: '10px' }}
+            style={{
+              fontFamily: "'Silkscreen', monospace",
+              fontSize: '9px',
+              letterSpacing: '0.1em',
+              color: 'var(--accent-gold)',
+            }}
           >
-            {entries.length} {entries.length === 1 ? 'entry' : 'entries'}
+            TRANSCRIPT FEED
           </span>
+          <span
+            style={{
+              fontFamily: "'DM Mono', monospace",
+              fontSize: '10px',
+              color: 'rgba(255,255,255,0.25)',
+              fontVariantNumeric: 'tabular-nums',
+            }}
+          >
+            {entries.length}
+          </span>
+          {isSpeaking && (
+            <span
+              className="w-1.5 h-1.5 rounded-full"
+              style={{
+                background: '#e85a4a',
+                boxShadow: '0 0 4px rgba(232, 90, 74, 0.5)',
+                animation: 'statusPulse 1.5s ease-in-out infinite',
+              }}
+            />
+          )}
         </div>
 
         <button
           onClick={() => setIsCollapsed(!isCollapsed)}
-          className="flex items-center gap-1 px-2 py-1 rounded-md transition-colors"
+          className="flex items-center gap-1.5 px-2 py-1 rounded transition-colors"
           style={{
             background: 'transparent',
             border: 'none',
             cursor: 'pointer',
-            color: 'var(--text-muted)',
-            fontSize: '11px',
             fontFamily: "'DM Mono', monospace",
+            fontSize: '10px',
+            color: 'rgba(255,255,255,0.3)',
           }}
           onMouseEnter={(e) => {
-            (e.target as HTMLElement).style.background = 'var(--bg-surface)';
+            (e.currentTarget as HTMLElement).style.color = 'rgba(255,255,255,0.6)';
           }}
           onMouseLeave={(e) => {
-            (e.target as HTMLElement).style.background = 'transparent';
+            (e.currentTarget as HTMLElement).style.color = 'rgba(255,255,255,0.3)';
           }}
         >
           <svg
-            width="12"
-            height="12"
+            width="10"
+            height="10"
             viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"
@@ -181,17 +206,17 @@ export default function LiveTranscript({
           >
             <polyline points="6 9 12 15 18 9" />
           </svg>
-          {isCollapsed ? 'Expand' : 'Collapse'}
+          {isCollapsed ? 'EXPAND' : 'COLLAPSE'}
         </button>
       </div>
 
       {/* Collapsed preview — show last entry only */}
       {isCollapsed && lastEntry && (
         <div
-          className="px-4 py-3 rounded-b-xl mt-px"
+          className="px-4 py-3 rounded-b-lg mt-px"
           style={{
-            background: 'var(--bg-surface)',
-            border: '1px solid var(--border)',
+            background: 'rgba(26, 23, 20, 0.7)',
+            border: '1px solid #2a2520',
             borderTop: 'none',
           }}
         >
@@ -205,49 +230,86 @@ export default function LiveTranscript({
         </div>
       )}
 
-      {/* Expanded transcript */}
+      {/* Expanded transcript — teleprompter feed */}
       {!isCollapsed && (
         <div
-          ref={scrollContainerRef}
-          onScroll={handleScroll}
-          className="rounded-b-xl overflow-y-auto"
+          className="relative"
           style={{
-            background: 'var(--bg-surface)',
-            border: '1px solid var(--border)',
-            borderTop: 'none',
-            maxHeight: '320px',
+            borderRadius: '0 0 10px 10px',
+            overflow: 'hidden',
           }}
         >
-          <div className="p-4 space-y-1">
-            {entries.map((entry, index) => {
-              const prevEntry = index > 0 ? entries[index - 1] : null;
-              const showRoundDivider = prevEntry && prevEntry.round !== entry.round;
-              const panelist = panelistMap.current.get(entry.panelistId) || null;
-              const isActive = isSpeaking && activePanelistId === entry.panelistId;
-              const isLastByActiveSpeaker =
-                isActive && index === entries.length - 1;
+          {/* Top scroll fade */}
+          <div
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              height: '24px',
+              background: 'linear-gradient(to bottom, rgba(26,23,20,0.95), transparent)',
+              zIndex: 2,
+              pointerEvents: 'none',
+            }}
+          />
 
-              return (
-                <div key={entry.id}>
-                  {/* Round divider */}
-                  {showRoundDivider && (
-                    <RoundDivider round={entry.round} />
-                  )}
+          {/* Bottom scroll fade */}
+          <div
+            style={{
+              position: 'absolute',
+              bottom: 0,
+              left: 0,
+              right: 0,
+              height: '24px',
+              background: 'linear-gradient(to top, rgba(26,23,20,0.95), transparent)',
+              zIndex: 2,
+              pointerEvents: 'none',
+            }}
+          />
 
-                  {/* Entry */}
-                  <EntryRow
-                    entry={entry}
-                    panelist={panelist}
-                    isActive={isLastByActiveSpeaker}
-                    isSpeaking={isSpeaking}
-                    isAnimating={animatedIds.has(entry.id)}
-                  />
-                </div>
-              );
-            })}
+          <div
+            ref={scrollContainerRef}
+            onScroll={handleScroll}
+            className="overflow-y-auto"
+            style={{
+              background: 'rgba(26, 23, 20, 0.85)',
+              border: '1px solid #2a2520',
+              borderTop: 'none',
+              maxHeight: '360px',
+              borderRadius: '0 0 10px 10px',
+            }}
+          >
+            <div className="py-4 px-3 space-y-0.5">
+              {entries.map((entry, index) => {
+                const prevEntry = index > 0 ? entries[index - 1] : null;
+                const showRoundDivider = prevEntry && prevEntry.round !== entry.round;
+                const panelist = panelistMap.current.get(entry.panelistId) || null;
+                const isActive = isSpeaking && activePanelistId === entry.panelistId;
+                const isLastByActiveSpeaker =
+                  isActive && index === entries.length - 1;
 
-            {/* Bottom sentinel for auto-scroll */}
-            <div ref={bottomSentinelRef} />
+                return (
+                  <div key={entry.id}>
+                    {/* Round divider */}
+                    {showRoundDivider && (
+                      <RoundDivider round={entry.round} />
+                    )}
+
+                    {/* Entry */}
+                    <EntryRow
+                      entry={entry}
+                      panelist={panelist}
+                      isActive={isLastByActiveSpeaker}
+                      isSpeaking={isSpeaking}
+                      isAnimating={animatedIds.has(entry.id)}
+                    />
+                  </div>
+                );
+              })}
+
+              {/* Bottom sentinel for auto-scroll */}
+              <div ref={bottomSentinelRef} />
+            </div>
           </div>
         </div>
       )}
@@ -260,19 +322,20 @@ export default function LiveTranscript({
               setAutoScroll(true);
               bottomSentinelRef.current?.scrollIntoView({ behavior: 'smooth' });
             }}
-            className="px-3 py-1 rounded-b-lg text-xs transition-colors"
+            className="px-3 py-1 rounded-b-lg transition-colors"
             style={{
               background: 'var(--accent-gold)',
-              color: 'var(--bg-deep)',
+              color: '#1a1714',
               border: 'none',
               cursor: 'pointer',
-              fontFamily: "'DM Mono', monospace",
-              fontSize: '10px',
-              fontWeight: 500,
-              letterSpacing: '0.05em',
+              fontFamily: "'Silkscreen', monospace",
+              fontSize: '8px',
+              fontWeight: 400,
+              letterSpacing: '0.08em',
+              textTransform: 'uppercase',
             }}
           >
-            Scroll to latest
+            SCROLL TO LATEST
           </button>
         </div>
       )}
@@ -281,38 +344,50 @@ export default function LiveTranscript({
 }
 
 /* ------------------------------------------------------------------ */
-/*  Round Divider                                                      */
+/*  Round Divider — broadcast-style segment marker                     */
 /* ------------------------------------------------------------------ */
 
 function RoundDivider({ round }: { round: string }) {
   const label = ROUND_LABELS[round] || round;
 
   return (
-    <div className="flex items-center gap-3 py-3">
+    <div className="flex items-center gap-3 py-3 my-1">
       <div
         className="flex-1 h-px"
-        style={{ background: 'var(--border)' }}
+        style={{ background: 'rgba(196, 154, 42, 0.15)' }}
       />
-      <span
-        className="label-mono"
+      <div
+        className="flex items-center gap-1.5 px-2.5 py-1 rounded"
         style={{
-          fontSize: '9px',
-          color: 'var(--accent-gold)',
-          whiteSpace: 'nowrap',
+          background: 'rgba(196, 154, 42, 0.08)',
+          border: '1px solid rgba(196, 154, 42, 0.15)',
         }}
       >
-        {label}
-      </span>
+        <span
+          className="w-1 h-1 rounded-full"
+          style={{ background: 'var(--accent-gold)', opacity: 0.6 }}
+        />
+        <span
+          style={{
+            fontFamily: "'Silkscreen', monospace",
+            fontSize: '8px',
+            letterSpacing: '0.1em',
+            color: 'var(--accent-gold)',
+          }}
+        >
+          {label}
+        </span>
+      </div>
       <div
         className="flex-1 h-px"
-        style={{ background: 'var(--border)' }}
+        style={{ background: 'rgba(196, 154, 42, 0.15)' }}
       />
     </div>
   );
 }
 
 /* ------------------------------------------------------------------ */
-/*  Entry Row                                                          */
+/*  Entry Row — court reporter style                                   */
 /* ------------------------------------------------------------------ */
 
 function EntryRow({
@@ -329,8 +404,7 @@ function EntryRow({
   isAnimating: boolean;
 }) {
   const isModerator = entry.panelistId === 'user';
-  const color = panelist?.color || (isModerator ? 'var(--accent-gold)' : 'var(--text-muted)');
-  const spriteIndex = panelist?.spriteIndex;
+  const color = panelist?.color || (isModerator ? 'var(--accent-gold)' : 'rgba(255,255,255,0.4)');
 
   return (
     <div
@@ -340,10 +414,13 @@ function EntryRow({
           ? `3px solid ${color}`
           : '3px solid transparent',
         background: isModerator
-          ? 'rgba(196, 154, 42, 0.06)'
+          ? 'rgba(196, 154, 42, 0.04)'
           : isActive
-            ? `${typeof color === 'string' && color.startsWith('#') ? color : ''}08`
+            ? `rgba(255,255,255,0.02)`
             : 'transparent',
+        boxShadow: isActive
+          ? `inset 3px 0 12px -4px ${typeof color === 'string' && color.startsWith('#') ? color + '30' : 'rgba(196,154,42,0.15)'}`
+          : 'none',
         animation: isAnimating
           ? 'transcriptFadeIn 0.4s ease-out forwards'
           : isActive
@@ -351,55 +428,30 @@ function EntryRow({
             : 'none',
       }}
     >
-      {/* Portrait / avatar */}
-      <div className="flex-shrink-0 mt-0.5">
-        {spriteIndex != null ? (
-          <img
-            src={`/sprites/characters/char_${spriteIndex}_idle.png`}
-            alt={entry.panelistName}
-            className="rounded"
-            style={{
-              width: 24,
-              height: 24,
-              imageRendering: 'pixelated',
-              objectFit: 'cover',
-            }}
-          />
-        ) : (
-          <div
-            className="w-6 h-6 rounded flex items-center justify-center text-xs font-700"
-            style={{
-              backgroundColor: isModerator
-                ? 'rgba(196, 154, 42, 0.15)'
-                : `${typeof color === 'string' && color.startsWith('#') ? color : '#888'}20`,
-              color: color,
-              fontSize: '10px',
-            }}
-          >
-            {isModerator ? 'M' : entry.panelistName.charAt(0)}
-          </div>
-        )}
-      </div>
-
       {/* Content */}
       <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2 mb-0.5">
+        <div className="flex items-center gap-2 mb-1">
+          {/* Speaker name in Silkscreen with their color */}
           <span
-            className="text-xs font-600"
-            style={{ color }}
+            style={{
+              fontFamily: "'Silkscreen', monospace",
+              fontSize: '9px',
+              letterSpacing: '0.04em',
+              color: color,
+            }}
           >
-            {entry.panelistName}
+            {entry.panelistName.toUpperCase()}
           </span>
           {isModerator && (
             <span
-              className="text-xs px-1.5 py-px rounded"
+              className="px-1.5 py-px rounded"
               style={{
-                background: 'rgba(196, 154, 42, 0.12)',
+                background: 'rgba(196, 154, 42, 0.1)',
+                border: '1px solid rgba(196, 154, 42, 0.15)',
+                fontFamily: "'Silkscreen', monospace",
+                fontSize: '7px',
+                letterSpacing: '0.06em',
                 color: 'var(--accent-gold)',
-                fontSize: '9px',
-                fontFamily: "'DM Mono', monospace",
-                fontWeight: 500,
-                letterSpacing: '0.05em',
               }}
             >
               MOD
@@ -407,17 +459,35 @@ function EntryRow({
           )}
           {isActive && (
             <span
-              className="w-1.5 h-1.5 rounded-full animate-pulse"
-              style={{ background: color }}
+              className="w-1.5 h-1.5 rounded-full"
+              style={{
+                background: color,
+                boxShadow: `0 0 4px ${typeof color === 'string' && color.startsWith('#') ? color + '80' : 'rgba(196,154,42,0.5)'}`,
+                animation: 'statusPulse 1.5s ease-in-out infinite',
+              }}
             />
           )}
+          {/* Timestamp */}
+          <span
+            style={{
+              fontFamily: "'DM Mono', monospace",
+              fontSize: '9px',
+              color: 'rgba(255,255,255,0.15)',
+              fontVariantNumeric: 'tabular-nums',
+            }}
+          >
+            {new Date(entry.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+          </span>
         </div>
         <p
-          className="text-sm leading-relaxed whitespace-pre-wrap"
+          className="whitespace-pre-wrap"
           style={{
+            fontFamily: "'DM Mono', monospace",
+            fontSize: '12px',
+            lineHeight: '1.65',
             color: isModerator
-              ? 'var(--text-primary)'
-              : 'var(--text-secondary)',
+              ? 'rgba(255,255,255,0.8)'
+              : 'rgba(255,255,255,0.55)',
           }}
         >
           {entry.content}

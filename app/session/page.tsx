@@ -420,9 +420,15 @@ export default function SessionPage() {
       {/* Main session content */}
       <div>
         <div className="max-w-5xl mx-auto px-4 sm:px-6 py-4 sm:py-6">
-          <div className="text-center mb-4">
-            <div className="label-mono mb-1">Live Session</div>
-            <h1 className="font-pixel text-lg sm:text-xl title-text">THE FISHBOWL</h1>
+          {/* Control room header strip */}
+          <div className="flex items-center justify-center gap-3 mb-4">
+            <div className="h-px flex-1 max-w-16" style={{ background: 'linear-gradient(90deg, transparent, var(--border))' }} />
+            <div className="flex items-center gap-2">
+              <span className="w-1.5 h-1.5 rounded-full" style={{ background: '#e85a4a', boxShadow: '0 0 4px rgba(232,90,74,0.5)', animation: 'statusPulse 2s ease-in-out infinite' }} />
+              <h1 className="font-pixel text-sm sm:text-base title-text" style={{ letterSpacing: '0.06em' }}>THE FISHBOWL</h1>
+              <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '9px', color: 'var(--text-muted)', letterSpacing: '0.06em', textTransform: 'uppercase' }}>LIVE</span>
+            </div>
+            <div className="h-px flex-1 max-w-16" style={{ background: 'linear-gradient(90deg, var(--border), transparent)' }} />
           </div>
 
           {/* === BRIEFING VIEW === */}
@@ -520,8 +526,8 @@ export default function SessionPage() {
             </div>
             <div
               ref={sceneContainerRef}
-              className="w-full max-w-[800px] mx-auto rounded-t-xl overflow-hidden shadow-lg"
-              style={{ aspectRatio: '16/9' }}
+              className="w-full max-w-[800px] mx-auto scene-viewport overflow-hidden"
+              style={{ aspectRatio: '16/9', borderRadius: '10px 10px 0 0', borderBottom: 'none' }}
             />
             {(() => {
               const model = getModelById(store.modelId);
