@@ -74,8 +74,8 @@ export default function OnboardingTour({ setStep }: OnboardingTourProps) {
       const rect = el.getBoundingClientRect();
       setHighlightRect(rect);
 
-      const tooltipWidth = 320;
-      const gap = 16;
+      const tooltipWidth = 340;
+      const gap = 18;
       let left = rect.left + rect.width / 2 - tooltipWidth / 2;
       // Clamp within viewport
       left = Math.max(12, Math.min(left, window.innerWidth - tooltipWidth - 12));
@@ -128,12 +128,10 @@ export default function OnboardingTour({ setStep }: OnboardingTourProps) {
 
   return (
     <>
-      {/* Transparent click-catcher (no darkening) */}
+      {/* Dark overlay with vignette */}
       <div
+        className="tour-overlay"
         style={{
-          position: 'fixed',
-          inset: 0,
-          zIndex: 40,
           pointerEvents: showFinale ? 'none' : 'auto',
         }}
         onClick={(e) => e.stopPropagation()}
@@ -142,16 +140,14 @@ export default function OnboardingTour({ setStep }: OnboardingTourProps) {
       {/* Highlight ring on target element */}
       {highlightRect && !showFinale && (
         <div
+          className="tour-highlight"
           style={{
             position: 'fixed',
-            top: highlightRect.top - 4,
-            left: highlightRect.left - 4,
-            width: highlightRect.width + 8,
-            height: highlightRect.height + 8,
-            boxShadow: '0 0 0 4px var(--accent-gold)',
-            borderRadius: '12px',
+            top: highlightRect.top - 6,
+            left: highlightRect.left - 6,
+            width: highlightRect.width + 12,
+            height: highlightRect.height + 12,
             zIndex: 42,
-            pointerEvents: 'none',
           }}
         />
       )}
@@ -163,81 +159,62 @@ export default function OnboardingTour({ setStep }: OnboardingTourProps) {
             position: 'fixed',
             top: tooltipPos.top,
             left: tooltipPos.left,
-            width: 320,
+            width: 340,
             transform: 'translateY(-100%)',
             zIndex: 50,
-            filter: 'drop-shadow(0 8px 24px rgba(0,0,0,0.35))',
           }}
         >
-          <div
-            style={{
-              background: 'var(--text-primary)',
-              color: 'var(--bg-deep)',
-              borderRadius: '12px',
-              padding: '16px',
-            }}
-          >
+          <div className="tour-tooltip">
+            {/* Step counter */}
+            <div className="tour-step-label">
+              <span className="tour-step-icon">{stopIndex + 1}</span>
+              Step {stopIndex + 1} of {TOUR_STOPS.length}
+            </div>
+
             {/* Title */}
-            <p style={{ fontWeight: 600, fontSize: '0.875rem', marginBottom: '6px' }}>
+            <p className="tour-title">
               {currentStop.title}
             </p>
+
             {/* Description */}
-            <p style={{ fontSize: '0.75rem', color: '#b0a89e', lineHeight: 1.5, marginBottom: '14px' }}>
+            <p className="tour-desc">
               {currentStop.copy}
             </p>
+
             {/* Footer */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <span
-                className="label-mono"
-                style={{ color: '#b0a89e', flexShrink: 0 }}
-              >
-                {stopIndex + 1} / {TOUR_STOPS.length}
-              </span>
+            <div className="tour-footer">
+              {/* Progress dots */}
+              <div className="tour-dots">
+                {TOUR_STOPS.map((_, di) => (
+                  <div
+                    key={di}
+                    className={`tour-dot ${di === stopIndex ? 'active' : di < stopIndex ? 'completed' : ''}`}
+                  />
+                ))}
+              </div>
+
               <div style={{ flex: 1 }} />
+
               <button
                 onClick={dismiss}
-                style={{
-                  fontSize: '0.75rem',
-                  color: '#b0a89e',
-                  background: 'none',
-                  border: 'none',
-                  cursor: 'pointer',
-                  padding: 0,
-                  textDecoration: 'underline',
-                  flexShrink: 0,
-                }}
+                className="tour-btn tour-btn-skip"
               >
                 Skip
               </button>
               <button
                 onClick={handleNext}
-                style={{
-                  fontSize: '0.75rem',
-                  fontWeight: 600,
-                  background: 'var(--accent-gold)',
-                  color: 'var(--bg-deep)',
-                  border: 'none',
-                  borderRadius: '6px',
-                  padding: '5px 12px',
-                  cursor: 'pointer',
-                  flexShrink: 0,
-                }}
+                className="tour-btn tour-btn-next"
               >
-                Next →
+                Next
               </button>
             </div>
           </div>
-          {/* CSS triangle arrow pointing down */}
+
+          {/* Arrow pointing down */}
           <div
+            className="tour-arrow"
             style={{
-              position: 'absolute',
-              bottom: -8,
-              left: Math.max(12, Math.min(tooltipPos.arrowLeft - 8, 296)),
-              width: 0,
-              height: 0,
-              borderLeft: '8px solid transparent',
-              borderRight: '8px solid transparent',
-              borderTop: '8px solid var(--text-primary)',
+              left: Math.max(16, Math.min(tooltipPos.arrowLeft - 8, 312)),
             }}
           />
         </div>
@@ -257,37 +234,65 @@ export default function OnboardingTour({ setStep }: OnboardingTourProps) {
           }}
         >
           <div
-            style={{
-              background: 'linear-gradient(135deg, var(--accent-warm), var(--accent-gold))',
-              borderRadius: '16px',
-              padding: '40px 48px',
-              maxWidth: '400px',
-              textAlign: 'center',
-              color: '#ffffff',
-              pointerEvents: 'auto',
-              filter: 'drop-shadow(0 16px 40px rgba(0,0,0,0.4))',
-            }}
+            className="tour-finale"
+            style={{ pointerEvents: 'auto' }}
           >
-            <h2 style={{ fontSize: '1.5rem', fontWeight: 700, marginBottom: '12px' }}>
-              Ready to focus group your stuff!
+            {/* Decorative corner marks */}
+            <div style={{
+              position: 'absolute',
+              top: 8,
+              left: 8,
+              width: 12,
+              height: 12,
+              borderTop: '2px solid var(--accent-gold)',
+              borderLeft: '2px solid var(--accent-gold)',
+              opacity: 0.4,
+            }} />
+            <div style={{
+              position: 'absolute',
+              top: 8,
+              right: 8,
+              width: 12,
+              height: 12,
+              borderTop: '2px solid var(--accent-gold)',
+              borderRight: '2px solid var(--accent-gold)',
+              opacity: 0.4,
+            }} />
+            <div style={{
+              position: 'absolute',
+              bottom: 8,
+              left: 8,
+              width: 12,
+              height: 12,
+              borderBottom: '2px solid var(--accent-gold)',
+              borderLeft: '2px solid var(--accent-gold)',
+              opacity: 0.4,
+            }} />
+            <div style={{
+              position: 'absolute',
+              bottom: 8,
+              right: 8,
+              width: 12,
+              height: 12,
+              borderBottom: '2px solid var(--accent-gold)',
+              borderRight: '2px solid var(--accent-gold)',
+              opacity: 0.4,
+            }} />
+
+            <div className="tour-step-label" style={{ justifyContent: 'center', marginBottom: 12 }}>
+              Tutorial Complete
+            </div>
+            <h2 className="tour-finale-title">
+              Mission Briefing Complete
             </h2>
-            <p style={{ fontSize: '0.9rem', opacity: 0.9, lineHeight: 1.6, marginBottom: '28px' }}>
-              Set up your panel and hit "Start the Fishbowl" when you're ready.
+            <p className="tour-finale-desc">
+              Set up your panel and hit &ldquo;Start the Fishbowl&rdquo; when you&apos;re ready to begin.
             </p>
             <button
               onClick={dismiss}
-              style={{
-                background: '#ffffff',
-                color: 'var(--accent-warm)',
-                fontWeight: 700,
-                fontSize: '0.9rem',
-                border: 'none',
-                borderRadius: '8px',
-                padding: '12px 32px',
-                cursor: 'pointer',
-              }}
+              className="tour-finale-btn"
             >
-              Let's Go!
+              Let&apos;s Go
             </button>
           </div>
         </div>
