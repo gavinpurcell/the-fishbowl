@@ -152,24 +152,26 @@ export default function SetupPage() {
                 </div>
 
                 {/* Cost estimate */}
-                {store.provider !== 'ollama' && store.panelists.length >= 3 && (
-                  <div
-                    className="rounded-lg p-3 flex items-center gap-2"
-                    style={{
-                      background: 'var(--bg-surface)',
-                      border: '1px solid var(--border)',
-                    }}
-                  >
-                    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0, opacity: 0.5 }}>
-                      <circle cx="8" cy="8" r="6" stroke="currentColor" strokeWidth="1.5" fill="none" />
-                      <path d="M8 5v4M6.5 7h3" stroke="currentColor" strokeWidth="1" strokeLinecap="round" />
-                    </svg>
-                    <span className="text-xs" style={{ color: 'var(--text-muted)' }}>
-                      {(() => {
-                        const est = estimateSessionCost(store.modelId, store.panelists.length);
-                        return `Est. cost: ${formatCost(est.low)} - ${formatCost(est.high)}`;
-                      })()}
-                    </span>
+                {store.panelists.length >= 3 && (
+                  <div className="cost-badge">
+                    <div className="cost-badge-icon">
+                      <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
+                        <path d="M8 1L10.5 6L16 7L12 11L13 16L8 13.5L3 16L4 11L0 7L5.5 6L8 1Z" fill="var(--accent-gold)" />
+                      </svg>
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <span className="cost-badge-label">Estimated Cost</span>
+                      {store.provider === 'ollama' || store.provider === 'claude-code' ? (
+                        <span className="cost-badge-free">Free</span>
+                      ) : (
+                        <span className="cost-badge-value">
+                          {(() => {
+                            const est = estimateSessionCost(store.modelId, store.panelists.length);
+                            return `${formatCost(est.low)} - ${formatCost(est.high)}`;
+                          })()}
+                        </span>
+                      )}
+                    </div>
                   </div>
                 )}
 

@@ -69,44 +69,27 @@ export default function ApiKeyConfig({ provider, apiKey, modelId, onProviderChan
       </div>
 
       {/* Provider-specific config */}
-      <div
-        className="rounded-xl p-4"
-        style={{
-          background: 'var(--bg-surface)',
-          border: '1px solid var(--border)',
-        }}
-      >
+      <div className="dossier-panel">
         {provider !== 'ollama' && provider !== 'claude-code' ? (
           <>
+            <div className="dossier-label">API Key</div>
             <input
               type="password"
               value={apiKey}
               onChange={(e) => onApiKeyChange(e.target.value)}
               placeholder={provider === 'claude' ? 'sk-ant-...' : 'sk-...'}
-              className="w-full rounded-lg text-sm font-mono p-3"
-              style={{
-                background: 'var(--bg-elevated)',
-                border: '1px solid var(--border)',
-                color: 'var(--text-primary)',
-                outline: 'none',
-              }}
+              className="dossier-input"
             />
-            <p className="text-[10px] mt-2" style={{ color: 'var(--text-muted)', opacity: 0.7 }}>
+            <p className="text-[10px] mt-2" style={{ color: '#5a5248', opacity: 0.8 }}>
               Stored in your browser only. Sent directly to {provider === 'claude' ? 'Anthropic' : 'OpenAI'}.
             </p>
 
-            <div className="mt-3">
-              <div className="label-mono mb-2">Model</div>
+            <div className="mt-4">
+              <div className="dossier-label">Model</div>
               <select
                 value={modelId}
                 onChange={(e) => onModelChange(e.target.value)}
-                className="w-full rounded-lg text-sm p-3"
-                style={{
-                  background: 'var(--bg-elevated)',
-                  border: '1px solid var(--border)',
-                  color: 'var(--text-primary)',
-                  outline: 'none',
-                }}
+                className="dossier-select"
               >
                 {models.map((m) => (
                   <option key={m.id} value={m.id}>
@@ -118,24 +101,18 @@ export default function ApiKeyConfig({ provider, apiKey, modelId, onProviderChan
           </>
         ) : provider === 'claude-code' ? (
           <>
-            <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+            <p className="text-xs" style={{ color: '#8a8078' }}>
               Uses your Claude Max subscription via Claude Code CLI. No API key needed.
             </p>
-            <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>
-              Requires <code style={{ background: 'var(--bg-deep)', padding: '1px 4px', borderRadius: '3px' }}>claude</code> CLI installed and logged in.
+            <p className="text-[10px] mt-1" style={{ color: '#5a5248' }}>
+              Requires <code style={{ background: 'var(--dark-surface)', padding: '1px 6px', borderRadius: '3px', color: 'var(--accent-gold-dim)', fontFamily: "'DM Mono', monospace", fontSize: '10px' }}>claude</code> CLI installed and logged in.
             </p>
-            <div className="mt-3">
-              <div className="label-mono mb-2">Model</div>
+            <div className="mt-4">
+              <div className="dossier-label">Model</div>
               <select
                 value={modelId}
                 onChange={(e) => onModelChange(e.target.value)}
-                className="w-full rounded-lg text-sm p-3"
-                style={{
-                  background: 'var(--bg-elevated)',
-                  border: '1px solid var(--border)',
-                  color: 'var(--text-primary)',
-                  outline: 'none',
-                }}
+                className="dossier-select"
               >
                 {models.map((m) => (
                   <option key={m.id} value={m.id}>
@@ -146,7 +123,7 @@ export default function ApiKeyConfig({ provider, apiKey, modelId, onProviderChan
             </div>
           </>
         ) : (
-          <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+          <p className="text-xs" style={{ color: '#8a8078' }}>
             Make sure Ollama is running on port 11434. No key needed.
           </p>
         )}

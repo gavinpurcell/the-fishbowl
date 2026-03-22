@@ -1921,3 +1921,158 @@ html, body {
 .skip-to-content:focus {
   transform: translateX(-50%) translateY(0);
 }
+
+/* ============================================================ */
+/*  Dossier-styled form controls — dark select & input           */
+/* ============================================================ */
+
+/* Model selector dropdown — dark dossier style */
+.dossier-select {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  width: 100%;
+  padding: 10px 36px 10px 12px;
+  border-radius: 8px;
+  font-family: 'DM Mono', monospace;
+  font-size: 12px;
+  letter-spacing: 0.02em;
+  background-color: var(--dark-surface);
+  color: #e8e0d4;
+  border: 1px solid var(--dark-border);
+  outline: none;
+  cursor: pointer;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  /* Gold chevron arrow */
+  background-image: url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%23c49a2a' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 10px 6px;
+}
+
+.dossier-select:hover {
+  border-color: var(--accent-gold-dim);
+}
+
+.dossier-select:focus {
+  border-color: var(--accent-gold);
+  box-shadow: 0 0 0 1px var(--accent-gold), 0 0 12px rgba(196, 154, 42, 0.15);
+}
+
+.dossier-select option {
+  background: var(--dark-surface);
+  color: #e8e0d4;
+  padding: 8px;
+  font-family: 'DM Mono', monospace;
+  font-size: 12px;
+}
+
+/* API key input — matching dark style */
+.dossier-input {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-family: 'DM Mono', monospace;
+  font-size: 12px;
+  letter-spacing: 0.02em;
+  background-color: var(--dark-surface);
+  color: #e8e0d4;
+  border: 1px solid var(--dark-border);
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.dossier-input::placeholder {
+  color: #5a5248;
+}
+
+.dossier-input:focus {
+  border-color: var(--accent-gold);
+  box-shadow: 0 0 0 1px var(--accent-gold), 0 0 12px rgba(196, 154, 42, 0.15);
+}
+
+/* Field label — Silkscreen micro-label */
+.dossier-label {
+  font-family: 'Silkscreen', 'Courier New', monospace;
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--accent-gold-dim);
+  margin-bottom: 6px;
+}
+
+/* Provider config panel — dark treatment */
+.dossier-panel {
+  border-radius: 10px;
+  padding: 16px;
+  background: var(--dark-deep);
+  border: 1px solid var(--dark-border);
+}
+
+/* ============================================================ */
+/*  Cost estimate badge — mission cost briefing                  */
+/* ============================================================ */
+
+@keyframes costBadgeEnter {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.cost-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  border-radius: 20px;
+  background: var(--dark-deep);
+  border: 1px solid var(--dark-border);
+  animation: costBadgeEnter 0.35s ease-out forwards;
+}
+
+.cost-badge-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: rgba(196, 154, 42, 0.12);
+  flex-shrink: 0;
+}
+
+.cost-badge-label {
+  font-family: 'Silkscreen', 'Courier New', monospace;
+  font-size: 8px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--accent-gold-dim);
+  line-height: 1;
+}
+
+.cost-badge-value {
+  font-family: 'DM Mono', monospace;
+  font-size: 13px;
+  font-weight: 400;
+  letter-spacing: 0.02em;
+  color: #e8e0d4;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.cost-badge-free {
+  font-family: 'Silkscreen', 'Courier New', monospace;
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--dark-surface);
+  background: var(--accent-gold);
+  padding: 2px 8px;
+  border-radius: 4px;
+  line-height: 1.4;
+}
