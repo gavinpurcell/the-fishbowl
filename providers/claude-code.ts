@@ -63,7 +63,7 @@ function delay(ms: number): Promise<void> {
 export class ClaudeCodeProvider implements LLMProvider {
   constructor(private modelId?: string) {}
 
-  async *stream(messages: Message[]): AsyncIterable<StreamEvent> {
+  async *stream(messages: Message[], options?: { signal?: AbortSignal }): AsyncIterable<StreamEvent> {
     const response = await fetch('/api/claude-code', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -71,6 +71,7 @@ export class ClaudeCodeProvider implements LLMProvider {
         messages,
         modelId: this.modelId,
       }),
+      signal: options?.signal,
     });
 
     if (!response.ok) {
@@ -87,30 +88,35 @@ export class ClaudeCodeProvider implements LLMProvider {
     // Collect all events first, then simulate streaming for text
     const collectedEvents: StreamEvent[] = [];
 
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
 
-      buffer += decoder.decode(value, { stream: true });
-      const lines = buffer.split('\n');
-      buffer = lines.pop() || '';
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || '';
 
-      for (const line of lines) {
-        if (!line.startsWith('data: ')) continue;
-        const data = line.slice(6);
-        if (data === '[DONE]') break;
+        for (const line of lines) {
+          if (!line.startsWith('data: ')) continue;
+          const data = line.slice(6);
+          if (data === '[DONE]') break;
 
-        try {
-          const parsed = JSON.parse(data);
-          if (parsed.type === 'text') {
-            collectedEvents.push({ type: 'text', text: parsed.text });
-          } else if (parsed.type === 'usage') {
-            collectedEvents.push({ type: 'usage', inputTokens: parsed.inputTokens, outputTokens: parsed.outputTokens });
+          try {
+            const parsed = JSON.parse(data);
+            if (parsed.type === 'text') {
+              collectedEvents.push({ type: 'text', text: parsed.text });
+            } else if (parsed.type === 'usage') {
+              collectedEvents.push({ type: 'usage', inputTokens: parsed.inputTokens, outputTokens: parsed.outputTokens });
+            }
+          } catch {
+            // Skip unparseable lines
           }
-        } catch {
-          // Skip unparseable lines
         }
       }
+    } finally {
+      reader.cancel().catch(() => {});
+      reader.releaseLock();
     }
 
     // Determine if the response came as a bulk delivery.

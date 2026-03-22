@@ -7,7 +7,7 @@ export class OllamaProvider implements LLMProvider {
     this.baseUrl = baseUrl || 'http://localhost:11434';
   }
 
-  async *stream(messages: Message[]): AsyncIterable<StreamEvent> {
+  async *stream(messages: Message[], options?: { signal?: AbortSignal }): AsyncIterable<StreamEvent> {
     const response = await fetch(`${this.baseUrl}/api/chat`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -16,6 +16,7 @@ export class OllamaProvider implements LLMProvider {
         messages,
         stream: true,
       }),
+      signal: options?.signal,
     });
 
     if (!response.ok) {
@@ -28,25 +29,30 @@ export class OllamaProvider implements LLMProvider {
     const decoder = new TextDecoder();
     let buffer = '';
 
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
 
-      buffer += decoder.decode(value, { stream: true });
-      const lines = buffer.split('\n');
-      buffer = lines.pop() || '';
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || '';
 
-      for (const line of lines) {
-        if (!line.trim()) continue;
-        try {
-          const parsed = JSON.parse(line);
-          if (parsed.message?.content) {
-            yield { type: 'text', text: parsed.message.content };
+        for (const line of lines) {
+          if (!line.trim()) continue;
+          try {
+            const parsed = JSON.parse(line);
+            if (parsed.message?.content) {
+              yield { type: 'text', text: parsed.message.content };
+            }
+          } catch {
+            // Skip unparseable lines
           }
-        } catch {
-          // Skip unparseable lines
         }
       }
+    } finally {
+      reader.cancel().catch(() => {});
+      reader.releaseLock();
     }
   }
 

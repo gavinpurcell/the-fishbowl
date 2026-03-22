@@ -323,7 +323,8 @@ export class ConversationOrchestrator {
 
   /**
    * Consume the provider stream, yielding chunks via callbacks.
-   * Respects an AbortSignal for timeout cancellation.
+   * Passes the AbortSignal to the provider so the underlying fetch is
+   * cancelled when the timeout fires (or when the session is aborted).
    */
   private async consumeStream(
     panelistId: string,
@@ -332,8 +333,8 @@ export class ConversationOrchestrator {
   ): Promise<string> {
     let fullResponse = '';
 
-    // Wrap the stream iteration with timeout awareness
-    const streamIterator = this.provider.stream(messages);
+    // Pass signal to the provider so the underlying fetch is cancelled on abort
+    const streamIterator = this.provider.stream(messages, { signal });
 
     for await (const event of streamIterator) {
       if (this.aborted) break;

@@ -3,7 +3,7 @@ import type { LLMProvider, Message, StreamEvent, GenerateResult } from './types'
 export class OpenAIProvider implements LLMProvider {
   constructor(private apiKey: string, private modelId?: string) {}
 
-  async *stream(messages: Message[]): AsyncIterable<StreamEvent> {
+  async *stream(messages: Message[], options?: { signal?: AbortSignal }): AsyncIterable<StreamEvent> {
     const response = await fetch('/api/llm', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -14,6 +14,7 @@ export class OpenAIProvider implements LLMProvider {
         modelId: this.modelId,
         stream: true,
       }),
+      signal: options?.signal,
     });
 
     if (!response.ok) {
@@ -27,31 +28,36 @@ export class OpenAIProvider implements LLMProvider {
     const decoder = new TextDecoder();
     let buffer = '';
 
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
 
-      buffer += decoder.decode(value, { stream: true });
-      const lines = buffer.split('\n');
-      buffer = lines.pop() || '';
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || '';
 
-      for (const line of lines) {
-        if (!line.startsWith('data: ')) continue;
-        const data = line.slice(6);
-        if (data === '[DONE]') return;
+        for (const line of lines) {
+          if (!line.startsWith('data: ')) continue;
+          const data = line.slice(6);
+          if (data === '[DONE]') return;
 
-        try {
-          const parsed = JSON.parse(data);
-          if (parsed.type === 'usage') {
-            yield { type: 'usage', inputTokens: parsed.inputTokens, outputTokens: parsed.outputTokens };
-          } else {
-            const content = parsed.choices?.[0]?.delta?.content;
-            if (content) yield { type: 'text', text: content };
+          try {
+            const parsed = JSON.parse(data);
+            if (parsed.type === 'usage') {
+              yield { type: 'usage', inputTokens: parsed.inputTokens, outputTokens: parsed.outputTokens };
+            } else {
+              const content = parsed.choices?.[0]?.delta?.content;
+              if (content) yield { type: 'text', text: content };
+            }
+          } catch {
+            // Skip unparseable lines
           }
-        } catch {
-          // Skip unparseable lines
         }
       }
+    } finally {
+      reader.cancel().catch(() => {});
+      reader.releaseLock();
     }
   }
 

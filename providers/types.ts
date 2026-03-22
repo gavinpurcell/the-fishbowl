@@ -13,7 +13,7 @@ export interface GenerateResult {
 }
 
 export interface LLMProvider {
-  stream(messages: Message[]): AsyncIterable<StreamEvent>;
+  stream(messages: Message[], options?: { signal?: AbortSignal }): AsyncIterable<StreamEvent>;
   generate(messages: Message[]): Promise<GenerateResult>;
 }
 
