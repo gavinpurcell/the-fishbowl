@@ -6,6 +6,7 @@ import { FishbowlScene, type LayoutEditorSnapshot } from '@/scene/FishbowlScene'
 import { loadAllSprites } from '@/lib/spriteLoader';
 import type { Panelist, RoundType, TranscriptEntry } from '@/engine/types';
 import StatusBar from '@/components/scene/StatusBar';
+import TransitionOverlay from '@/components/scene/TransitionOverlay';
 import ModerationInput from '@/components/scene/ModerationInput';
 
 const FAKE_PANELISTS: Panelist[] = [
@@ -87,6 +88,7 @@ function TestPageContent() {
   const forceSceneVisible = searchParams.get('scene') === '1' || editorMode;
 
   const advanceResolverRef = useRef<(() => void) | null>(null);
+  const transitionResolverRef = useRef<(() => void) | null>(null);
   const [waitingForAdvance, setWaitingForAdvance] = useState(false);
   const streamAbortRef = useRef(false);
   const startedRef = useRef(false);
@@ -130,6 +132,14 @@ function TestPageContent() {
       advanceResolverRef.current = resolve;
       setWaitingForAdvance(true);
     });
+  }, []);
+
+  const handleTransitionComplete = useCallback(() => {
+    if (transitionResolverRef.current) {
+      const resolver = transitionResolverRef.current;
+      transitionResolverRef.current = null;
+      resolver();
+    }
   }, []);
 
   const streamBriefingText = useCallback(async (text: string): Promise<void> => {
@@ -362,7 +372,7 @@ function TestPageContent() {
       await waitForSpace();
       setViewMode('transition');
       setHint('');
-      await new Promise((r) => setTimeout(r, 2000));
+      await new Promise<void>((r) => { transitionResolverRef.current = r; });
     }
 
     // === PHASE 2: ROUNDTABLE ===
@@ -525,20 +535,10 @@ function TestPageContent() {
 
         {/* === TRANSITION SCREEN === */}
         {viewMode === 'transition' && (
-          <div className="max-w-[800px] mx-auto text-center py-24 animate-fade-in">
-            <div className="label-mono mb-4" style={{ color: 'var(--accent-gold)' }}>All panelists briefed</div>
-            <h2 className="text-4xl font-800 tracking-tight" style={{ color: 'var(--text-primary)' }}>
-              Start the Discussion
-            </h2>
-            <p className="mt-3 text-lg" style={{ color: 'var(--text-secondary)' }}>
-              The panel will now debate with each other.
-            </p>
-            <div className="flex justify-center gap-2 mt-8">
-              {FAKE_PANELISTS.map((p) => (
-                <div key={p.id} className="w-3 h-3 rounded-full" style={{ background: p.color }} />
-              ))}
-            </div>
-          </div>
+          <TransitionOverlay
+            panelists={FAKE_PANELISTS.map((p) => ({ id: p.id, name: p.name, color: p.color }))}
+            onComplete={handleTransitionComplete}
+          />
         )}
 
         {/* === ROUNDTABLE VIEW (canvas always in DOM, hidden until needed) === */}

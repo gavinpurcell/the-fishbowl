@@ -8,6 +8,7 @@ import { ConversationOrchestrator } from '@/engine/conversation';
 import { createProvider } from '@/providers/index';
 import { VideoRecorder } from '@/scene/VideoRecorder';
 import StatusBar from '@/components/scene/StatusBar';
+import TransitionOverlay from '@/components/scene/TransitionOverlay';
 import { getModelById } from '@/lib/models';
 // Note: PixiJS scene is managed directly via ref, not via FishbowlCanvas component
 import ModerationInput from '@/components/scene/ModerationInput';
@@ -28,6 +29,7 @@ export default function SessionPage() {
   const recorderRef = useRef<VideoRecorder | null>(null);
   const startedRef = useRef(false);
   const advanceResolverRef = useRef<(() => void) | null>(null);
+  const transitionResolverRef = useRef<(() => void) | null>(null);
   const isSpeakingRef = useRef(false);
   const speakerTextRef = useRef('');
   const textUpdateTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -49,6 +51,15 @@ export default function SessionPage() {
 
   // Moderation state
   const [inModeration, setInModeration] = useState(false);
+
+  // Transition overlay complete handler
+  const handleTransitionComplete = useCallback(() => {
+    if (transitionResolverRef.current) {
+      const resolver = transitionResolverRef.current;
+      transitionResolverRef.current = null;
+      resolver();
+    }
+  }, []);
 
   // Keep refs in sync
   useEffect(() => { isSpeakingRef.current = isSpeaking; }, [isSpeaking]);
@@ -262,7 +273,7 @@ export default function SessionPage() {
         await waitForSpace();
         setViewMode('transition');
         setHint('');
-        await new Promise((r) => setTimeout(r, 2500));
+        await new Promise<void>((r) => { transitionResolverRef.current = r; });
 
         // === PHASE 2: ROUNDTABLE CROSS-TALK ===
         setViewMode('roundtable');
@@ -464,16 +475,10 @@ export default function SessionPage() {
 
           {/* === TRANSITION === */}
           {viewMode === 'transition' && (
-            <div className="max-w-[800px] mx-auto text-center py-24 animate-fade-in">
-              <div className="label-mono mb-4" style={{ color: 'var(--accent-gold)' }}>All panelists briefed</div>
-              <h2 className="text-4xl font-800 tracking-tight" style={{ color: 'var(--text-primary)' }}>Start the Discussion</h2>
-              <p className="mt-3 text-lg" style={{ color: 'var(--text-secondary)' }}>The panel will now debate with each other.</p>
-              <div className="flex justify-center gap-2 mt-8">
-                {store.panelists.map((p) => (
-                  <div key={p.id} className="w-3 h-3 rounded-full" style={{ background: p.color }} />
-                ))}
-              </div>
-            </div>
+            <TransitionOverlay
+              panelists={store.panelists.map((p) => ({ id: p.id, name: p.name, color: p.color }))}
+              onComplete={handleTransitionComplete}
+            />
           )}
 
           {/* === ROUNDTABLE (PixiJS canvas always in DOM, hidden until needed) === */}
