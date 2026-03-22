@@ -37,6 +37,7 @@ export default function SessionPage() {
   const speakerTextRef = useRef('');
   const textUpdateTimerRef = useRef<NodeJS.Timeout | null>(null);
   const localTranscriptRef = useRef<TranscriptEntry[]>([]);
+  const firstChunkReceivedRef = useRef(false);
 
   // UI state
   const [viewMode, setViewMode] = useState<ViewMode>('briefing');
@@ -208,17 +209,18 @@ export default function SessionPage() {
           setIsSpeaking(true);
           isSpeakingRef.current = true;
           speakerTextRef.current = '';
+          firstChunkReceivedRef.current = false;
           storeRef.current.setActivePanelist(panelistId);
 
-          // During roundtable, drive the scene
+          // During roundtable, show thinking state until first text chunk arrives
           const scene = sceneRef.current;
           if (scene && viewModeRef.current === 'roundtable') {
             scene.hideAllThinkingIndicators();
-            scene.setCharacterState(panelistId, 'talking');
-            scene.showSpeechBubble(panelistId);
+            scene.setCharacterState(panelistId, 'thinking');
+            scene.showThinkingIndicator(panelistId);
             storeRef.current.panelists.forEach((p) => {
               if (p.id !== panelistId) {
-                scene.setCharacterState(p.id, Math.random() > 0.7 ? 'reacting' : 'thinking');
+                scene.setCharacterState(p.id, 'idle');
               }
             });
           }
@@ -257,6 +259,19 @@ export default function SessionPage() {
           // Drive scene bubbles during roundtable
           const scene = sceneRef.current;
           if (scene) {
+            // On first chunk: transition from thinking to talking
+            if (!firstChunkReceivedRef.current) {
+              firstChunkReceivedRef.current = true;
+              scene.hideThinkingIndicator(_panelistId);
+              scene.setCharacterState(_panelistId, 'talking');
+              scene.showSpeechBubble(_panelistId);
+              // Set other panelists to listening reactions
+              storeRef.current.panelists.forEach((p) => {
+                if (p.id !== _panelistId) {
+                  scene.setCharacterState(p.id, Math.random() > 0.7 ? 'reacting' : 'thinking');
+                }
+              });
+            }
             scene.appendToBubble(_panelistId, chunk);
           }
 
