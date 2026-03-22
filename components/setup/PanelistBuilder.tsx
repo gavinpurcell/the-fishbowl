@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Image from 'next/image';
 import type { Panelist } from '@/engine/types';
-import { createCustomPanelist, createPanelistFromTemplate } from '@/engine/panelist';
+import { createCustomPanelist, createCustomPanelistLocal } from '@/engine/panelist';
 import { createProvider } from '@/providers';
 import { useFishbowlStore } from '@/lib/store';
 
@@ -11,8 +11,6 @@ interface Props {
   panelists: Panelist[];
   onUpdate: (panelists: Panelist[]) => void;
 }
-
-const COLORS = ['#4a9a7a', '#e74c4c', '#4477ee', '#e44a9a', '#eea444', '#9a44ee', '#44aacc', '#cc7744'];
 
 export default function PanelistBuilder({ panelists, onUpdate }: Props) {
   const [newName, setNewName] = useState('');
@@ -33,13 +31,13 @@ export default function PanelistBuilder({ panelists, onUpdate }: Props) {
       setIsExpanding(true);
       try {
         const provider = createProvider(providerType, apiKey);
-        panelist = await createCustomPanelist(newName.trim(), newRole.trim(), newDesc.trim() || newRole.trim(), panelists.length, provider);
+        panelist = await createCustomPanelist(newName.trim(), newRole.trim(), newDesc.trim() || newRole.trim(), panelists, provider);
       } catch {
-        panelist = createPanelistFromTemplate({ name: newName.trim(), role: newRole.trim(), description: newDesc.trim() || `Expert ${newRole.trim()}`, color: COLORS[panelists.length % COLORS.length] }, panelists.length);
+        panelist = createCustomPanelistLocal({ name: newName.trim(), role: newRole.trim(), description: newDesc.trim() || `Expert ${newRole.trim()}`, color: '' }, panelists);
       }
       setIsExpanding(false);
     } else {
-      panelist = createPanelistFromTemplate({ name: newName.trim(), role: newRole.trim(), description: newDesc.trim() || `Expert ${newRole.trim()}`, color: COLORS[panelists.length % COLORS.length] }, panelists.length);
+      panelist = createCustomPanelistLocal({ name: newName.trim(), role: newRole.trim(), description: newDesc.trim() || `Expert ${newRole.trim()}`, color: '' }, panelists);
     }
 
     onUpdate([...panelists, panelist]);

@@ -1,7 +1,17 @@
-import type { Panelist, PanelTemplate } from './types';
+import type { Panelist } from './types';
 import type { LLMProvider } from '@/providers/types';
 
 const PANELIST_COLORS = ['#4a9a7a', '#e74c4c', '#4477ee', '#e44a9a', '#eea444', '#9a44ee', '#44aacc', '#cc7744'];
+const ALL_SPRITE_INDICES = [0, 1, 2, 3, 4, 5, 6, 7];
+
+/** Pick a random sprite index not already used by existing panelists */
+export function pickUnusedSpriteIndex(existingPanelists: Panelist[]): number {
+  const usedIndices = existingPanelists.map(p => p.spriteIndex);
+  const available = ALL_SPRITE_INDICES.filter(i => !usedIndices.includes(i));
+  // Fallback: if somehow all 8 are used (shouldn't happen with max 4), pick randomly from all
+  const pool = available.length > 0 ? available : ALL_SPRITE_INDICES;
+  return pool[Math.floor(Math.random() * pool.length)];
+}
 
 export function generateId(): string {
   return Math.random().toString(36).substring(2, 10);
@@ -67,7 +77,7 @@ export async function createCustomPanelist(
   name: string,
   role: string,
   shortDescription: string,
-  index: number,
+  existingPanelists: Panelist[],
   provider: LLMProvider
 ): Promise<Panelist> {
   const expandedDescription = await expandPanelistDescription(
@@ -75,13 +85,30 @@ export async function createCustomPanelist(
     provider
   );
 
+  const spriteIndex = pickUnusedSpriteIndex(existingPanelists);
+
   return {
     id: generateId(),
     name,
     role,
     description: expandedDescription,
     systemPrompt: buildExpertPrompt(name, role, expandedDescription),
-    color: PANELIST_COLORS[index % PANELIST_COLORS.length],
-    spriteIndex: index % 8,
+    color: PANELIST_COLORS[spriteIndex % PANELIST_COLORS.length],
+    spriteIndex,
+  };
+}
+
+/** Create a custom panelist without LLM expansion, using an unused sprite */
+export function createCustomPanelistLocal(
+  data: Omit<Panelist, 'id' | 'systemPrompt' | 'spriteIndex'>,
+  existingPanelists: Panelist[]
+): Panelist {
+  const spriteIndex = pickUnusedSpriteIndex(existingPanelists);
+  return {
+    ...data,
+    id: generateId(),
+    color: PANELIST_COLORS[spriteIndex % PANELIST_COLORS.length],
+    spriteIndex,
+    systemPrompt: buildExpertPrompt(data.name, data.role, data.description),
   };
 }
