@@ -16,10 +16,10 @@ const MODELS: ModelOption[] = [
   { id: 'gpt-4o-mini', label: 'GPT-4o Mini', provider: 'openai', tier: 'fast', inputPer1M: 0.15, outputPer1M: 0.60 },
   { id: 'gpt-5', label: 'GPT-5', provider: 'openai', tier: 'balanced', inputPer1M: 1.25, outputPer1M: 10.00 },
   { id: 'gpt-5.2', label: 'GPT-5.2', provider: 'openai', tier: 'smartest', inputPer1M: 1.75, outputPer1M: 14.00 },
-  // Claude Code (Max subscription) — no API cost, uses subscription credits
-  { id: 'haiku', label: 'Haiku (Max)', provider: 'claude-code', tier: 'fast', inputPer1M: 0, outputPer1M: 0 },
-  { id: 'sonnet', label: 'Sonnet (Max)', provider: 'claude-code', tier: 'balanced', inputPer1M: 0, outputPer1M: 0 },
-  { id: 'opus', label: 'Opus (Max)', provider: 'claude-code', tier: 'smartest', inputPer1M: 0, outputPer1M: 0 },
+  // Claude Code (Local) — no API cost, uses Pro/Max subscription credits
+  { id: 'haiku', label: 'Haiku (Local)', provider: 'claude-code', tier: 'fast', inputPer1M: 0, outputPer1M: 0 },
+  { id: 'sonnet', label: 'Sonnet (Local)', provider: 'claude-code', tier: 'balanced', inputPer1M: 0, outputPer1M: 0 },
+  { id: 'opus', label: 'Opus (Local)', provider: 'claude-code', tier: 'smartest', inputPer1M: 0, outputPer1M: 0 },
 ];
 
 export function getModelsForProvider(provider: ProviderType): ModelOption[] {

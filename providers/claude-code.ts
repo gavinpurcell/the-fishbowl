@@ -52,7 +52,7 @@ function delay(ms: number): Promise<void> {
 }
 
 /**
- * Claude Code provider — uses the `claude` CLI with a Max subscription.
+ * Claude Local provider — uses the `claude` CLI with a Pro/Max subscription.
  * No API key needed; authenticates via Claude Code's OAuth login.
  * Calls a local API route that shells out to `claude -p`.
  *

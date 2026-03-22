@@ -12,7 +12,7 @@ interface ClaudeCodeRequest {
 
 /**
  * API route that shells out to `claude -p` (Claude Code CLI).
- * Uses the locally logged-in Max subscription — no API key needed.
+ * Uses the locally logged-in Pro/Max subscription — no API key needed.
  */
 export async function POST(req: NextRequest) {
   const body: ClaudeCodeRequest = await req.json();
@@ -162,7 +162,7 @@ function streamResponse(prompt: string, model: string): Response {
       proc.on('error', (err) => {
         const errorEvent = `data: ${JSON.stringify({
           type: 'text',
-          text: `[Claude Code not found. Make sure \`claude\` CLI is installed and you're logged in with your Max subscription.]`,
+          text: `[Claude Code not found. Make sure \`claude\` CLI is installed and you're logged in with your Pro/Max subscription.]`,
         })}\n\n`;
         controller.enqueue(encoder.encode(errorEvent));
         controller.enqueue(encoder.encode('data: [DONE]\n\n'));
@@ -221,7 +221,7 @@ async function generateResponse(prompt: string, model: string): Promise<Response
 
     proc.on('error', () => {
       resolve(new Response(
-        JSON.stringify({ error: 'Claude Code CLI not found. Install it and log in with your Max subscription.' }),
+        JSON.stringify({ error: 'Claude Code CLI not found. Install it and log in with your Pro/Max subscription.' }),
         { status: 500, headers: { 'Content-Type': 'application/json' } },
       ));
     });

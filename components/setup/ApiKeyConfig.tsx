@@ -16,7 +16,7 @@ interface Props {
 const PROVIDERS: { id: ProviderType; label: string }[] = [
   { id: 'claude', label: 'Claude' },
   { id: 'openai', label: 'OpenAI' },
-  { id: 'claude-code', label: 'Claude Max' },
+  { id: 'claude-code', label: 'Claude Local' },
   { id: 'ollama', label: 'Ollama' },
 ];
 
@@ -101,12 +101,47 @@ export default function ApiKeyConfig({ provider, apiKey, modelId, onProviderChan
           </>
         ) : provider === 'claude-code' ? (
           <>
-            <p className="text-xs" style={{ color: '#8a8078' }}>
-              Uses your Claude Max subscription via Claude Code CLI. No API key needed.
-            </p>
-            <p className="text-[10px] mt-1" style={{ color: '#5a5248' }}>
-              Requires <code style={{ background: 'var(--dark-surface)', padding: '1px 6px', borderRadius: '3px', color: 'var(--accent-gold-dim)', fontFamily: "'DM Mono', monospace", fontSize: '10px' }}>claude</code> CLI installed and logged in.
-            </p>
+            {/* Claude Local info box */}
+            <div
+              style={{
+                background: 'rgba(196, 154, 42, 0.06)',
+                border: '1px solid rgba(196, 154, 42, 0.2)',
+                borderRadius: '6px',
+                padding: '12px 14px',
+                marginBottom: '12px',
+              }}
+            >
+              <div
+                style={{
+                  fontFamily: "'DM Mono', monospace",
+                  fontSize: '11px',
+                  fontWeight: 500,
+                  color: 'var(--accent-gold)',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.08em',
+                  marginBottom: '8px',
+                }}
+              >
+                How Claude Local Works
+              </div>
+              <ul
+                style={{
+                  margin: 0,
+                  padding: '0 0 0 16px',
+                  listStyle: 'disc',
+                  fontFamily: "'DM Mono', monospace",
+                  fontSize: '10px',
+                  lineHeight: '1.7',
+                  color: '#8a8078',
+                }}
+              >
+                <li>Uses Claude Code CLI installed on your machine</li>
+                <li>Runs through your Claude Pro/Max subscription — no API key needed</li>
+                <li>Tokens are deducted from your subscription usage</li>
+                <li>Requires <code style={{ background: 'var(--dark-surface)', padding: '1px 5px', borderRadius: '3px', color: 'var(--accent-gold-dim)', fontFamily: "'DM Mono', monospace", fontSize: '10px' }}>claude</code> CLI to be installed and logged in</li>
+                <li>Responses may be slower due to CLI startup time</li>
+              </ul>
+            </div>
             <div className="mt-4">
               <div className="dossier-label">Model</div>
               <select
@@ -116,7 +151,7 @@ export default function ApiKeyConfig({ provider, apiKey, modelId, onProviderChan
               >
                 {models.map((m) => (
                   <option key={m.id} value={m.id}>
-                    {m.label} — included with Max subscription
+                    {m.label} — $0 — uses subscription
                   </option>
                 ))}
               </select>
