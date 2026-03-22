@@ -12,6 +12,8 @@ interface DustParticle {
   speed: number;
   drift: number;
   phase: number;
+  baseAlpha: number;
+  isBokeh: boolean;
 }
 
 export class Room extends Container {
@@ -26,6 +28,7 @@ export class Room extends Container {
   // Ambient effect fields (sprite mode)
   private particles: DustParticle[] = [];
   private lightPatch: Graphics | null = null;
+  private lightPatchSecondary: Graphics | null = null;
   private ambientOverlay: Graphics | null = null;
 
   // Room dimensions (procedural fallback)
@@ -94,22 +97,34 @@ export class Room extends Container {
 
       // 1. Ambient color shift overlay (full-screen, lowest z of effects)
       this.ambientOverlay = new Graphics();
-      this.ambientOverlay.rect(0, 0, 800, 450).fill({ color: 0xf5d080, alpha: 0.01 });
+      this.ambientOverlay.rect(0, 0, 800, 450).fill({ color: 0xf5d080, alpha: 0.02 });
       this.ambientOverlay.zIndex = 2;
       this.addChild(this.ambientOverlay);
 
-      // 2. Window light shimmer patch
+      // 2. Window light shimmer patches
+      // Primary light patch — warm rectangle on the floor
       this.lightPatch = new Graphics();
-      this.lightPatch.rect(420, 360, 180, 90).fill({ color: 0xfff8e0, alpha: 0.04 });
+      this.lightPatch.rect(420, 360, 180, 90).fill({ color: 0xfff8e0, alpha: 0.07 });
       this.lightPatch.zIndex = 3;
       this.addChild(this.lightPatch);
 
-      // 3. Floating dust motes / particles
-      const particleCount = 8 + Math.floor(Math.random() * 5); // 8-12
+      // Secondary light patch — smaller, offset, adds depth
+      this.lightPatchSecondary = new Graphics();
+      this.lightPatchSecondary.rect(320, 380, 100, 60).fill({ color: 0xffe8b0, alpha: 0.05 });
+      this.lightPatchSecondary.zIndex = 3;
+      this.addChild(this.lightPatchSecondary);
+
+      // 3. Floating dust motes / particles (12-18 normal + 2-3 bokeh)
+      const particleCount = 12 + Math.floor(Math.random() * 7); // 12-18
+      // Tint palette: warm gold variations
+      const dustTints = [0xf5e6c8, 0xf8e0b0, 0xfff0d0, 0xe8d4a8, 0xfce8c0];
+
       for (let i = 0; i < particleCount; i++) {
-        const radius = 1 + Math.random(); // 1-2px
+        const radius = 1 + Math.random() * 2; // 1-3px
+        const baseAlpha = 0.12 + Math.random() * 0.23; // 0.12-0.35
+        const tint = dustTints[Math.floor(Math.random() * dustTints.length)];
         const g = new Graphics();
-        g.circle(0, 0, radius).fill({ color: 0xf5e6c8, alpha: 0.15 + Math.random() * 0.15 });
+        g.circle(0, 0, radius).fill({ color: tint, alpha: baseAlpha });
         g.zIndex = 4;
 
         const particle: DustParticle = {
@@ -119,6 +134,33 @@ export class Room extends Container {
           speed: 0.15 + Math.random() * 0.25, // upward drift speed
           drift: 0.3 + Math.random() * 0.4, // sideways drift amplitude
           phase: Math.random() * Math.PI * 2, // sin wave phase offset
+          baseAlpha,
+          isBokeh: false,
+        };
+
+        g.position.set(particle.x, particle.y);
+        this.particles.push(particle);
+        this.addChild(g);
+      }
+
+      // Bokeh particles — larger, slower, lower alpha
+      const bokehCount = 2 + Math.floor(Math.random() * 2); // 2-3
+      for (let i = 0; i < bokehCount; i++) {
+        const radius = 3 + Math.random() * 2; // 3-5px
+        const baseAlpha = 0.06 + Math.random() * 0.06; // 0.06-0.12
+        const g = new Graphics();
+        g.circle(0, 0, radius).fill({ color: 0xfff0d0, alpha: baseAlpha });
+        g.zIndex = 4;
+
+        const particle: DustParticle = {
+          graphics: g,
+          x: Math.random() * 800,
+          y: Math.random() * 450,
+          speed: 0.06 + Math.random() * 0.10, // slower drift
+          drift: 0.2 + Math.random() * 0.3, // gentler sway
+          phase: Math.random() * Math.PI * 2,
+          baseAlpha,
+          isBokeh: true,
         };
 
         g.position.set(particle.x, particle.y);
@@ -266,14 +308,14 @@ export class Room extends Container {
     if (this.useSpriteBackground) {
       // Animate ambient effects for sprite background
 
-      // 1. Floating dust motes
+      // 1. Floating dust motes with alpha oscillation
       for (const p of this.particles) {
         p.y -= p.speed * delta;
         p.x = p.x + Math.sin(this.pulseTime * 0.5 + p.phase) * p.drift * 0.3;
 
         // Wrap around: reappear at bottom when going off top
         if (p.y < -10) {
-          p.y = 610;
+          p.y = 460;
           p.x = Math.random() * 800;
         }
         // Wrap horizontally
@@ -281,17 +323,29 @@ export class Room extends Container {
         if (p.x > 810) p.x = -10;
 
         p.graphics.position.set(p.x, p.y);
+
+        // Alpha oscillation: fade in/out based on y-position and time
+        // Particles fade in as they rise, peak in the middle, fade out near top
+        const yNorm = p.y / 450; // 0 at top, 1 at bottom
+        const yFade = Math.sin(yNorm * Math.PI); // peaks at center (y=225)
+        const timeFade = 0.8 + Math.sin(this.pulseTime * 0.3 + p.phase) * 0.2;
+        p.graphics.alpha = p.baseAlpha * yFade * timeFade;
       }
 
       // 2. Window light shimmer (period ~8 seconds at 60fps)
       if (this.lightPatch) {
-        const lightAlpha = 0.02 + Math.sin(this.pulseTime * 0.25) * 0.02;
+        const lightAlpha = 0.07 + Math.sin(this.pulseTime * 0.25) * 0.03;
         this.lightPatch.alpha = Math.max(0, lightAlpha);
+      }
+      // Secondary light patch — slightly different phase for natural feel
+      if (this.lightPatchSecondary) {
+        const secAlpha = 0.04 + Math.sin(this.pulseTime * 0.18 + 1.2) * 0.02;
+        this.lightPatchSecondary.alpha = Math.max(0, secAlpha);
       }
 
       // 3. Ambient color shift (period ~20 seconds at 60fps)
       if (this.ambientOverlay) {
-        const ambientAlpha = 0.0075 + Math.sin(this.pulseTime * 0.1) * 0.0075;
+        const ambientAlpha = 0.02 + Math.sin(this.pulseTime * 0.1) * 0.01;
         this.ambientOverlay.alpha = Math.max(0, ambientAlpha);
       }
 
