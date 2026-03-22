@@ -172,39 +172,57 @@ export default function StatusBar({ round, panelistsSpoken, totalPanelists, onWr
             {panelistsSpoken}/{totalPanelists}
           </span>
 
-          {/* Wrap Up button — broadcast END SHOW style */}
+          {/* Wrap Up button — broadcast END SHOW style (gold during moderation) */}
           {canWrapUp && (
             <button
               onClick={onWrapUp}
               className="status-bar-wrap-btn"
               style={{
                 fontFamily: "'Silkscreen', monospace",
-                fontSize: '9px',
-                letterSpacing: '0.06em',
-                padding: '6px 12px',
-                borderRadius: '4px',
-                border: '1px solid rgba(232, 90, 74, 0.4)',
+                fontSize: round === 'moderation' ? '11px' : '9px',
+                letterSpacing: '0.08em',
+                padding: round === 'moderation' ? '8px 16px' : '6px 12px',
+                borderRadius: '6px',
+                border: round === 'moderation'
+                  ? '2px solid var(--accent-gold)'
+                  : '1px solid rgba(232, 90, 74, 0.4)',
                 cursor: 'pointer',
-                background: 'rgba(232, 90, 74, 0.12)',
-                color: 'var(--accent-red)',
+                background: round === 'moderation'
+                  ? 'linear-gradient(180deg, rgba(196, 154, 42, 0.25) 0%, rgba(196, 154, 42, 0.12) 100%)'
+                  : 'rgba(232, 90, 74, 0.12)',
+                color: round === 'moderation'
+                  ? 'var(--accent-gold-light)'
+                  : 'var(--accent-red)',
                 transition: 'all 0.15s ease',
                 textTransform: 'uppercase',
+                animation: round === 'moderation' ? 'wrapGoldPulseSubtle 3s ease-in-out infinite' : 'none',
+                position: 'relative',
               }}
               onMouseEnter={(e) => {
                 const el = e.currentTarget;
-                el.style.background = 'rgba(232, 90, 74, 0.25)';
-                el.style.borderColor = 'rgba(232, 90, 74, 0.6)';
-                el.style.boxShadow = '0 0 12px rgba(232, 90, 74, 0.2)';
+                if (round === 'moderation') {
+                  el.style.background = 'linear-gradient(180deg, rgba(196, 154, 42, 0.4) 0%, rgba(196, 154, 42, 0.2) 100%)';
+                  el.style.boxShadow = '0 0 20px rgba(196, 154, 42, 0.4), 0 0 40px rgba(196, 154, 42, 0.15)';
+                } else {
+                  el.style.background = 'rgba(232, 90, 74, 0.25)';
+                  el.style.borderColor = 'rgba(232, 90, 74, 0.6)';
+                  el.style.boxShadow = '0 0 12px rgba(232, 90, 74, 0.2)';
+                }
               }}
               onMouseLeave={(e) => {
                 const el = e.currentTarget;
-                el.style.background = 'rgba(232, 90, 74, 0.12)';
-                el.style.borderColor = 'rgba(232, 90, 74, 0.4)';
-                el.style.boxShadow = 'none';
+                if (round === 'moderation') {
+                  el.style.background = 'linear-gradient(180deg, rgba(196, 154, 42, 0.25) 0%, rgba(196, 154, 42, 0.12) 100%)';
+                  el.style.boxShadow = '';
+                } else {
+                  el.style.background = 'rgba(232, 90, 74, 0.12)';
+                  el.style.borderColor = 'rgba(232, 90, 74, 0.4)';
+                  el.style.boxShadow = 'none';
+                }
               }}
             >
-              <span className="hidden sm:inline">WRAP SESSION</span>
-              <span className="sm:hidden">WRAP</span>
+              <span className="hidden sm:inline">{round === 'moderation' ? 'END SHOW' : 'WRAP SESSION'}</span>
+              <span className="sm:hidden">{round === 'moderation' ? 'END' : 'WRAP'}</span>
             </button>
           )}
         </div>

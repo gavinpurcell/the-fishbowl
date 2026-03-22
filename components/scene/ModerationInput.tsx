@@ -8,9 +8,10 @@ const WARN_THRESHOLD = 400;
 interface Props {
   onSubmit: (question: string) => void;
   disabled: boolean;
+  onWrapUp?: () => void;
 }
 
-export default function ModerationInput({ onSubmit, disabled }: Props) {
+export default function ModerationInput({ onSubmit, disabled, onWrapUp }: Props) {
   const [question, setQuestion] = useState('');
   const [mounted, setMounted] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -307,6 +308,101 @@ export default function ModerationInput({ onSubmit, disabled }: Props) {
           </span>
         </div>
       </div>
+
+      {/* Prominent END SHOW button — broadcast control room CTA */}
+      {onWrapUp && !disabled && (
+        <div
+          className="mt-4 flex flex-col items-center gap-2"
+          style={{
+            opacity: mounted ? 1 : 0,
+            transform: mounted ? 'translateY(0)' : 'translateY(10px)',
+            transition: 'opacity 0.6s cubic-bezier(0.22, 1, 0.36, 1) 0.2s, transform 0.6s cubic-bezier(0.22, 1, 0.36, 1) 0.2s',
+          }}
+        >
+          {/* Hint text with clickable Wrap Up */}
+          <p
+            style={{
+              fontFamily: "'DM Mono', monospace",
+              fontSize: '12px',
+              color: 'rgba(255,255,255,0.35)',
+              letterSpacing: '0.02em',
+            }}
+          >
+            Ask another question, or{' '}
+            <button
+              onClick={onWrapUp}
+              style={{
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                fontFamily: "'Silkscreen', monospace",
+                fontSize: '11px',
+                color: 'var(--accent-gold)',
+                letterSpacing: '0.06em',
+                textDecoration: 'underline',
+                textUnderlineOffset: '3px',
+                textDecorationColor: 'rgba(196, 154, 42, 0.4)',
+                padding: 0,
+                transition: 'color 0.15s ease, text-decoration-color 0.15s ease',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.color = 'var(--accent-gold-light)';
+                e.currentTarget.style.textDecorationColor = 'var(--accent-gold)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.color = 'var(--accent-gold)';
+                e.currentTarget.style.textDecorationColor = 'rgba(196, 154, 42, 0.4)';
+              }}
+            >
+              wrap up the session
+            </button>
+          </p>
+
+          {/* Big END SHOW button */}
+          <button
+            onClick={onWrapUp}
+            style={{
+              fontFamily: "'Silkscreen', monospace",
+              fontSize: '14px',
+              letterSpacing: '0.1em',
+              padding: '14px 32px',
+              borderRadius: '8px',
+              border: '2px solid var(--accent-gold)',
+              cursor: 'pointer',
+              background: 'linear-gradient(180deg, rgba(196, 154, 42, 0.2) 0%, rgba(196, 154, 42, 0.08) 100%)',
+              color: 'var(--accent-gold-light)',
+              textTransform: 'uppercase',
+              animation: 'wrapGoldPulse 3s ease-in-out infinite',
+              position: 'relative',
+              transition: 'all 0.15s ease',
+            }}
+            onMouseEnter={(e) => {
+              const el = e.currentTarget;
+              el.style.background = 'linear-gradient(180deg, rgba(196, 154, 42, 0.35) 0%, rgba(196, 154, 42, 0.15) 100%)';
+              el.style.transform = 'translateY(-2px)';
+              el.style.boxShadow = '0 0 24px rgba(196, 154, 42, 0.5), 0 0 48px rgba(196, 154, 42, 0.2), 0 4px 12px rgba(0,0,0,0.3)';
+            }}
+            onMouseLeave={(e) => {
+              const el = e.currentTarget;
+              el.style.background = 'linear-gradient(180deg, rgba(196, 154, 42, 0.2) 0%, rgba(196, 154, 42, 0.08) 100%)';
+              el.style.transform = 'translateY(0)';
+              el.style.boxShadow = '';
+            }}
+            onMouseDown={(e) => {
+              const el = e.currentTarget;
+              el.style.transform = 'translateY(1px)';
+              el.style.boxShadow = '0 0 12px rgba(196, 154, 42, 0.3), inset 0 2px 4px rgba(0,0,0,0.2)';
+            }}
+            onMouseUp={(e) => {
+              const el = e.currentTarget;
+              el.style.transform = 'translateY(-2px)';
+              el.style.boxShadow = '0 0 24px rgba(196, 154, 42, 0.5), 0 0 48px rgba(196, 154, 42, 0.2), 0 4px 12px rgba(0,0,0,0.3)';
+            }}
+          >
+            END SHOW
+          </button>
+        </div>
+      )}
     </form>
   );
 }

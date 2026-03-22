@@ -373,7 +373,7 @@ export default function SessionPage() {
         setInModeration(true);
         const scene = sceneRef.current;
         if (scene) await scene.addObserver();
-        setHint('You\'re in the fishbowl. Type a question below, or press Wrap Up.');
+        setHint('You\'re in the fishbowl. Ask the panel a question below.');
 
       } catch (err) {
         showError(err instanceof Error ? err.message : 'An error occurred.');
@@ -401,7 +401,7 @@ export default function SessionPage() {
 
     try {
       await orchestrator.handleModerationQuestion(question);
-      setHint('Ask another question, or press Wrap Up.');
+      setHint('Ask another question, or end the show below.');
     } catch (err) {
       showError(err instanceof Error ? err.message : 'Error processing question.');
     }
@@ -841,7 +841,7 @@ export default function SessionPage() {
           {/* Moderation Input */}
           {inModeration && (
             <div className="max-w-[800px] mx-auto mt-4">
-              <ModerationInput onSubmit={handleModeration} disabled={isSpeaking} />
+              <ModerationInput onSubmit={handleModeration} disabled={isSpeaking} onWrapUp={handleWrapUp} />
             </div>
           )}
 

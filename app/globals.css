@@ -1387,6 +1387,38 @@ html, body {
   50% { color: rgba(255,255,255,0.5); }
 }
 
+/* END SHOW button — slow pulsing gold glow for wrap-up CTA */
+@keyframes wrapGoldPulse {
+  0%, 100% {
+    box-shadow:
+      0 0 8px rgba(196, 154, 42, 0.3),
+      0 0 20px rgba(196, 154, 42, 0.15),
+      inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  }
+  50% {
+    box-shadow:
+      0 0 16px rgba(196, 154, 42, 0.5),
+      0 0 40px rgba(196, 154, 42, 0.25),
+      0 0 60px rgba(196, 154, 42, 0.1),
+      inset 0 1px 0 rgba(255, 255, 255, 0.15);
+  }
+}
+
+/* END SHOW button in status bar during moderation — smaller pulse */
+@keyframes wrapGoldPulseSubtle {
+  0%, 100% {
+    box-shadow:
+      0 0 6px rgba(196, 154, 42, 0.2),
+      inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  }
+  50% {
+    box-shadow:
+      0 0 12px rgba(196, 154, 42, 0.35),
+      0 0 24px rgba(196, 154, 42, 0.15),
+      inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  }
+}
+
 /* Dark panel scrollbar — shared by moderation input + transcript */
 .moderation-input-form textarea::-webkit-scrollbar,
 .transcript-dark-scroll::-webkit-scrollbar {
