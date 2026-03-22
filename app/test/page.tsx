@@ -445,190 +445,251 @@ function TestPageContent() {
 
   return (
     <div className="min-h-screen">
-      <div className="fixed top-0 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-[var(--accent-gold)] opacity-[0.06] rounded-full blur-[120px] pointer-events-none" />
+      {/* Main session content */}
+      <div>
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 py-4 sm:py-6">
+          {/* Control room header strip */}
+          <div className="flex items-center justify-center gap-3 mb-4">
+            <div className="h-px flex-1 max-w-16" style={{ background: 'linear-gradient(90deg, transparent, var(--border))' }} />
+            <div className="flex items-center gap-2">
+              <span className="w-1.5 h-1.5 rounded-full" style={{ background: '#e85a4a', boxShadow: '0 0 4px rgba(232,90,74,0.5)', animation: 'statusPulse 2s ease-in-out infinite' }} />
+              <h1 className="font-pixel text-sm sm:text-base title-text" style={{ letterSpacing: '0.06em' }}>THE FISHBOWL</h1>
+              <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '9px', color: 'var(--text-muted)', letterSpacing: '0.06em', textTransform: 'uppercase' }}>DEMO</span>
+            </div>
+            <div className="h-px flex-1 max-w-16" style={{ background: 'linear-gradient(90deg, var(--border), transparent)' }} />
+          </div>
 
-      <div className="max-w-5xl mx-auto px-6 py-6 relative">
-        <div className="text-center mb-4">
-          <div className="label-mono mb-1">Test Mode — No API Calls</div>
-          <h1 className="text-2xl font-700 tracking-tight" style={{ color: 'var(--text-primary)' }}>The Fishbowl</h1>
-        </div>
+          {/* === BRIEFING VIEW === */}
+          {viewMode === 'briefing' && (
+            <div className="max-w-[800px] mx-auto">
+              {briefingIndex < 0 ? (
+                /* Pre-start state */
+                <div className="text-center py-12 sm:py-20">
+                  <p className="text-base sm:text-lg" style={{ color: 'var(--text-secondary)' }}>Your panel of {FAKE_PANELISTS.length} experts is ready.</p>
+                  <div className="flex justify-center gap-4 mt-6 flex-wrap">
+                    {FAKE_PANELISTS.map((p) => (
+                      <div key={p.id} className="flex flex-col items-center gap-1.5">
+                        <div
+                          className="relative w-10 h-10 sm:w-12 sm:h-12 overflow-hidden"
+                          style={{
+                            border: `2px solid ${p.color}`,
+                            borderRadius: '6px',
+                            background: '#0d0b09',
+                          }}
+                        >
+                          <img
+                            src={`/sprites/portraits/char_${p.spriteIndex}_portrait.png`}
+                            alt={p.name}
+                            className="absolute inset-0 w-full h-full object-cover"
+                            style={{
+                              imageRendering: 'pixelated',
+                              objectPosition: 'center 20%',
+                              transform: 'scale(1.18)',
+                              transformOrigin: 'center 20%',
+                            }}
+                          />
+                        </div>
+                        <span className="text-xs" style={{ color: 'var(--text-muted)' }}>{p.name}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : currentPanelist && (
+                /* Character Dossier Card — classified document / RPG briefing */
+                <div
+                  className="dossier-slide-in overflow-hidden"
+                  key={currentPanelist.id}
+                  style={{
+                    background: '#1a1714',
+                    border: '1px solid #2a2520',
+                    borderLeft: `3px solid ${currentPanelist.color}`,
+                    borderRadius: '10px',
+                    boxShadow: '0 4px 24px rgba(0,0,0,0.3), 0 0 40px rgba(196,154,42,0.04)',
+                    position: 'relative',
+                  }}
+                >
+                  {/* Top gold accent line */}
+                  <div style={{ height: '1px', background: 'linear-gradient(90deg, ' + currentPanelist.color + ', transparent 80%)' }} />
 
-        {/* === BRIEFING VIEW === */}
-        {viewMode === 'briefing' && (
-          <div className="max-w-[800px] mx-auto">
-            {briefingIndex < 0 ? (
-              /* Pre-start state */
-              <div className="text-center py-20">
-                <p className="text-lg" style={{ color: 'var(--text-secondary)' }}>Your panel of {FAKE_PANELISTS.length} experts is ready.</p>
-                <div className="flex justify-center gap-3 mt-6">
-                  {FAKE_PANELISTS.map((p) => (
-                    <div key={p.id} className="flex flex-col items-center gap-1">
+                  {/* PANELIST BRIEF watermark */}
+                  <div
+                    className="font-pixel hidden sm:block"
+                    style={{
+                      position: 'absolute',
+                      top: '14px',
+                      right: '16px',
+                      fontSize: '8px',
+                      letterSpacing: '0.12em',
+                      color: 'rgba(255,255,255,0.08)',
+                      textTransform: 'uppercase',
+                      pointerEvents: 'none',
+                      userSelect: 'none',
+                    }}
+                  >
+                    PANELIST BRIEF
+                  </div>
+
+                  <div className="flex flex-col sm:flex-row">
+                    {/* Left: Portrait + Identity */}
+                    <div
+                      className="sm:w-64 flex-shrink-0 flex flex-col items-center justify-center py-6 sm:py-10 px-4 sm:px-6 border-b sm:border-b-0 sm:border-r"
+                      style={{ borderColor: '#2a2520' }}
+                    >
+                      {/* Pixel art portrait */}
                       <div
-                        className="relative w-12 h-12 rounded-full overflow-hidden"
-                        style={{ border: `2px solid ${p.color}` }}
+                        className="relative w-16 h-16 sm:w-24 sm:h-24 overflow-hidden mb-3 sm:mb-4"
+                        style={{
+                          border: `2px solid ${currentPanelist.color}`,
+                          borderRadius: '8px',
+                          background: '#0d0b09',
+                          boxShadow: `0 0 16px ${currentPanelist.color}20`,
+                        }}
                       >
                         <img
-                          src={`/sprites/portraits/char_${p.spriteIndex}_portrait.png`}
-                          alt={p.name}
+                          src={`/sprites/portraits/char_${currentPanelist.spriteIndex}_portrait.png`}
+                          alt={currentPanelist.name}
                           className="absolute inset-0 w-full h-full object-cover"
                           style={{
                             imageRendering: 'pixelated',
                             objectPosition: 'center 20%',
-                            transform: 'scale(1.18)',
+                            transform: 'scale(1.14)',
                             transformOrigin: 'center 20%',
                           }}
                         />
                       </div>
-                      <span className="text-xs" style={{ color: 'var(--text-muted)' }}>{p.name}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ) : currentPanelist && (
-              /* Expert briefing card — large format */
-              <div className="rounded-xl overflow-hidden animate-fade-in" style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)' }}>
-                <div className="flex">
-                  {/* Left: Expert visual */}
-                  <div className="w-64 flex-shrink-0 flex flex-col items-center justify-center py-10 px-6"
-                    style={{ background: currentPanelist.color + '12', borderRight: `1px solid var(--border)` }}>
-                    <div
-                      className="relative w-24 h-24 rounded-full overflow-hidden mb-4"
-                      style={{ border: `3px solid ${currentPanelist.color}` }}
-                    >
-                      <img
-                        src={`/sprites/portraits/char_${currentPanelist.spriteIndex}_portrait.png`}
-                        alt={currentPanelist.name}
-                        className="absolute inset-0 w-full h-full object-cover"
-                        style={{
-                          imageRendering: 'pixelated',
-                          objectPosition: 'center 20%',
-                          transform: 'scale(1.14)',
-                          transformOrigin: 'center 20%',
-                        }}
-                      />
-                    </div>
-                    <div className="text-center">
-                      <div className="text-lg font-700" style={{ color: 'var(--text-primary)' }}>{currentPanelist.name}</div>
-                      <div className="label-mono mt-1" style={{ color: currentPanelist.color }}>{currentPanelist.role}</div>
-                    </div>
-                    <p className="text-xs text-center mt-3 leading-relaxed px-2" style={{ color: 'var(--text-muted)' }}>
-                      {currentPanelist.description}
-                    </p>
-                    <div className="mt-4 label-mono" style={{ fontSize: '9px' }}>
-                      Panelist {briefingIndex + 1} of {FAKE_PANELISTS.length}
-                    </div>
-                  </div>
 
-                  {/* Right: Their take */}
-                  <div className="flex-1 p-8">
-                    <div className="label-mono mb-3" style={{ color: currentPanelist.color }}>Initial Take</div>
-                    {briefingText ? (
-                      <p className="text-sm leading-relaxed whitespace-pre-wrap" style={{ color: 'var(--text-secondary)' }}>
-                        {briefingText}
-                        {isSpeaking && <span className="inline-block w-1 h-3.5 ml-0.5 animate-pulse" style={{ background: currentPanelist.color }} />}
+                      {/* Name — Silkscreen */}
+                      <div className="text-center">
+                        <div
+                          className="font-pixel text-sm sm:text-base"
+                          style={{ color: 'rgba(255,255,255,0.9)', letterSpacing: '0.04em' }}
+                        >
+                          {currentPanelist.name}
+                        </div>
+                        {/* Role — DM Mono uppercase pill */}
+                        <div
+                          className="inline-block mt-2 px-2.5 py-0.5"
+                          style={{
+                            fontFamily: "'DM Mono', monospace",
+                            fontSize: '9px',
+                            letterSpacing: '0.08em',
+                            textTransform: 'uppercase',
+                            color: currentPanelist.color,
+                            background: currentPanelist.color + '15',
+                            border: `1px solid ${currentPanelist.color}30`,
+                            borderRadius: '4px',
+                          }}
+                        >
+                          {currentPanelist.role}
+                        </div>
+                      </div>
+
+                      {/* Description */}
+                      <p
+                        className="text-xs text-center mt-3 leading-relaxed px-2 hidden sm:block"
+                        style={{ color: 'rgba(255,255,255,0.4)' }}
+                      >
+                        {currentPanelist.description}
                       </p>
-                    ) : (
-                      <p className="text-sm italic" style={{ color: 'var(--text-muted)' }}>Preparing response...</p>
-                    )}
+
+                      {/* Panelist counter */}
+                      <div
+                        className="mt-3 sm:mt-4"
+                        style={{
+                          fontFamily: "'DM Mono', monospace",
+                          fontSize: '9px',
+                          letterSpacing: '0.12em',
+                          textTransform: 'uppercase',
+                          color: 'rgba(255,255,255,0.2)',
+                        }}
+                      >
+                        {briefingIndex + 1} / {FAKE_PANELISTS.length}
+                      </div>
+                    </div>
+
+                    {/* Right: Initial Take content */}
+                    <div className="flex-1 p-4 sm:p-8">
+                      <div
+                        className="font-pixel mb-4"
+                        style={{
+                          fontSize: '9px',
+                          letterSpacing: '0.1em',
+                          color: currentPanelist.color,
+                        }}
+                      >
+                        INITIAL TAKE
+                      </div>
+                      {briefingText ? (
+                        <p
+                          className="text-sm leading-relaxed whitespace-pre-wrap"
+                          style={{ color: 'rgba(255,255,255,0.65)' }}
+                        >
+                          {briefingText}
+                          {isSpeaking && (
+                            <span
+                              className="inline-block w-1 h-3.5 ml-0.5 animate-pulse"
+                              style={{ background: currentPanelist.color }}
+                            />
+                          )}
+                        </p>
+                      ) : (
+                        <p
+                          className="text-sm"
+                          style={{
+                            fontFamily: "'DM Mono', monospace",
+                            color: 'rgba(255,255,255,0.3)',
+                            fontStyle: 'italic',
+                          }}
+                        >
+                          Preparing response...
+                        </p>
+                      )}
+                    </div>
                   </div>
                 </div>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* === TRANSITION SCREEN === */}
-        {viewMode === 'transition' && (
-          <TransitionOverlay
-            panelists={FAKE_PANELISTS.map((p) => ({ id: p.id, name: p.name, role: p.role, color: p.color }))}
-            onComplete={handleTransitionComplete}
-          />
-        )}
-
-        {/* === ROUNDTABLE VIEW (canvas always in DOM, hidden until needed) === */}
-        <div style={{ display: viewMode === 'roundtable' || forceSceneVisible ? 'block' : 'none' }}>
-          <div
-            ref={containerRef}
-            className="w-full max-w-[800px] mx-auto rounded-t-xl overflow-hidden shadow-lg"
-            style={{ aspectRatio: '16/9', position: 'relative' }}
-          >
-            {/* Hint/choice overlay inside canvas */}
-            {!editorMode && <div style={{
-              position: 'absolute',
-              bottom: 0,
-              left: 0,
-              right: 0,
-              padding: '12px 16px',
-              background: 'linear-gradient(transparent, rgba(20, 12, 8, 0.7))',
-              textAlign: 'center',
-              zIndex: 10,
-              pointerEvents: 'none',
-            }}>
-              {showRoundtableChoice ? (
-                <div style={{ pointerEvents: 'auto' }}>
-                  <p className="text-sm mb-3" style={{ color: 'var(--accent-gold)' }}>
-                    What would you like to do?
-                  </p>
-                  <div className="flex justify-center gap-3">
-                    <button
-                      onClick={handleContinueRoundtable}
-                      className="px-5 py-2 rounded-lg text-sm font-500 glow-gold transition-all"
-                      style={{ background: 'var(--accent-gold)', color: 'var(--bg-deep)' }}
-                    >
-                      Continue the Roundtable
-                    </button>
-                    <button
-                      onClick={handleAskQuestions}
-                      className="px-5 py-2 rounded-lg text-sm font-500 glow-gold transition-all"
-                      style={{ background: 'var(--accent-gold)', color: 'var(--bg-deep)' }}
-                    >
-                      Ask Questions
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <>
-                  <p className={`text-sm ${!isSpeaking ? 'animate-pulse' : ''}`}
-                    style={{ color: !isSpeaking ? 'var(--accent-gold)' : 'var(--text-muted)' }}>
-                    {hint}
-                  </p>
-                  {!isSpeaking && waitingForAdvance && (
-                    <button
-                      onClick={() => {
-                        if (advanceResolverRef.current) {
-                          const resolver = advanceResolverRef.current;
-                          advanceResolverRef.current = null;
-                          setWaitingForAdvance(false);
-                          resolver();
-                        }
-                      }}
-                      className="mt-2 px-5 py-2 rounded-lg text-sm font-500 glow-gold transition-all"
-                      style={{ background: 'var(--accent-gold)', color: 'var(--bg-deep)', pointerEvents: 'auto' }}
-                    >
-                      Continue (or press Space)
-                    </button>
-                  )}
-                </>
               )}
-            </div>}
-          </div>
-          {!editorMode && (() => {
-            const cost = (fakeTokens.input / 1_000_000) * 3.00 + (fakeTokens.output / 1_000_000) * 15.00;
-            const total = fakeTokens.input + fakeTokens.output;
-            return (
-              <StatusBar
-                round={currentRound}
-                panelistsSpoken={panelistsSpoken}
-                totalPanelists={FAKE_PANELISTS.length}
-                onWrapUp={handleWrapUp}
-                canWrapUp={inModeration && !isSpeaking}
-                modelLabel="Sonnet 4.6"
-                costDollars={cost}
-                totalTokens={total}
+            </div>
+          )}
+
+          {/* === TRANSITION SCREEN === */}
+          {viewMode === 'transition' && (
+            <TransitionOverlay
+              panelists={FAKE_PANELISTS.map((p) => ({ id: p.id, name: p.name, role: p.role, color: p.color }))}
+              onComplete={handleTransitionComplete}
+            />
+          )}
+
+          {/* === ROUNDTABLE VIEW (canvas always in DOM, hidden until needed) === */}
+          <div style={{ display: viewMode === 'roundtable' || forceSceneVisible ? 'block' : 'none' }}>
+            {/* Scene + status bar pinned at top so transcript doesn't push it off-screen */}
+            <div style={{ position: 'sticky', top: 0, zIndex: 10 }}>
+              {/* On small screens, show a note that the scene is best on desktop */}
+              <div className="sm:hidden text-center mb-2">
+                <p className="text-xs" style={{ color: 'var(--text-muted)' }}>Scene best viewed on a wider screen</p>
+              </div>
+              <div
+                ref={containerRef}
+                className="w-full max-w-[800px] mx-auto scene-viewport overflow-hidden"
+                style={{ aspectRatio: '16/9', borderRadius: '10px 10px 0 0', borderBottom: 'none' }}
               />
-            );
-          })()}
-        </div>
+              {!editorMode && (() => {
+                const cost = (fakeTokens.input / 1_000_000) * 3.00 + (fakeTokens.output / 1_000_000) * 15.00;
+                const total = fakeTokens.input + fakeTokens.output;
+                return (
+                  <StatusBar
+                    round={currentRound}
+                    panelistsSpoken={panelistsSpoken}
+                    totalPanelists={FAKE_PANELISTS.length}
+                    onWrapUp={handleWrapUp}
+                    canWrapUp={inModeration && !isSpeaking}
+                    modelLabel="Sonnet 4.6"
+                    costDollars={cost}
+                    totalTokens={total}
+                  />
+                );
+              })()}
+            </div>
+          </div>
 
         {editorMode && (
           <div className="max-w-[800px] mx-auto mt-4 rounded-xl p-4" style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)' }}>
@@ -659,28 +720,65 @@ function TestPageContent() {
           </div>
         )}
 
-        {/* Hint bar (visible during briefing/transition, before roundtable starts) */}
-        {viewMode !== 'roundtable' && !editorMode && (
-        <div className="max-w-[800px] mx-auto mt-6 text-center">
-          <p className={`text-sm ${!isSpeaking ? 'animate-pulse' : ''}`}
-            style={{ color: !isSpeaking ? 'var(--accent-gold)' : 'var(--text-muted)' }}>
-            {hint}
-          </p>
-          {!isSpeaking && !startedRef.current && briefingIndex < 0 && (
-            <button
-              onClick={() => {
-                if (!startedRef.current) {
-                  startedRef.current = true;
-                  runDemoRef.current();
-                }
-              }}
-              className="mt-3 px-5 py-2 rounded-lg text-sm font-500 glow-gold transition-all"
-              style={{ background: 'var(--accent-gold)', color: 'var(--bg-deep)' }}
-            >
-              Start Demo (or press Space)
-            </button>
-          )}
-        </div>
+        {/* Hint bar */}
+        {!editorMode && (
+          <div className="max-w-[800px] mx-auto mt-4 text-center">
+            <p className={`text-sm ${!isSpeaking && waitingForAdvance ? 'animate-pulse' : ''}`}
+              style={{ color: !isSpeaking && waitingForAdvance ? 'var(--accent-gold)' : 'var(--text-muted)' }}>
+              {hint}
+            </p>
+            {/* Roundtable choice buttons */}
+            {showRoundtableChoice && (
+              <div className="flex justify-center gap-3 mt-3">
+                <button
+                  onClick={handleContinueRoundtable}
+                  className="px-5 py-2 rounded-lg text-sm font-500 glow-gold transition-all cursor-pointer"
+                  style={{ background: 'var(--accent-gold)', color: 'var(--bg-deep)' }}
+                >
+                  Continue the Roundtable
+                </button>
+                <button
+                  onClick={handleAskQuestions}
+                  className="px-5 py-2 rounded-lg text-sm font-500 glow-gold transition-all cursor-pointer"
+                  style={{ background: 'var(--accent-gold)', color: 'var(--bg-deep)' }}
+                >
+                  Ask Questions
+                </button>
+              </div>
+            )}
+            {/* Start demo button (pre-start only) */}
+            {!isSpeaking && !startedRef.current && briefingIndex < 0 && (
+              <button
+                onClick={() => {
+                  if (!startedRef.current) {
+                    startedRef.current = true;
+                    runDemoRef.current();
+                  }
+                }}
+                className="mt-3 px-5 py-2 rounded-lg text-sm font-500 glow-gold transition-all cursor-pointer"
+                style={{ background: 'var(--accent-gold)', color: 'var(--bg-deep)' }}
+              >
+                Start Demo (or press Space)
+              </button>
+            )}
+            {/* Continue button for spacebar advances */}
+            {!isSpeaking && waitingForAdvance && !showRoundtableChoice && startedRef.current && (
+              <button
+                onClick={() => {
+                  if (advanceResolverRef.current) {
+                    const resolver = advanceResolverRef.current;
+                    advanceResolverRef.current = null;
+                    setWaitingForAdvance(false);
+                    resolver();
+                  }
+                }}
+                className="mt-3 px-5 py-2 rounded-lg text-sm font-500 glow-gold transition-all cursor-pointer"
+                style={{ background: 'var(--accent-gold)', color: 'var(--bg-deep)' }}
+              >
+                Continue (or press Space)
+              </button>
+            )}
+          </div>
         )}
 
         {/* Moderation Input */}
@@ -700,6 +798,7 @@ function TestPageContent() {
           />
         )}
 
+        </div>
       </div>
 
       {/* === FULL-SCREEN SESSION COMPLETE OVERLAY === */}
