@@ -95,6 +95,11 @@ body::before {
   box-shadow: 0 2px 8px rgba(196, 154, 42, 0.3) !important;
 }
 
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
 /* Global focus-visible ring for keyboard navigation */
 button:focus-visible, input:focus-visible, a:focus-visible {
   outline: 2px solid var(--accent-gold);
