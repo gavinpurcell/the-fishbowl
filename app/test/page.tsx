@@ -9,6 +9,7 @@ import StatusBar from '@/components/scene/StatusBar';
 import TransitionOverlay from '@/components/scene/TransitionOverlay';
 import ModerationInput from '@/components/scene/ModerationInput';
 import LiveTranscript from '@/components/scene/LiveTranscript';
+import KeyboardHelp from '@/components/scene/KeyboardHelp';
 
 const FAKE_PANELISTS: Panelist[] = [
   { id: 'p1', name: 'Mei', role: 'UX Designer', description: 'Ten years of product design at startups and FAANG. Thinks user-first and will challenge any feature that adds complexity without clear user value.', systemPrompt: '', color: '#4a9a7a', spriteIndex: 0 },
@@ -445,6 +446,7 @@ function TestPageContent() {
 
   return (
     <div className="min-h-screen">
+      <KeyboardHelp />
       {/* Main session content */}
       <div>
         <div className="max-w-5xl mx-auto px-4 sm:px-6 py-4 sm:py-6">

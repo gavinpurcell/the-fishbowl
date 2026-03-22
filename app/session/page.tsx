@@ -13,6 +13,7 @@ import { getModelById } from '@/lib/models';
 // Note: PixiJS scene is managed directly via ref, not via FishbowlCanvas component
 import ModerationInput from '@/components/scene/ModerationInput';
 import LiveTranscript from '@/components/scene/LiveTranscript';
+import KeyboardHelp from '@/components/scene/KeyboardHelp';
 import { loadAllSprites } from '@/lib/spriteLoader';
 import type { RoundType, TranscriptEntry, Panelist } from '@/engine/types';
 
@@ -417,6 +418,7 @@ export default function SessionPage() {
 
   return (
     <div className="min-h-screen">
+      <KeyboardHelp />
       {/* Main session content */}
       <div>
         <div className="max-w-5xl mx-auto px-4 sm:px-6 py-4 sm:py-6">
