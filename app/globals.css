@@ -748,3 +748,427 @@ html, body {
   background: rgba(255,255,255,0.1);
   border-radius: 2px;
 }
+
+/* ============================================================ */
+/*  Results Page — Post-Show Debrief / Research Report Styles    */
+/* ============================================================ */
+
+/* Dark report header — classified document feel */
+.report-header {
+  background: #1a1714;
+  border: 1px solid #2a2520;
+  border-radius: 12px;
+  overflow: hidden;
+  position: relative;
+}
+
+/* Gold accent line at top of report header */
+.report-header::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent 5%, var(--accent-gold) 30%, #f0c866 50%, var(--accent-gold) 70%, transparent 95%);
+}
+
+/* Stamp for completion status */
+.report-stamp {
+  font-family: 'Silkscreen', monospace;
+  font-size: 8px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 4px 10px;
+  border-radius: 4px;
+  border: 1px solid rgba(196, 154, 42, 0.3);
+  background: rgba(196, 154, 42, 0.1);
+  color: var(--accent-gold);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Metadata field — label + value pair */
+.report-field {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.report-field-label {
+  font-family: 'Silkscreen', monospace;
+  font-size: 8px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.25);
+  white-space: nowrap;
+}
+
+.report-field-value {
+  font-family: 'DM Mono', monospace;
+  font-size: 12px;
+  font-weight: 500;
+  color: rgba(255,255,255,0.75);
+  font-variant-numeric: tabular-nums;
+}
+
+.report-field-divider {
+  width: 1px;
+  height: 16px;
+  background: rgba(255,255,255,0.08);
+  margin: 0 4px;
+}
+
+/* Document tab toggle — classified document tabs */
+.doc-tab {
+  position: relative;
+  font-family: 'Silkscreen', monospace;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 10px 16px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.doc-tab:first-child {
+  border-radius: 8px 0 0 8px;
+  border-right: none;
+}
+
+.doc-tab:last-child {
+  border-radius: 0 8px 8px 0;
+}
+
+.doc-tab.active {
+  background: var(--accent-gold);
+  color: #1a1714;
+  border-color: var(--accent-gold);
+  box-shadow: 0 2px 8px rgba(196, 154, 42, 0.25);
+}
+
+.doc-tab:not(.active):hover {
+  background: var(--bg-elevated);
+  border-color: var(--accent-gold);
+  color: var(--text-secondary);
+}
+
+/* Action badge buttons for export */
+.action-badge {
+  position: relative;
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 8px 14px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--bg-surface);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.action-badge:hover {
+  background: var(--bg-elevated);
+  border-color: var(--accent-gold);
+  color: var(--text-primary);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+}
+
+.action-badge:active {
+  transform: translateY(1px);
+  box-shadow: none;
+}
+
+.action-badge.success {
+  background: var(--accent-gold);
+  border-color: var(--accent-gold);
+  color: #1a1714;
+}
+
+/* Document content area — the report body */
+.report-document {
+  position: relative;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+/* Corner fold decoration on document */
+.report-document::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 24px;
+  height: 24px;
+  background: linear-gradient(225deg, var(--bg-deep) 50%, var(--border) 50%, var(--border) 51%, transparent 51%);
+  pointer-events: none;
+}
+
+/* Document section header bar */
+.report-doc-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-surface);
+}
+
+/* Summary content — research brief styling */
+.summary-content h2 {
+  font-family: 'Silkscreen', monospace;
+  font-size: 13px;
+  letter-spacing: 0.04em;
+  color: var(--text-primary);
+  margin-top: 24px;
+  margin-bottom: 10px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--border);
+}
+
+.summary-content h2:first-child {
+  margin-top: 0;
+}
+
+.summary-content h3 {
+  font-family: 'Silkscreen', monospace;
+  font-size: 12px;
+  letter-spacing: 0.03em;
+  color: var(--text-primary);
+  margin-top: 20px;
+  margin-bottom: 8px;
+}
+
+/* Pull quote — highlighted insight */
+.pull-quote {
+  position: relative;
+  padding: 12px 16px;
+  margin: 12px 0;
+  border-left: 3px solid var(--accent-gold);
+  background: rgba(196, 154, 42, 0.04);
+  border-radius: 0 8px 8px 0;
+}
+
+.pull-quote p {
+  font-family: 'Outfit', sans-serif;
+  font-style: italic;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--text-primary);
+}
+
+.pull-quote .attribution {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--accent-gold);
+  margin-top: 6px;
+}
+
+/* Transcript in report mode — dark teleprompter style */
+.transcript-report {
+  background: #1a1714;
+  border: 1px solid #2a2520;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+/* Transcript entry row — court reporter style */
+.transcript-entry {
+  display: flex;
+  gap: 12px;
+  padding: 10px 16px;
+  transition: background 0.15s ease;
+  border-left: 3px solid transparent;
+}
+
+.transcript-entry:hover {
+  background: rgba(255,255,255,0.02);
+}
+
+/* Transcript round divider — broadcast segment marker */
+.transcript-round-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  margin: 4px 0;
+}
+
+.transcript-round-divider::before,
+.transcript-round-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: rgba(196, 154, 42, 0.15);
+}
+
+.transcript-round-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 4px;
+  background: rgba(196, 154, 42, 0.08);
+  border: 1px solid rgba(196, 154, 42, 0.15);
+  font-family: 'Silkscreen', monospace;
+  font-size: 8px;
+  letter-spacing: 0.1em;
+  color: var(--accent-gold);
+}
+
+.transcript-round-label .dot {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--accent-gold);
+  opacity: 0.6;
+}
+
+/* Transcript speaker name */
+.transcript-speaker {
+  font-family: 'Silkscreen', monospace;
+  font-size: 9px;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+/* Transcript timestamp column */
+.transcript-timestamp {
+  font-family: 'DM Mono', monospace;
+  font-size: 9px;
+  color: rgba(255,255,255,0.15);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  min-width: 44px;
+  text-align: right;
+}
+
+/* Transcript content text */
+.transcript-text {
+  font-family: 'DM Mono', monospace;
+  font-size: 12px;
+  line-height: 1.65;
+  color: rgba(255,255,255,0.55);
+  white-space: pre-wrap;
+}
+
+.transcript-text.moderator {
+  color: rgba(255,255,255,0.8);
+}
+
+/* Cost tally — compact inline strip */
+.cost-strip {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  border-radius: 8px;
+  background: rgba(26, 23, 20, 0.5);
+  border: 1px solid var(--border);
+  font-family: 'DM Mono', monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+.cost-strip-label {
+  font-family: 'Silkscreen', monospace;
+  font-size: 8px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.cost-strip-value {
+  font-family: 'DM Mono', monospace;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.cost-strip-detail {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  color: var(--text-muted);
+}
+
+.cost-strip-divider {
+  width: 1px;
+  height: 14px;
+  background: var(--border);
+}
+
+/* New Session CTA — game button style matching title page */
+.results-cta {
+  position: relative;
+  font-family: 'Silkscreen', 'Courier New', monospace;
+  font-size: 14px;
+  letter-spacing: 0.05em;
+  padding: 16px 36px;
+  border-radius: 10px;
+  border: none;
+  cursor: pointer;
+  background: linear-gradient(180deg, #d4aa3a 0%, #c49a2a 50%, #a88020 100%);
+  color: #1a1714;
+  box-shadow:
+    0 3px 0 #8a6a18,
+    0 4px 12px rgba(196, 154, 42, 0.35);
+  transition: all 0.15s ease;
+  text-transform: uppercase;
+  animation: startButtonPulse 3s ease-in-out infinite;
+}
+
+.results-cta:hover {
+  transform: translateY(-2px);
+  animation: none;
+  box-shadow:
+    0 5px 0 #8a6a18,
+    0 6px 18px rgba(196, 154, 42, 0.45);
+}
+
+.results-cta:active {
+  transform: translateY(2px);
+  box-shadow:
+    0 1px 0 #8a6a18,
+    0 2px 6px rgba(196, 154, 42, 0.25);
+}
+
+/* Staggered entrance animations for results sections */
+@keyframes reportSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.report-enter {
+  opacity: 0;
+  animation: reportSlideIn 0.6s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.report-enter-1 { animation-delay: 0.05s; }
+.report-enter-2 { animation-delay: 0.15s; }
+.report-enter-3 { animation-delay: 0.25s; }
+.report-enter-4 { animation-delay: 0.35s; }
+.report-enter-5 { animation-delay: 0.45s; }
+.report-enter-6 { animation-delay: 0.55s; }
