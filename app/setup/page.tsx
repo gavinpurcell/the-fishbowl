@@ -28,10 +28,10 @@ export default function SetupPage() {
     setStep('configure');
   };
 
-  const canStart =
-    store.panelists.length >= 3 &&
-    (store.ideaText.trim() || store.ideaFiles.length > 0) &&
-    (store.provider === 'ollama' || store.provider === 'claude-code' || store.apiKey.trim());
+  const hasPanelists = store.panelists.length >= 3;
+  const hasIdea = !!(store.ideaText.trim() || store.ideaFiles.length > 0);
+  const hasProvider = store.provider === 'ollama' || store.provider === 'claude-code' || !!store.apiKey.trim();
+  const canStart = hasPanelists && hasIdea && hasProvider;
 
   const handleStart = () => {
     store.startSession();
@@ -109,6 +109,37 @@ export default function SetupPage() {
                   const est = estimateSessionCost(store.modelId, store.panelists.length);
                   return `Estimated session cost: ~${formatCost(est.low)} – ${formatCost(est.high)}`;
                 })()}
+              </div>
+            )}
+
+            {/* Readiness checklist */}
+            {!canStart && (
+              <div className="flex flex-wrap gap-x-6 gap-y-2 py-4 animate-fade-in">
+                {[
+                  { done: hasPanelists, label: store.panelists.length === 0 ? 'Add 3+ panelists' : `${store.panelists.length}/3 panelists` },
+                  { done: hasIdea, label: 'Describe your idea' },
+                  { done: hasProvider, label: store.provider === 'ollama' || store.provider === 'claude-code' ? 'Provider selected' : 'API key entered' },
+                ].map((item) => (
+                  <span
+                    key={item.label}
+                    className="flex items-center gap-1.5 text-xs transition-colors duration-300"
+                    style={{ color: item.done ? 'var(--accent-gold)' : 'var(--text-muted)' }}
+                  >
+                    <span
+                      className="inline-flex items-center justify-center rounded-full text-[9px] font-600 transition-all duration-300"
+                      style={{
+                        width: 16,
+                        height: 16,
+                        background: item.done ? 'var(--accent-gold)' : 'transparent',
+                        color: item.done ? 'var(--bg-deep)' : 'var(--text-muted)',
+                        border: item.done ? '1px solid var(--accent-gold)' : '1px solid var(--border)',
+                      }}
+                    >
+                      {item.done ? '\u2713' : ''}
+                    </span>
+                    {item.label}
+                  </span>
+                ))}
               </div>
             )}
 
