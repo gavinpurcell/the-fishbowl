@@ -130,7 +130,7 @@ export class ConversationOrchestrator {
     this.prefetching = true;
 
     const ideaContext = this.buildIdeaContext();
-    const prompt = `${ideaContext}\n\nGive your initial reaction to this idea. What stands out? What concerns you? What excites you? Be specific and draw on your expertise. Keep your response to 100-200 words.`;
+    const prompt = `${ideaContext}\n\nReact naturally, like you just heard this pitch for the first time. What stands out? What concerns you? What excites you? Be specific and draw on your expertise. Keep your response to 100-200 words. Remember: plain text only, no markdown, no em-dashes.`;
 
     for (const panelist of this.panelists) {
       const prefetched: PrefetchedResponse = {
@@ -209,19 +209,19 @@ export class ConversationOrchestrator {
   private buildIdeaContext(): string {
     let context = '';
     if (this.ideaText) {
-      context += `## The Idea\n\n${this.ideaText}\n\n`;
+      context += `The Idea:\n\n${this.ideaText}\n\n`;
     }
     for (const file of this.ideaFiles) {
-      context += `## File: ${file.name}\n\n${file.content}\n\n`;
+      context += `File: ${file.name}\n\n${file.content}\n\n`;
     }
     return context;
   }
 
   private buildTranscriptContext(): string {
     if (this.transcript.length === 0) return '';
-    let text = '## Discussion So Far\n\n';
+    let text = 'Discussion So Far:\n\n';
     for (const entry of this.transcript) {
-      text += `**${entry.panelistName}:** ${entry.content}\n\n`;
+      text += `${entry.panelistName}: ${entry.content}\n\n`;
     }
     return text;
   }
@@ -455,11 +455,11 @@ export class ConversationOrchestrator {
 
     let prompt: string;
     if (round === 'initial-takes') {
-      prompt = `${ideaContext}\n\nGive your initial reaction to this idea. What stands out? What concerns you? What excites you? Be specific and draw on your expertise. Keep your response to 100-200 words.`;
+      prompt = `${ideaContext}\n\nReact naturally, like you just heard this pitch for the first time. What stands out? What concerns you? What excites you? Be specific and draw on your expertise. Keep your response to 100-200 words. Remember: plain text only, no markdown, no em-dashes.`;
     } else if (round === 'cross-talk') {
-      prompt = `${ideaContext}\n\n${transcriptContext}\n\nRespond to what the other panelists have said. You can agree, disagree, build on their points, or challenge their assumptions. Reference specific panelists by name. Be direct and specific. Keep your response to 100-200 words.`;
+      prompt = `${ideaContext}\n\n${transcriptContext}\n\nJump in like you would in a real meeting. Agree, push back, or build on what was said. Reference specific panelists by name. Be direct and specific. Keep your response to 100-200 words. Remember: plain text only, no markdown, no em-dashes.`;
     } else {
-      prompt = `${ideaContext}\n\n${transcriptContext}\n\nShare your thoughts. Keep your response to 100-200 words.`;
+      prompt = `${ideaContext}\n\n${transcriptContext}\n\nShare your thoughts naturally. Keep your response to 100-200 words. Remember: plain text only, no markdown, no em-dashes.`;
     }
 
     await this.streamPanelistResponse(panelist, prompt, round);
@@ -473,7 +473,7 @@ export class ConversationOrchestrator {
       for (const panelist of this.panelists) {
         if (this.aborted) return;
         const transcriptContext = this.buildTranscriptContext();
-        const prompt = `${ideaContext}\n\n${transcriptContext}\n\nRespond to what the other panelists have said. You can agree, disagree, build on their points, or challenge their assumptions. Reference specific panelists by name. Be direct and specific. Keep your response to 100-200 words.`;
+        const prompt = `${ideaContext}\n\n${transcriptContext}\n\nJump in like you would in a real meeting. Agree, push back, or build on what was said. Reference specific panelists by name. Be direct and specific. Keep your response to 100-200 words. Remember: plain text only, no markdown, no em-dashes.`;
         await this.streamPanelistResponse(panelist, prompt, 'cross-talk');
       }
     }
@@ -496,7 +496,7 @@ export class ConversationOrchestrator {
 
     for (const panelist of this.panelists) {
       if (this.aborted) return;
-      const prompt = `${ideaContext}\n\n${transcriptContext}\n\n**Moderator:** ${question}\n\nThe moderator has stepped in with a question or directive. Respond directly to what they asked. You can also reference what other panelists have said. Be specific and actionable. Keep your response to 100-200 words.`;
+      const prompt = `${ideaContext}\n\n${transcriptContext}\n\nModerator: ${question}\n\nThe moderator has stepped in with a question or directive. Respond directly to what they asked. You can also reference what other panelists have said. Be specific and actionable. Keep your response to 100-200 words. Remember: plain text only, no markdown, no em-dashes.`;
       await this.streamPanelistResponse(panelist, prompt, 'moderation');
     }
   }
@@ -507,7 +507,7 @@ export class ConversationOrchestrator {
 
     for (const panelist of this.panelists) {
       if (this.aborted) return;
-      const prompt = `${transcriptContext}\n\nThe discussion is wrapping up. Give your single most important takeaway — the one thing this person absolutely must hear. One sentence, specific and actionable.`;
+      const prompt = `${transcriptContext}\n\nThe discussion is wrapping up. Give one honest takeaway in a single sentence. Be real. No markdown, no em-dashes, just plain talk.`;
       await this.streamPanelistResponse(panelist, prompt, 'wrap-up');
     }
   }
@@ -519,7 +519,7 @@ export class ConversationOrchestrator {
     this.callbacks.onRoundChange('summary');
     const transcriptContext = this.buildTranscriptContext();
 
-    const prompt = `${transcriptContext}\n\nSynthesize this discussion into a structured summary with these sections:\n\n## Key Insights\nBulleted list of the most important points raised.\n\n## Points of Agreement\nWhere the panelists aligned.\n\n## Points of Disagreement\nWhere they diverged and why.\n\n## Top Recommendations\nThe 3-5 most actionable next steps, in priority order.\n\nBe specific and reference which panelists made which points.`;
+    const prompt = `${transcriptContext}\n\nSynthesize this discussion into a structured summary with these sections:\n\nKey Insights: The most important points raised.\n\nPoints of Agreement: Where the panelists aligned.\n\nPoints of Disagreement: Where they diverged and why.\n\nTop Recommendations: The 3 to 5 most actionable next steps, in priority order.\n\nBe specific and reference which panelists made which points. Write in plain text only. Do not use markdown formatting, em-dashes, bold, italic, headers, or bullet symbols. Use short paragraphs and line breaks to organize the sections.`;
 
     for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
       try {
