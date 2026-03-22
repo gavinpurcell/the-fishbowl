@@ -56,6 +56,22 @@ export default function SessionPage() {
   // Track whether we're waiting for spacebar (ref doesn't trigger re-renders)
   const [waitingForSpace, setWaitingForSpace] = useState(false);
 
+  // Warn before leaving mid-session (browser back, tab close, refresh)
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      // Only warn if the session is actively running
+      if (storeRef.current.status === 'running') {
+        e.preventDefault();
+        // Modern browsers ignore custom messages but still show a prompt
+        e.returnValue = 'Your focus group session is still in progress. Are you sure you want to leave?';
+        return e.returnValue;
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, []);
+
   // Auto-dismiss error timer
   const errorTimerRef = useRef<NodeJS.Timeout | null>(null);
 

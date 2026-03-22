@@ -117,3 +117,13 @@ html, body {
     min-height: 36px;
   }
 }
+
+/* Page transition wrapper — subtle fade-in for each page */
+@keyframes pageEnter {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.page-transition-wrapper {
+  animation: pageEnter 0.35s ease-out;
+}

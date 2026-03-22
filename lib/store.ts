@@ -126,6 +126,7 @@ export const useFishbowlStore = create<FishbowlState>()(
       panelists: [],
       ideaText: '',
       ideaFiles: [],
+      sessionCost: { inputTokens: 0, outputTokens: 0 },
       sessionStartTime: null,
       sessionEndTime: null,
       moderationQuestionCount: 0,
