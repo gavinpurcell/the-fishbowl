@@ -130,7 +130,7 @@ export default function SetupPage() {
 
             {/* Two-column layout on desktop */}
             <div className="configure-grid">
-              {/* Left column: Panel + Provider */}
+              {/* Left column: Panel */}
               <div className="space-y-8">
                 <div id="section-panelists">
                   <PanelistBuilder
@@ -138,20 +138,9 @@ export default function SetupPage() {
                     onUpdate={store.setPanelists}
                   />
                 </div>
-
-                <div id="section-api">
-                  <ApiKeyConfig
-                    provider={store.provider}
-                    apiKey={store.apiKey}
-                    modelId={store.modelId}
-                    onProviderChange={store.setProvider}
-                    onApiKeyChange={store.setApiKey}
-                    onModelChange={store.setModelId}
-                  />
-                </div>
               </div>
 
-              {/* Right column: Idea */}
+              {/* Right column: Idea + API Provider */}
               <div className="space-y-8">
                 <div id="section-idea">
                   <IdeaInput
@@ -183,6 +172,17 @@ export default function SetupPage() {
                     </span>
                   </div>
                 )}
+
+                <div id="section-api">
+                  <ApiKeyConfig
+                    provider={store.provider}
+                    apiKey={store.apiKey}
+                    modelId={store.modelId}
+                    onProviderChange={store.setProvider}
+                    onApiKeyChange={store.setApiKey}
+                    onModelChange={store.setModelId}
+                  />
+                </div>
               </div>
             </div>
 

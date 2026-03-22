@@ -632,36 +632,39 @@ export default function SessionPage() {
 
           {/* === ROUNDTABLE (PixiJS canvas always in DOM, hidden until needed) === */}
           <div style={{ display: viewMode === 'roundtable' ? 'block' : 'none' }}>
-            {/* On small screens, show a note that the scene is best on desktop */}
-            <div className="sm:hidden text-center mb-2">
-              <p className="text-xs" style={{ color: 'var(--text-muted)' }}>Scene best viewed on a wider screen</p>
+            {/* Scene + status bar pinned at top so transcript never pushes it off-screen */}
+            <div style={{ position: 'sticky', top: 0, zIndex: 10 }}>
+              {/* On small screens, show a note that the scene is best on desktop */}
+              <div className="sm:hidden text-center mb-2">
+                <p className="text-xs" style={{ color: 'var(--text-muted)' }}>Scene best viewed on a wider screen</p>
+              </div>
+              <div
+                ref={sceneContainerRef}
+                className="w-full max-w-[800px] mx-auto scene-viewport overflow-hidden"
+                style={{ aspectRatio: '16/9', borderRadius: '10px 10px 0 0', borderBottom: 'none' }}
+              />
+              {(() => {
+                const model = getModelById(store.modelId);
+                const cost = model
+                  ? (store.sessionCost.inputTokens / 1_000_000) * model.inputPer1M +
+                    (store.sessionCost.outputTokens / 1_000_000) * model.outputPer1M
+                  : 0;
+                const totalTokens = store.sessionCost.inputTokens + store.sessionCost.outputTokens;
+                return (
+                  <StatusBar
+                    round={currentRound}
+                    panelistsSpoken={panelistsSpoken}
+                    totalPanelists={store.panelists.length}
+                    onWrapUp={handleWrapUp}
+                    canWrapUp={inModeration && !isSpeaking}
+                    modelLabel={model?.label}
+                    costDollars={cost}
+                    totalTokens={totalTokens}
+                    isOllama={store.provider === 'ollama'}
+                  />
+                );
+              })()}
             </div>
-            <div
-              ref={sceneContainerRef}
-              className="w-full max-w-[800px] mx-auto scene-viewport overflow-hidden"
-              style={{ aspectRatio: '16/9', borderRadius: '10px 10px 0 0', borderBottom: 'none' }}
-            />
-            {(() => {
-              const model = getModelById(store.modelId);
-              const cost = model
-                ? (store.sessionCost.inputTokens / 1_000_000) * model.inputPer1M +
-                  (store.sessionCost.outputTokens / 1_000_000) * model.outputPer1M
-                : 0;
-              const totalTokens = store.sessionCost.inputTokens + store.sessionCost.outputTokens;
-              return (
-                <StatusBar
-                  round={currentRound}
-                  panelistsSpoken={panelistsSpoken}
-                  totalPanelists={store.panelists.length}
-                  onWrapUp={handleWrapUp}
-                  canWrapUp={inModeration && !isSpeaking}
-                  modelLabel={model?.label}
-                  costDollars={cost}
-                  totalTokens={totalTokens}
-                  isOllama={store.provider === 'ollama'}
-                />
-              );
-            })()}
           </div>
 
           {/* Hint bar */}

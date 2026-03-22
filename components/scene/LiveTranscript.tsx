@@ -53,7 +53,7 @@ export default function LiveTranscript({
 }: LiveTranscriptProps) {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const bottomSentinelRef = useRef<HTMLDivElement>(null);
-  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(true);
   const [autoScroll, setAutoScroll] = useState(true);
   const prevEntryCountRef = useRef(0);
   const [animatedIds, setAnimatedIds] = useState<Set<string>>(new Set());
@@ -275,7 +275,7 @@ export default function LiveTranscript({
               background: 'rgba(26, 23, 20, 0.85)',
               border: '1px solid #2a2520',
               borderTop: 'none',
-              maxHeight: '360px',
+              maxHeight: '25vh',
               borderRadius: '0 0 10px 10px',
             }}
           >
