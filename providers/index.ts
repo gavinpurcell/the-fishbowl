@@ -3,6 +3,7 @@ import type { ProviderType } from '@/engine/types';
 import { ClaudeProvider } from './claude';
 import { OpenAIProvider } from './openai';
 import { OllamaProvider } from './ollama';
+import { ClaudeCodeProvider } from './claude-code';
 
 export function createProvider(type: ProviderType, apiKey: string, modelId?: string): LLMProvider {
   switch (type) {
@@ -12,6 +13,8 @@ export function createProvider(type: ProviderType, apiKey: string, modelId?: str
       return new OpenAIProvider(apiKey, modelId);
     case 'ollama':
       return new OllamaProvider(modelId);
+    case 'claude-code':
+      return new ClaudeCodeProvider(modelId);
     default:
       throw new Error(`Unknown provider: ${type}`);
   }

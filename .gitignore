@@ -39,3 +39,15 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# scripts with API keys
+scripts/generate-sprites.sh
+
+# raw art assets (large, not needed for builds)
+/art-raw
+
+# Piskel project files
+*.piskel
+
+# superpowers internal
+.superpowers/

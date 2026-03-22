@@ -1,12 +1,12 @@
 'use client';
 
-import { useEffect, useRef, useState, useCallback } from 'react';
-import { FishbowlScene } from '@/scene/FishbowlScene';
+import { Suspense, useEffect, useRef, useState, useCallback } from 'react';
+import { useSearchParams } from 'next/navigation';
+import { FishbowlScene, type LayoutEditorSnapshot } from '@/scene/FishbowlScene';
 import { loadAllSprites } from '@/lib/spriteLoader';
 import type { Panelist, RoundType, TranscriptEntry } from '@/engine/types';
 import StatusBar from '@/components/scene/StatusBar';
 import ModerationInput from '@/components/scene/ModerationInput';
-import { formatCost, formatTokens } from '@/lib/models';
 
 const FAKE_PANELISTS: Panelist[] = [
   { id: 'p1', name: 'Mei', role: 'UX Designer', description: 'Ten years of product design at startups and FAANG. Thinks user-first and will challenge any feature that adds complexity without clear user value.', systemPrompt: '', color: '#4a9a7a', spriteIndex: 0 },
@@ -59,7 +59,9 @@ function fakeId(): string {
 
 type ViewMode = 'briefing' | 'transition' | 'roundtable';
 
-export default function TestPage() {
+function TestPageContent() {
+  const searchParams = useSearchParams();
+  const editorMode = searchParams.get('editor') === '1';
   const containerRef = useRef<HTMLDivElement>(null);
   const sceneRef = useRef<FishbowlScene | null>(null);
   const [scene, setScene] = useState<FishbowlScene | null>(null);
@@ -71,18 +73,21 @@ export default function TestPage() {
   const [briefingText, setBriefingText] = useState('');
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [panelistsSpoken, setPanelistsSpoken] = useState(0);
-  const [roundtableSpeakerIndex, setRoundtableSpeakerIndex] = useState(0);
   const [hint, setHint] = useState('Press SPACE to meet your panel');
 
   // Moderation state
+  const [showRoundtableChoice, setShowRoundtableChoice] = useState(false);
   const [inModeration, setInModeration] = useState(false);
   const [moderationQuestionCount, setModerationQuestionCount] = useState(0);
   const [transcript, setTranscript] = useState<TranscriptEntry[]>([]);
   const [sessionComplete, setSessionComplete] = useState(false);
   const [fakeTokens, setFakeTokens] = useState({ input: 0, output: 0 });
   const [testExportMode, setTestExportMode] = useState<'summary' | 'transcript'>('transcript');
+  const [layoutSnapshot, setLayoutSnapshot] = useState<LayoutEditorSnapshot | null>(null);
+  const forceSceneVisible = searchParams.get('scene') === '1' || editorMode;
 
   const advanceResolverRef = useRef<(() => void) | null>(null);
+  const [waitingForAdvance, setWaitingForAdvance] = useState(false);
   const streamAbortRef = useRef(false);
   const startedRef = useRef(false);
 
@@ -101,8 +106,30 @@ export default function TestPage() {
     return () => { s.destroy(); sceneRef.current = null; };
   }, []);
 
+  useEffect(() => {
+    if (!scene) return;
+
+    if (editorMode) {
+      setViewMode('roundtable');
+      setHint('Drag the characters, tags, and table to place them.');
+      scene.enableLayoutEditor((snapshot) => {
+        setLayoutSnapshot(snapshot);
+      });
+      setLayoutSnapshot(scene.getLayoutSnapshot());
+      return () => {
+        scene.disableLayoutEditor();
+      };
+    }
+
+    scene.disableLayoutEditor();
+    setLayoutSnapshot(null);
+  }, [scene, editorMode]);
+
   const waitForSpace = useCallback((): Promise<void> => {
-    return new Promise((resolve) => { advanceResolverRef.current = resolve; });
+    return new Promise((resolve) => {
+      advanceResolverRef.current = resolve;
+      setWaitingForAdvance(true);
+    });
   }, []);
 
   const streamBriefingText = useCallback(async (text: string): Promise<void> => {
@@ -237,62 +264,18 @@ export default function TestPage() {
     setHint('Session complete! Scroll down to see the full transcript.');
   }, [streamRoundtableText, addTranscriptEntry, waitForSpace, addFakeTokens]);
 
-  const runDemo = useCallback(async () => {
-    // === PHASE 1: INDIVIDUAL BRIEFINGS ===
-    setViewMode('briefing');
-    setCurrentRound('initial-takes');
-
-    for (let i = 0; i < FAKE_PANELISTS.length; i++) {
-      if (i === 0) {
-        setBriefingIndex(i);
-        setBriefingText('');
-        setHint(`Press SPACE to hear ${FAKE_PANELISTS[i].name}'s take`);
-        await waitForSpace();
-      }
-
-      setHint(`${FAKE_PANELISTS[i].name} is sharing their initial take...`);
-      await streamBriefingText(INITIAL_TAKES[i]);
-      addFakeTokens(INITIAL_TAKES[i]);
-      setPanelistsSpoken(i + 1);
-
-      // Add to transcript
-      addTranscriptEntry({
-        id: fakeId(),
-        panelistId: FAKE_PANELISTS[i].id,
-        panelistName: FAKE_PANELISTS[i].name,
-        content: INITIAL_TAKES[i],
-        round: 'initial-takes',
-        timestamp: Date.now(),
-      });
-
-      if (i < FAKE_PANELISTS.length - 1) {
-        setHint(`Press SPACE for ${FAKE_PANELISTS[i + 1].name}'s take`);
-        await waitForSpace();
-        setBriefingIndex(i + 1);
-        setBriefingText('');
-      } else {
-        setHint('Press SPACE to start the discussion');
-      }
-    }
-
-    // === TRANSITION ===
-    await waitForSpace();
-    setViewMode('transition');
-    setHint('');
-    await new Promise((r) => setTimeout(r, 2000));
-
-    // === PHASE 2: ROUNDTABLE ===
-    setViewMode('roundtable');
-    setCurrentRound('cross-talk');
-    setPanelistsSpoken(0);
+  // Run a single round of cross-talk (used both for initial and "Continue Roundtable")
+  const runCrosstalkRound = useCallback(async () => {
     const s = sceneStateRef.current;
     if (!s) return;
+
+    setCurrentRound('cross-talk');
+    setPanelistsSpoken(0);
 
     for (let i = 0; i < CROSSTALK.length; i++) {
       setHint(`Press SPACE to hear ${FAKE_PANELISTS[i].name}'s response`);
       await waitForSpace();
 
-      setRoundtableSpeakerIndex(i);
       setHint(`${FAKE_PANELISTS[i].name} is responding...`);
       await streamRoundtableText(s, FAKE_PANELISTS[i], CROSSTALK[i]);
       addFakeTokens(CROSSTALK[i]);
@@ -311,22 +294,88 @@ export default function TestPage() {
       setHint(`${FAKE_PANELISTS[i].name} finished.`);
     }
 
-    // === MODERATION ===
-    setHint('Press SPACE to enter the fishbowl');
-    await waitForSpace();
+    // Show choice instead of auto-entering moderation
+    setShowRoundtableChoice(true);
+    setHint('What would you like to do?');
+  }, [waitForSpace, streamRoundtableText, addTranscriptEntry, addFakeTokens]);
+
+  // Handle "Continue the Roundtable" choice
+  const handleContinueRoundtable = useCallback(async () => {
+    setShowRoundtableChoice(false);
+    await runCrosstalkRound();
+  }, [runCrosstalkRound]);
+
+  // Handle "Ask Questions" choice — enter moderation
+  const handleAskQuestions = useCallback(async () => {
+    setShowRoundtableChoice(false);
+    const s = sceneStateRef.current;
+    if (!s) return;
     setCurrentRound('moderation');
     setPanelistsSpoken(0);
     await s.addObserver();
     setInModeration(true);
     setHint('You\'re in the fishbowl. Ask the panel a question below, or press Wrap Up.');
-  }, [waitForSpace, streamBriefingText, streamRoundtableText, addTranscriptEntry, addFakeTokens]);
+  }, []);
+
+  const skipToRoundtable = searchParams.get('skip') === '1';
+
+  const runDemo = useCallback(async () => {
+    if (!skipToRoundtable) {
+      // === PHASE 1: INDIVIDUAL BRIEFINGS ===
+      setViewMode('briefing');
+      setCurrentRound('initial-takes');
+
+      for (let i = 0; i < FAKE_PANELISTS.length; i++) {
+        if (i === 0) {
+          setBriefingIndex(i);
+          setBriefingText('');
+          setHint(`Press SPACE to hear ${FAKE_PANELISTS[i].name}'s take`);
+          await waitForSpace();
+        }
+
+        setHint(`${FAKE_PANELISTS[i].name} is sharing their initial take...`);
+        await streamBriefingText(INITIAL_TAKES[i]);
+        addFakeTokens(INITIAL_TAKES[i]);
+        setPanelistsSpoken(i + 1);
+
+        // Add to transcript
+        addTranscriptEntry({
+          id: fakeId(),
+          panelistId: FAKE_PANELISTS[i].id,
+          panelistName: FAKE_PANELISTS[i].name,
+          content: INITIAL_TAKES[i],
+          round: 'initial-takes',
+          timestamp: Date.now(),
+        });
+
+        if (i < FAKE_PANELISTS.length - 1) {
+          setHint(`Press SPACE for ${FAKE_PANELISTS[i + 1].name}'s take`);
+          await waitForSpace();
+          setBriefingIndex(i + 1);
+          setBriefingText('');
+        } else {
+          setHint('Press SPACE to start the discussion');
+        }
+      }
+
+      // === TRANSITION ===
+      await waitForSpace();
+      setViewMode('transition');
+      setHint('');
+      await new Promise((r) => setTimeout(r, 2000));
+    }
+
+    // === PHASE 2: ROUNDTABLE ===
+    setViewMode('roundtable');
+    setCurrentRound('cross-talk');
+    await runCrosstalkRound();
+  }, [skipToRoundtable, waitForSpace, streamBriefingText, addTranscriptEntry, addFakeTokens, runCrosstalkRound]);
 
   const runDemoRef = useRef(runDemo);
   runDemoRef.current = runDemo;
 
   const isSpeakingRef = useRef(false);
-  // Keep ref in sync
-  useEffect(() => { isSpeakingRef.current = isSpeaking; }, [isSpeaking]);
+  isSpeakingRef.current = isSpeaking;
 
   // Spacebar handler — blocks during speaking, ignores when typing in input
   useEffect(() => {
@@ -343,6 +392,7 @@ export default function TestPage() {
         if (advanceResolverRef.current) {
           const resolver = advanceResolverRef.current;
           advanceResolverRef.current = null;
+          setWaitingForAdvance(false);
           resolver();
         } else if (!startedRef.current) {
           startedRef.current = true;
@@ -354,7 +404,30 @@ export default function TestPage() {
     return () => window.removeEventListener('keydown', handleKey);
   }, []);
 
+  // Auto-start when ?skip=1 is set
+  useEffect(() => {
+    if (skipToRoundtable && !startedRef.current && sceneStateRef.current) {
+      startedRef.current = true;
+      runDemoRef.current();
+    }
+  }, [skipToRoundtable, scene]);
+
   const currentPanelist = briefingIndex >= 0 ? FAKE_PANELISTS[briefingIndex] : null;
+  const layoutSnippet = layoutSnapshot
+    ? [
+        layoutSnapshot.table
+          ? `table.position.set(${layoutSnapshot.table.x}, ${layoutSnapshot.table.y});`
+          : null,
+        ...FAKE_PANELISTS.flatMap((panelist) => {
+          const item = layoutSnapshot.panelists[panelist.id];
+          if (!item) return [];
+          return [
+            `${panelist.name}: character { x: ${item.character.x}, y: ${item.character.y}, scale: ${item.character.scale} }`,
+            `${panelist.name}: tag { x: ${item.tag.x}, y: ${item.tag.y}, tagX: ${item.tag.tagX}, tagY: ${item.tag.tagY} }`,
+          ];
+        }),
+      ].filter(Boolean).join('\n')
+    : '';
 
   return (
     <div className="min-h-screen">
@@ -376,9 +449,21 @@ export default function TestPage() {
                 <div className="flex justify-center gap-3 mt-6">
                   {FAKE_PANELISTS.map((p) => (
                     <div key={p.id} className="flex flex-col items-center gap-1">
-                      <div className="w-12 h-12 rounded-full flex items-center justify-center text-sm font-700"
-                        style={{ backgroundColor: p.color + '20', color: p.color, border: `2px solid ${p.color}` }}>
-                        {p.name.charAt(0)}
+                      <div
+                        className="relative w-12 h-12 rounded-full overflow-hidden"
+                        style={{ border: `2px solid ${p.color}` }}
+                      >
+                        <img
+                          src={`/sprites/portraits/char_${p.spriteIndex}_portrait.png`}
+                          alt={p.name}
+                          className="absolute inset-0 w-full h-full object-cover"
+                          style={{
+                            imageRendering: 'pixelated',
+                            objectPosition: 'center 20%',
+                            transform: 'scale(1.18)',
+                            transformOrigin: 'center 20%',
+                          }}
+                        />
                       </div>
                       <span className="text-xs" style={{ color: 'var(--text-muted)' }}>{p.name}</span>
                     </div>
@@ -392,9 +477,21 @@ export default function TestPage() {
                   {/* Left: Expert visual */}
                   <div className="w-64 flex-shrink-0 flex flex-col items-center justify-center py-10 px-6"
                     style={{ background: currentPanelist.color + '12', borderRight: `1px solid var(--border)` }}>
-                    <div className="w-24 h-24 rounded-full flex items-center justify-center text-3xl font-800 mb-4"
-                      style={{ backgroundColor: currentPanelist.color + '25', color: currentPanelist.color, border: `3px solid ${currentPanelist.color}` }}>
-                      {currentPanelist.name.charAt(0)}
+                    <div
+                      className="relative w-24 h-24 rounded-full overflow-hidden mb-4"
+                      style={{ border: `3px solid ${currentPanelist.color}` }}
+                    >
+                      <img
+                        src={`/sprites/portraits/char_${currentPanelist.spriteIndex}_portrait.png`}
+                        alt={currentPanelist.name}
+                        className="absolute inset-0 w-full h-full object-cover"
+                        style={{
+                          imageRendering: 'pixelated',
+                          objectPosition: 'center 20%',
+                          transform: 'scale(1.14)',
+                          transformOrigin: 'center 20%',
+                        }}
+                      />
                     </div>
                     <div className="text-center">
                       <div className="text-lg font-700" style={{ color: 'var(--text-primary)' }}>{currentPanelist.name}</div>
@@ -445,13 +542,73 @@ export default function TestPage() {
         )}
 
         {/* === ROUNDTABLE VIEW (canvas always in DOM, hidden until needed) === */}
-        <div style={{ display: viewMode === 'roundtable' ? 'block' : 'none' }}>
+        <div style={{ display: viewMode === 'roundtable' || forceSceneVisible ? 'block' : 'none' }}>
           <div
             ref={containerRef}
             className="w-full max-w-[800px] mx-auto rounded-t-xl overflow-hidden shadow-lg"
-            style={{ aspectRatio: '4/3' }}
-          />
-          {(() => {
+            style={{ aspectRatio: '16/9', position: 'relative' }}
+          >
+            {/* Hint/choice overlay inside canvas */}
+            {!editorMode && <div style={{
+              position: 'absolute',
+              bottom: 0,
+              left: 0,
+              right: 0,
+              padding: '12px 16px',
+              background: 'linear-gradient(transparent, rgba(20, 12, 8, 0.7))',
+              textAlign: 'center',
+              zIndex: 10,
+              pointerEvents: 'none',
+            }}>
+              {showRoundtableChoice ? (
+                <div style={{ pointerEvents: 'auto' }}>
+                  <p className="text-sm mb-3" style={{ color: 'var(--accent-gold)' }}>
+                    What would you like to do?
+                  </p>
+                  <div className="flex justify-center gap-3">
+                    <button
+                      onClick={handleContinueRoundtable}
+                      className="px-5 py-2 rounded-lg text-sm font-500 glow-gold transition-all"
+                      style={{ background: 'var(--accent-gold)', color: 'var(--bg-deep)' }}
+                    >
+                      Continue the Roundtable
+                    </button>
+                    <button
+                      onClick={handleAskQuestions}
+                      className="px-5 py-2 rounded-lg text-sm font-500 glow-gold transition-all"
+                      style={{ background: 'var(--accent-gold)', color: 'var(--bg-deep)' }}
+                    >
+                      Ask Questions
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <p className={`text-sm ${!isSpeaking ? 'animate-pulse' : ''}`}
+                    style={{ color: !isSpeaking ? 'var(--accent-gold)' : 'var(--text-muted)' }}>
+                    {hint}
+                  </p>
+                  {!isSpeaking && waitingForAdvance && (
+                    <button
+                      onClick={() => {
+                        if (advanceResolverRef.current) {
+                          const resolver = advanceResolverRef.current;
+                          advanceResolverRef.current = null;
+                          setWaitingForAdvance(false);
+                          resolver();
+                        }
+                      }}
+                      className="mt-2 px-5 py-2 rounded-lg text-sm font-500 glow-gold transition-all"
+                      style={{ background: 'var(--accent-gold)', color: 'var(--bg-deep)', pointerEvents: 'auto' }}
+                    >
+                      Continue (or press Space)
+                    </button>
+                  )}
+                </>
+              )}
+            </div>}
+          </div>
+          {!editorMode && (() => {
             const cost = (fakeTokens.input / 1_000_000) * 3.00 + (fakeTokens.output / 1_000_000) * 15.00;
             const total = fakeTokens.input + fakeTokens.output;
             return (
@@ -469,7 +626,37 @@ export default function TestPage() {
           })()}
         </div>
 
-        {/* Hint bar (always visible) */}
+        {editorMode && (
+          <div className="max-w-[800px] mx-auto mt-4 rounded-xl p-4" style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)' }}>
+            <div className="flex items-start justify-between gap-4 mb-3">
+              <div>
+                <div className="label-mono mb-1">Layout Editor</div>
+                <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+                  Drag the four characters, the four name tags, and the table directly in the scene. The coordinates below update live.
+                </p>
+              </div>
+              <button
+                onClick={async () => {
+                  if (!layoutSnippet) return;
+                  await navigator.clipboard.writeText(layoutSnippet);
+                }}
+                className="px-4 py-2 rounded-lg text-sm font-500 glow-gold transition-all shrink-0"
+                style={{ background: 'var(--accent-gold)', color: 'var(--bg-deep)' }}
+              >
+                Copy Coordinates
+              </button>
+            </div>
+            <pre
+              className="text-xs overflow-x-auto whitespace-pre-wrap rounded-lg p-3"
+              style={{ background: 'var(--bg-deep)', color: 'var(--text-primary)', border: '1px solid var(--border)' }}
+            >
+              {layoutSnippet || 'Waiting for scene...'}
+            </pre>
+          </div>
+        )}
+
+        {/* Hint bar (visible during briefing/transition, before roundtable starts) */}
+        {viewMode !== 'roundtable' && !editorMode && (
         <div className="max-w-[800px] mx-auto mt-6 text-center">
           <p className={`text-sm ${!isSpeaking ? 'animate-pulse' : ''}`}
             style={{ color: !isSpeaking ? 'var(--accent-gold)' : 'var(--text-muted)' }}>
@@ -490,6 +677,7 @@ export default function TestPage() {
             </button>
           )}
         </div>
+        )}
 
         {/* Moderation Input */}
         {inModeration && (
@@ -674,5 +862,13 @@ export default function TestPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function TestPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen" />}>
+      <TestPageContent />
+    </Suspense>
   );
 }

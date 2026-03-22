@@ -35,6 +35,7 @@ export default function SessionPage() {
 
   // UI state
   const [viewMode, setViewMode] = useState<ViewMode>('briefing');
+  const viewModeRef = useRef<ViewMode>('briefing');
   const [currentRound, setCurrentRound] = useState<RoundType>('initial-takes');
   const [panelistsSpoken, setPanelistsSpoken] = useState(0);
   const [error, setError] = useState<string | null>(null);
@@ -49,8 +50,9 @@ export default function SessionPage() {
   // Moderation state
   const [inModeration, setInModeration] = useState(false);
 
-  // Keep isSpeaking ref in sync
+  // Keep refs in sync
   useEffect(() => { isSpeakingRef.current = isSpeaking; }, [isSpeaking]);
+  useEffect(() => { viewModeRef.current = viewMode; }, [viewMode]);
 
   // Redirect to setup if no active session
   useEffect(() => {
@@ -152,7 +154,8 @@ export default function SessionPage() {
 
           // During roundtable, drive the scene
           const scene = sceneRef.current;
-          if (scene && viewMode === 'roundtable') {
+          if (scene && viewModeRef.current === 'roundtable') {
+            scene.hideAllThinkingIndicators();
             scene.setCharacterState(panelistId, 'talking');
             scene.showSpeechBubble(panelistId);
             storeRef.current.panelists.forEach((p) => {
@@ -178,6 +181,7 @@ export default function SessionPage() {
 
           const scene = sceneRef.current;
           if (scene) {
+            scene.hideAllThinkingIndicators();
             storeRef.current.panelists.forEach((p) => scene.setCharacterState(p.id, 'idle'));
           }
         },
@@ -218,10 +222,13 @@ export default function SessionPage() {
 
     orchestratorRef.current = orchestrator;
 
+    // Start pre-fetching all initial takes immediately (parallel, in background)
+    orchestrator.prefetchInitialTakes();
+
     // Run the session flow
     (async () => {
       try {
-        // === PHASE 1: INDIVIDUAL BRIEFINGS ===
+        // === PHASE 1: INDIVIDUAL BRIEFINGS (uses prefetched responses) ===
         setViewMode('briefing');
         setCurrentRound('initial-takes');
 
@@ -238,6 +245,7 @@ export default function SessionPage() {
           setHint(`${panelist.name} is sharing their initial take...`);
           setBriefingText('');
           speakerTextRef.current = '';
+          // Uses prefetched data — will be near-instant if already generated
           await orchestrator.runSinglePanelist(panelist, 'initial-takes');
 
           if (i < s.panelists.length - 1) {
@@ -267,6 +275,12 @@ export default function SessionPage() {
             if (orchestrator.isAborted) return;
             setHint(`Press SPACE to hear ${panelist.name}`);
             await waitForSpace();
+            // Show thinking indicator before speech starts
+            const scene = sceneRef.current;
+            if (scene) {
+              scene.showThinkingIndicator(panelist.id);
+              scene.setCharacterState(panelist.id, 'thinking');
+            }
             setHint(`${panelist.name} is responding...`);
             await orchestrator.runSinglePanelist(panelist, 'cross-talk');
             setHint(`${panelist.name} finished.`);
@@ -297,6 +311,13 @@ export default function SessionPage() {
     isSpeakingRef.current = true;
     setHint('Panelists are responding...');
     setError(null);
+
+    // Show thinking indicator on first panelist while processing
+    const scene = sceneRef.current;
+    if (scene && storeRef.current.panelists.length > 0) {
+      scene.showThinkingIndicator(storeRef.current.panelists[0].id);
+    }
+
     try {
       await orchestrator.handleModerationQuestion(question);
       setHint('Ask another question, or press Wrap Up.');
@@ -371,10 +392,22 @@ export default function SessionPage() {
                   <div className="flex justify-center gap-3 mt-6">
                     {store.panelists.map((p) => (
                       <div key={p.id} className="flex flex-col items-center gap-1">
-                        <div className="w-12 h-12 rounded-full flex items-center justify-center text-sm font-700"
-                          style={{ backgroundColor: p.color + '20', color: p.color, border: `2px solid ${p.color}` }}>
-                          {p.name.charAt(0)}
-                        </div>
+                      <div
+                        className="relative w-12 h-12 rounded-full overflow-hidden"
+                        style={{ border: `2px solid ${p.color}` }}
+                      >
+                        <img
+                          src={`/sprites/portraits/char_${p.spriteIndex}_portrait.png`}
+                          alt={p.name}
+                          className="absolute inset-0 w-full h-full object-cover"
+                          style={{
+                            imageRendering: 'pixelated',
+                            objectPosition: 'center 20%',
+                            transform: 'scale(1.18)',
+                            transformOrigin: 'center 20%',
+                          }}
+                        />
+                      </div>
                         <span className="text-xs" style={{ color: 'var(--text-muted)' }}>{p.name}</span>
                       </div>
                     ))}
@@ -385,9 +418,21 @@ export default function SessionPage() {
                   <div className="flex">
                     <div className="w-64 flex-shrink-0 flex flex-col items-center justify-center py-10 px-6"
                       style={{ background: currentPanelist.color + '12', borderRight: '1px solid var(--border)' }}>
-                      <div className="w-24 h-24 rounded-full flex items-center justify-center text-3xl font-800 mb-4"
-                        style={{ backgroundColor: currentPanelist.color + '25', color: currentPanelist.color, border: `3px solid ${currentPanelist.color}` }}>
-                        {currentPanelist.name.charAt(0)}
+                      <div
+                        className="relative w-24 h-24 rounded-full overflow-hidden mb-4"
+                        style={{ border: `3px solid ${currentPanelist.color}` }}
+                      >
+                        <img
+                          src={`/sprites/portraits/char_${currentPanelist.spriteIndex}_portrait.png`}
+                          alt={currentPanelist.name}
+                          className="absolute inset-0 w-full h-full object-cover"
+                          style={{
+                            imageRendering: 'pixelated',
+                            objectPosition: 'center 20%',
+                            transform: 'scale(1.14)',
+                            transformOrigin: 'center 20%',
+                          }}
+                        />
                       </div>
                       <div className="text-center">
                         <div className="text-lg font-700" style={{ color: 'var(--text-primary)' }}>{currentPanelist.name}</div>
@@ -436,7 +481,7 @@ export default function SessionPage() {
             <div
               ref={sceneContainerRef}
               className="w-full max-w-[800px] mx-auto rounded-t-xl overflow-hidden shadow-lg"
-              style={{ aspectRatio: '4/3' }}
+              style={{ aspectRatio: '16/9' }}
             />
             {(() => {
               const model = getModelById(store.modelId);

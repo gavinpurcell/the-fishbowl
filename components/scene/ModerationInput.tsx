@@ -15,6 +15,8 @@ export default function ModerationInput({ onSubmit, disabled }: Props) {
     if (!question.trim() || disabled) return;
     onSubmit(question.trim());
     setQuestion('');
+    // Blur so spacebar advances the scene instead of typing in the input
+    (document.activeElement as HTMLElement)?.blur();
   };
 
   return (

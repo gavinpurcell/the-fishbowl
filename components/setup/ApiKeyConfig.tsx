@@ -30,7 +30,7 @@ export default function ApiKeyConfig({ provider, apiKey, modelId, onProviderChan
       <div className="label-mono mb-4">API Key</div>
 
       <div className="flex gap-2 mb-3">
-        {(['claude', 'openai', 'ollama'] as ProviderType[]).map((p) => (
+        {(['claude', 'openai', 'claude-code', 'ollama'] as ProviderType[]).map((p) => (
           <button
             key={p}
             onClick={() => onProviderChange(p)}
@@ -41,12 +41,12 @@ export default function ApiKeyConfig({ provider, apiKey, modelId, onProviderChan
               border: `1px solid ${provider === p ? 'var(--accent-gold)' : 'var(--border)'}`,
             }}
           >
-            {p === 'claude' ? 'Claude' : p === 'openai' ? 'OpenAI' : 'Ollama'}
+            {p === 'claude' ? 'Claude' : p === 'openai' ? 'OpenAI' : p === 'claude-code' ? 'Claude Max' : 'Ollama'}
           </button>
         ))}
       </div>
 
-      {provider !== 'ollama' ? (
+      {provider !== 'ollama' && provider !== 'claude-code' ? (
         <>
           <input
             type="password"
@@ -81,6 +81,35 @@ export default function ApiKeyConfig({ provider, apiKey, modelId, onProviderChan
               {models.map((m) => (
                 <option key={m.id} value={m.id}>
                   {m.label} — ${m.inputPer1M}/{m.outputPer1M} per 1M tokens
+                </option>
+              ))}
+            </select>
+          </div>
+        </>
+      ) : provider === 'claude-code' ? (
+        <>
+          <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+            Uses your Claude Max subscription via Claude Code CLI. No API key needed.
+          </p>
+          <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>
+            Requires <code style={{ background: 'var(--bg-deep)', padding: '1px 4px', borderRadius: '3px' }}>claude</code> CLI installed and logged in. Run <code style={{ background: 'var(--bg-deep)', padding: '1px 4px', borderRadius: '3px' }}>claude /login</code> if needed.
+          </p>
+          <div className="mt-4">
+            <div className="label-mono mb-2">Model</div>
+            <select
+              value={modelId}
+              onChange={(e) => onModelChange(e.target.value)}
+              className="w-full rounded-lg text-sm p-3"
+              style={{
+                background: 'var(--bg-surface)',
+                border: '1px solid var(--border)',
+                color: 'var(--text-primary)',
+                outline: 'none',
+              }}
+            >
+              {models.map((m) => (
+                <option key={m.id} value={m.id}>
+                  {m.label} — included with Max subscription
                 </option>
               ))}
             </select>

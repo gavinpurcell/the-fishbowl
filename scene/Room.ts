@@ -1,16 +1,32 @@
 import { Container, Graphics, Sprite, Texture } from 'pixi.js';
-import { getRoomTexture } from '@/lib/spriteLoader';
+import { getRoomTexture, getShadowTexture } from '@/lib/spriteLoader';
 
 /**
  * Room background using pixel art sprite.
  * Falls back to procedural drawing if sprite textures aren't loaded.
  */
+interface DustParticle {
+  graphics: Graphics;
+  x: number;
+  y: number;
+  speed: number;
+  drift: number;
+  phase: number;
+}
+
 export class Room extends Container {
   private pulseTime = 0;
   private useSpriteBackground: boolean;
+  private fishbowlTable: Sprite | null = null;
+  private tableShadow: Graphics | Sprite | null = null;
 
   // Fallback fields
   private fishbowlCircle: Graphics | null = null;
+
+  // Ambient effect fields (sprite mode)
+  private particles: DustParticle[] = [];
+  private lightPatch: Graphics | null = null;
+  private ambientOverlay: Graphics | null = null;
 
   // Room dimensions (procedural fallback)
   private readonly ROOM_WIDTH = 700;
@@ -22,31 +38,95 @@ export class Room extends Container {
     super();
 
     const bgTexture = getRoomTexture('room_bg');
-    const tableTexture = getRoomTexture('coffee_table');
 
     if (bgTexture && bgTexture !== Texture.EMPTY) {
       // === SPRITE-BASED RENDERING ===
       this.useSpriteBackground = true;
 
-      // Room background (800x600)
+      // Room background — scaled up and offset to crop roof off the top
       const bgSprite = new Sprite(bgTexture);
       bgSprite.texture.source.scaleMode = 'nearest';
-      bgSprite.position.set(0, 0);
-      // Scale to fill 800x600 canvas
+      // Room background — fill 16:9 canvas exactly
       bgSprite.width = 800;
-      bgSprite.height = 600;
+      bgSprite.height = 450;
+      bgSprite.position.set(0, 0);
       this.addChild(bgSprite);
 
-      // Coffee table at center
-      if (tableTexture && tableTexture !== Texture.EMPTY) {
-        const tableSprite = new Sprite(tableTexture);
-        tableSprite.texture.source.scaleMode = 'nearest';
-        tableSprite.anchor.set(0.5, 0.5);
-        tableSprite.position.set(400, 400);
-        tableSprite.scale.set(0.15);
-        tableSprite.zIndex = 1;
-        this.addChild(tableSprite);
+      // Table is baked into the background sprite — no separate table layer needed
+
+      // Fishbowl table at center of character group
+      const fishbowlTexture = getRoomTexture('fishbowl_table');
+      if (fishbowlTexture && fishbowlTexture !== Texture.EMPTY) {
+        // Table shadow (rendered below the table sprite)
+        const tableShadowTex = getShadowTexture('table_shadow');
+        if (tableShadowTex && tableShadowTex !== Texture.EMPTY) {
+          const tShadow = new Sprite(tableShadowTex);
+          tShadow.texture.source.scaleMode = 'nearest';
+          tShadow.anchor.set(0.5, 0.5);
+          tShadow.position.set(400, 394);
+          tShadow.scale.set(0.20);
+          tShadow.alpha = 0.40;
+          tShadow.zIndex = 2790;
+          this.tableShadow = tShadow;
+          this.addChild(tShadow);
+        } else {
+          // Fallback: procedural
+          const shadow = new Graphics();
+          shadow.ellipse(0, 0, 48, 16).fill({ color: 0x000000, alpha: 0.25 });
+          shadow.ellipse(0, 0, 32, 11).fill({ color: 0x000000, alpha: 0.30 });
+          shadow.position.set(400, 394);
+          shadow.zIndex = 2790;
+          this.tableShadow = shadow;
+          this.addChild(shadow);
+        }
+
+        const fishbowl = new Sprite(fishbowlTexture);
+        fishbowl.texture.source.scaleMode = 'nearest';
+        fishbowl.anchor.set(0.5, 0.75);
+        fishbowl.position.set(400, 376);  // placed from the in-browser layout editor
+        fishbowl.scale.set(0.18);
+        fishbowl.zIndex = 2800;  // above floor & back row, below front characters
+        this.fishbowlTable = fishbowl;
+        this.addChild(fishbowl);
       }
+
+      // === AMBIENT EFFECTS ===
+
+      // 1. Ambient color shift overlay (full-screen, lowest z of effects)
+      this.ambientOverlay = new Graphics();
+      this.ambientOverlay.rect(0, 0, 800, 450).fill({ color: 0xf5d080, alpha: 0.01 });
+      this.ambientOverlay.zIndex = 2;
+      this.addChild(this.ambientOverlay);
+
+      // 2. Window light shimmer patch
+      this.lightPatch = new Graphics();
+      this.lightPatch.rect(420, 360, 180, 90).fill({ color: 0xfff8e0, alpha: 0.04 });
+      this.lightPatch.zIndex = 3;
+      this.addChild(this.lightPatch);
+
+      // 3. Floating dust motes / particles
+      const particleCount = 8 + Math.floor(Math.random() * 5); // 8-12
+      for (let i = 0; i < particleCount; i++) {
+        const radius = 1 + Math.random(); // 1-2px
+        const g = new Graphics();
+        g.circle(0, 0, radius).fill({ color: 0xf5e6c8, alpha: 0.15 + Math.random() * 0.15 });
+        g.zIndex = 4;
+
+        const particle: DustParticle = {
+          graphics: g,
+          x: Math.random() * 800,
+          y: Math.random() * 450,
+          speed: 0.15 + Math.random() * 0.25, // upward drift speed
+          drift: 0.3 + Math.random() * 0.4, // sideways drift amplitude
+          phase: Math.random() * Math.PI * 2, // sin wave phase offset
+        };
+
+        g.position.set(particle.x, particle.y);
+        this.particles.push(particle);
+        this.addChild(g);
+      }
+
+      this.sortChildren();
     } else {
       // === FALLBACK: PROCEDURAL RENDERING ===
       this.useSpriteBackground = false;
@@ -181,16 +261,67 @@ export class Room extends Container {
 
   /** Call every frame with delta time */
   update(delta: number): void {
+    this.pulseTime += delta * 0.02;
+
     if (this.useSpriteBackground) {
-      // Nothing to animate for sprite background
+      // Animate ambient effects for sprite background
+
+      // 1. Floating dust motes
+      for (const p of this.particles) {
+        p.y -= p.speed * delta;
+        p.x = p.x + Math.sin(this.pulseTime * 0.5 + p.phase) * p.drift * 0.3;
+
+        // Wrap around: reappear at bottom when going off top
+        if (p.y < -10) {
+          p.y = 610;
+          p.x = Math.random() * 800;
+        }
+        // Wrap horizontally
+        if (p.x < -10) p.x = 810;
+        if (p.x > 810) p.x = -10;
+
+        p.graphics.position.set(p.x, p.y);
+      }
+
+      // 2. Window light shimmer (period ~8 seconds at 60fps)
+      if (this.lightPatch) {
+        const lightAlpha = 0.02 + Math.sin(this.pulseTime * 0.25) * 0.02;
+        this.lightPatch.alpha = Math.max(0, lightAlpha);
+      }
+
+      // 3. Ambient color shift (period ~20 seconds at 60fps)
+      if (this.ambientOverlay) {
+        const ambientAlpha = 0.0075 + Math.sin(this.pulseTime * 0.1) * 0.0075;
+        this.ambientOverlay.alpha = Math.max(0, ambientAlpha);
+      }
+
       return;
     }
 
     // Procedural fallback: pulse fishbowl circle
     if (this.fishbowlCircle) {
-      this.pulseTime += delta * 0.02;
       const alpha = 0.5 + Math.sin(this.pulseTime) * 0.2;
       this.fishbowlCircle.alpha = alpha;
+    }
+  }
+
+  getTableSprite(): Sprite | null {
+    return this.fishbowlTable;
+  }
+
+  getTablePosition(): { x: number; y: number } | null {
+    if (!this.fishbowlTable) return null;
+    return {
+      x: this.fishbowlTable.position.x,
+      y: this.fishbowlTable.position.y,
+    };
+  }
+
+  setTablePosition(x: number, y: number): void {
+    if (!this.fishbowlTable) return;
+    this.fishbowlTable.position.set(x, y);
+    if (this.tableShadow) {
+      this.tableShadow.position.set(x, y + 18);
     }
   }
 }

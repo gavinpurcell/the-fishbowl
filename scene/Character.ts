@@ -1,5 +1,5 @@
 import { Container, Graphics, Sprite, Text, TextStyle, Texture } from 'pixi.js';
-import { getCharacterTexture, getObserverTexture } from '@/lib/spriteLoader';
+import { getCharacterTexture, getObserverTexture, getShadowTexture } from '@/lib/spriteLoader';
 
 export type CharacterState = 'idle' | 'talking' | 'thinking' | 'reacting' | 'gesturing' | 'skeptical';
 
@@ -33,13 +33,22 @@ export class Character extends Container {
   private useSprite: boolean;
 
   // Sprite-based rendering
+  private groundShadow: Graphics | Sprite;
+  private dirShadow: Graphics | null = null;
+  private shadowSprite: Sprite | null = null;
   private sprite: Sprite | null = null;
-  private nameLabel: Text;
+  private nameLabel: Text | null = null;
 
   // Animation state
   private state: CharacterState = 'idle';
   private animTime = 0;
   private breathOffset: number;
+
+  // Sprite idle behavior: fidget timer
+  private fidgetTimer = 0;
+  private fidgetInterval: number;
+  private fidgetActive = false;
+  private fidgetPhase = 0;
 
   // === Fallback procedural fields (only used when sprites unavailable) ===
   private bodyColor: number = 0x6b9eaa;
@@ -76,16 +85,32 @@ export class Character extends Container {
     color: string;
     spriteIndex?: number;
     isObserver?: boolean;
+    showLabels?: boolean;
   }) {
     super();
 
     this.panelistId = options.panelistId;
     this.isObserver = options.isObserver ?? false;
     this.breathOffset = Math.random() * Math.PI * 2;
+    this.fidgetInterval = 5 + Math.random() * 3; // 5-8 seconds per character
     this.spriteIndex = options.spriteIndex ?? 0;
     this.appearance = CHARACTER_APPEARANCES[this.spriteIndex % CHARACTER_APPEARANCES.length];
     this.bodyColor = this.parseColor(options.color);
     this.headY = -this.BODY_HEIGHT / 2 - this.HEAD_RADIUS + 6;
+    // Try to load shadow sprite, fall back to procedural
+    const shadowAlias = this.isObserver ? 'observer_shadow' : `char_${this.spriteIndex}_shadow`;
+    const shadowTexture = getShadowTexture(shadowAlias);
+    if (shadowTexture && shadowTexture !== Texture.EMPTY) {
+      this.shadowSprite = new Sprite(shadowTexture);
+      this.shadowSprite.texture.source.scaleMode = 'nearest';
+      this.shadowSprite.anchor.set(0.5, 1.0);
+      this.shadowSprite.scale.set(0.17);
+      this.shadowSprite.alpha = 0.45;
+      this.shadowSprite.roundPixels = true;
+      this.groundShadow = this.shadowSprite;
+    } else {
+      this.groundShadow = this.drawGroundShadow();
+    }
 
     // Try to load sprite texture
     let texture: Texture | undefined;
@@ -102,41 +127,59 @@ export class Character extends Container {
       this.sprite.texture.source.scaleMode = 'nearest';
       this.sprite.anchor.set(0.5, 1.0);
       this.sprite.scale.set(0.17);
-      this.addChild(this.sprite);
+      this.sprite.roundPixels = true;
     } else {
       // === FALLBACK: PROCEDURAL RENDERING ===
       this.useSprite = false;
+    }
+
+    // Directional shadow from window light (upper-left) — skip for observers and when using shadow sprites
+    if (!this.isObserver && !this.shadowSprite) {
+      this.dirShadow = this.drawDirectionalShadow();
+      this.addChild(this.dirShadow);
+    }
+
+    this.addChild(this.groundShadow);
+
+    // Now add sprite or build procedural (above shadows in z-order)
+    if (this.useSprite && this.sprite) {
+      this.addChild(this.sprite);
+    } else if (!this.useSprite) {
       this.buildProcedural();
     }
 
-    // Name label (below sprite/character)
-    this.nameLabel = new Text({
-      text: options.name,
-      style: new TextStyle({
-        fontFamily: '"DM Mono", monospace',
-        fontSize: 10,
-        fill: 0x5a5a5a,
-        align: 'center',
-      }),
-    });
-    this.nameLabel.anchor.set(0.5, 0);
-    this.nameLabel.position.set(0, this.useSprite ? 4 : 36);
-    this.addChild(this.nameLabel);
-
-    // Role label (if provided)
-    if (options.role) {
-      const roleLabel = new Text({
-        text: options.role,
+    // Name label (below sprite/character) — white with black outline for readability
+    if (options.showLabels !== false) {
+      this.nameLabel = new Text({
+        text: options.name,
         style: new TextStyle({
           fontFamily: '"DM Mono", monospace',
-          fontSize: 8,
-          fill: 0x8a8078,
+          fontSize: 10,
+          fill: 0xffffff,
           align: 'center',
+          stroke: { color: 0x000000, width: 3 },
         }),
       });
-      roleLabel.anchor.set(0.5, 0);
-      roleLabel.position.set(0, this.useSprite ? 16 : 48);
-      this.addChild(roleLabel);
+      this.nameLabel.anchor.set(0.5, 0);
+      this.nameLabel.position.set(0, this.useSprite ? 2 : 36);
+      this.addChild(this.nameLabel);
+
+      // Role label (if provided)
+      if (options.role) {
+        const roleLabel = new Text({
+          text: options.role,
+          style: new TextStyle({
+            fontFamily: '"DM Mono", monospace',
+            fontSize: 8,
+            fill: 0xffffff,
+            align: 'center',
+            stroke: { color: 0x000000, width: 2 },
+          }),
+        });
+        roleLabel.anchor.set(0.5, 0);
+        roleLabel.position.set(0, this.useSprite ? 13 : 48);
+        this.addChild(roleLabel);
+      }
     }
 
     // Observer characters are slightly transparent
@@ -163,12 +206,12 @@ export class Character extends Container {
       if (this.isObserver) {
         // Map CharacterState to observer poses
         const observerPoseMap: Record<CharacterState, string> = {
-          idle: 'seated_idle',
-          talking: 'seated_talking',
-          thinking: 'seated_idle',
-          reacting: 'seated_idle',
-          gesturing: 'seated_talking',
-          skeptical: 'seated_idle',
+          idle: 'standing_idle',
+          talking: 'standing_talking',
+          thinking: 'standing_idle',
+          reacting: 'standing_idle',
+          gesturing: 'standing_talking',
+          skeptical: 'standing_idle',
         };
         texture = getObserverTexture(observerPoseMap[newState]);
       } else {
@@ -191,12 +234,109 @@ export class Character extends Container {
   /** Update animation each frame */
   update(delta: number): void {
     this.animTime += delta * 0.05;
+    const shadowPulse = Math.sin(this.animTime * 2 + this.breathOffset);
+
+    if (this.shadowSprite) {
+      // Sprite-based shadow: subtle breathing pulse
+      this.shadowSprite.alpha = (this.isObserver ? 0.35 : 0.45) + shadowPulse * 0.03;
+      this.shadowSprite.scale.set(
+        0.17 * (1 + shadowPulse * 0.01),
+        0.17 * (1 + shadowPulse * 0.008),
+      );
+    } else {
+      // Procedural shadow fallback
+      this.groundShadow.alpha = this.isObserver ? 0.12 : 0.18;
+      this.groundShadow.scale.set(
+        1 + shadowPulse * 0.015,
+        1 + shadowPulse * 0.01,
+      );
+    }
+
+    // Directional shadow: subtle breathing-linked pulse
+    if (this.dirShadow) {
+      this.dirShadow.alpha = 0.08 + shadowPulse * 0.02;
+      this.dirShadow.scale.x = 1 + shadowPulse * 0.02;
+    }
 
     if (this.useSprite) {
-      // Sprite mode: subtle breathing bob
       if (this.sprite) {
-        const breathAmount = Math.sin(this.animTime * 2 + this.breathOffset) * 0.8;
-        this.sprite.y = breathAmount * 0.5;
+        // --- No vertical bob — characters are seated, vertical movement looks like floating ---
+        let yOffset = 0;
+
+        // --- Micro-movements: subtle weight shifting in chair (horizontal only) ---
+        const shiftFreqA = 0.7 + this.breathOffset * 0.1;
+        const xShift = Math.sin(this.animTime * shiftFreqA + this.breathOffset) * 0.2;
+        this.sprite.x = xShift;
+
+        // --- Subtle scale pulse: simulate breathing ---
+        const scaleBase = 0.17;
+        const scalePulse = Math.sin(this.animTime * 1.1 + this.breathOffset * 1.5) * 0.0008;
+        const facingSign = this.sprite.scale.x < 0 ? -1 : 1;
+        let spriteScaleX = (scaleBase + scalePulse) * facingSign;
+        let spriteScaleY = scaleBase + scalePulse;
+
+        // --- Sprite rotation (default: none) ---
+        let spriteRotation = 0;
+
+        // --- State-specific enhancements (no y-movement, use rotation/scale instead) ---
+        switch (this.state) {
+          case 'talking': {
+            // Slight lean forward when talking
+            spriteRotation = Math.sin(this.animTime * 4.5 + this.breathOffset) * 0.008;
+            break;
+          }
+          case 'thinking': {
+            spriteRotation = Math.sin(this.animTime * 0.8 + this.breathOffset) * 0.012;
+            break;
+          }
+          case 'reacting': {
+            // Quick nod via scale pulse
+            const nodDecay = Math.max(0, 1 - this.animTime * 0.8);
+            const nodScale = Math.sin(this.animTime * 8) * 0.002 * nodDecay;
+            spriteScaleY = scaleBase + nodScale;
+            break;
+          }
+          case 'skeptical': {
+            const skepticShrink = 0.002;
+            spriteScaleX = (scaleBase - skepticShrink) * facingSign;
+            spriteScaleY = scaleBase - skepticShrink;
+            spriteRotation = Math.sin(this.animTime * 1.5) * 0.02;
+            break;
+          }
+          case 'gesturing': {
+            // Horizontal sway only
+            this.sprite.x += Math.sin(this.animTime * 3.5 + this.breathOffset) * 0.4;
+            spriteRotation = Math.sin(this.animTime * 5 + this.breathOffset) * 0.01;
+            break;
+          }
+        }
+
+        // --- Occasional fidget: quick micro-animation every 5-8 seconds ---
+        this.fidgetTimer += delta * 0.05;
+        if (!this.fidgetActive && this.fidgetTimer >= this.fidgetInterval) {
+          this.fidgetActive = true;
+          this.fidgetPhase = 0;
+          this.fidgetTimer = 0;
+          this.fidgetInterval = 5 + Math.random() * 3;
+        }
+        if (this.fidgetActive) {
+          this.fidgetPhase += delta * 0.05;
+          const fidgetDuration = 0.4;
+          if (this.fidgetPhase < fidgetDuration) {
+            const fidgetProgress = this.fidgetPhase / fidgetDuration;
+            const fidgetEase = Math.sin(fidgetProgress * Math.PI);
+            // Horizontal fidget only — no vertical bounce
+            this.sprite.x += fidgetEase * 0.5 * Math.sin(this.breathOffset);
+          } else {
+            this.fidgetActive = false;
+          }
+        }
+
+        // --- Apply all computed values ---
+        this.sprite.y = yOffset;
+        this.sprite.scale.x = spriteScaleX;
+        this.sprite.scale.y = spriteScaleY;
+        this.sprite.rotation = spriteRotation;
       }
     } else {
       // Procedural fallback
@@ -300,6 +440,34 @@ export class Character extends Container {
       this.glassesGraphics = this.drawGlasses();
       this.addChild(this.glassesGraphics);
     }
+  }
+
+  private drawGroundShadow(): Graphics {
+    const shadow = new Graphics();
+    const isObs = this.isObserver;
+
+    // Layered ellipses: must be wider than the sprite (~136px local) to be visible
+    // Positioned below sprite bottom (anchor y=1.0, so y=0 is feet)
+    shadow.ellipse(0, 6, isObs ? 70 : 58, isObs ? 20 : 17)
+      .fill({ color: 0x000000, alpha: 0.18 });
+    shadow.ellipse(0, 6, isObs ? 50 : 42, isObs ? 14 : 12)
+      .fill({ color: 0x000000, alpha: 0.25 });
+    shadow.ellipse(0, 6, isObs ? 30 : 24, isObs ? 9 : 7)
+      .fill({ color: 0x000000, alpha: 0.30 });
+
+    return shadow;
+  }
+
+  private drawDirectionalShadow(): Graphics {
+    const shadow = new Graphics();
+    // Shadow extending right from warm sunset light through left window
+    const xOffset = this.useSprite ? 30 : 20;
+    const yOffset = this.useSprite ? 8 : 8;
+    const rx = this.useSprite ? 50 : 35;
+    const ry = this.useSprite ? 14 : 12;
+    shadow.ellipse(xOffset, yOffset, rx, ry)
+      .fill({ color: 0x000000, alpha: 0.12 });
+    return shadow;
   }
 
   private drawChair(): Graphics {

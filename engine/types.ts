@@ -42,7 +42,7 @@ export interface FileContent {
 }
 
 /** Supported LLM providers */
-export type ProviderType = 'claude' | 'openai' | 'ollama';
+export type ProviderType = 'claude' | 'openai' | 'ollama' | 'claude-code';
 
 /** A pre-built panel template */
 export interface PanelTemplate {

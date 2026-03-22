@@ -12,9 +12,20 @@ export interface ConversationCallbacks {
   onError: (error: Error) => void;
 }
 
+interface PrefetchedResponse {
+  text: string;
+  chunks: string[];
+  inputTokens: number;
+  outputTokens: number;
+  ready: boolean;
+  error?: string;
+}
+
 export class ConversationOrchestrator {
   private transcript: TranscriptEntry[] = [];
   private aborted = false;
+  private prefetchedInitialTakes: Map<string, PrefetchedResponse> = new Map();
+  private prefetching = false;
 
   constructor(
     private panelists: Panelist[],
@@ -23,6 +34,53 @@ export class ConversationOrchestrator {
     private provider: LLMProvider,
     private callbacks: ConversationCallbacks
   ) {}
+
+  /**
+   * Start pre-fetching all initial takes in parallel.
+   * Call this immediately when the session starts (before user presses space).
+   */
+  prefetchInitialTakes(): void {
+    if (this.prefetching) return;
+    this.prefetching = true;
+
+    const ideaContext = this.buildIdeaContext();
+    const prompt = `${ideaContext}\n\nGive your initial reaction to this idea. What stands out? What concerns you? What excites you? Be specific and draw on your expertise. Keep your response to 100-200 words.`;
+
+    for (const panelist of this.panelists) {
+      const prefetched: PrefetchedResponse = {
+        text: '',
+        chunks: [],
+        inputTokens: 0,
+        outputTokens: 0,
+        ready: false,
+      };
+      this.prefetchedInitialTakes.set(panelist.id, prefetched);
+
+      const messages: Message[] = [
+        { role: 'system', content: panelist.systemPrompt },
+        { role: 'user', content: prompt },
+      ];
+
+      // Fire and forget — runs in background
+      (async () => {
+        try {
+          for await (const event of this.provider.stream(messages)) {
+            if (this.aborted) break;
+            if (event.type === 'text') {
+              prefetched.text += event.text;
+              prefetched.chunks.push(event.text);
+            } else if (event.type === 'usage') {
+              prefetched.inputTokens = event.inputTokens;
+              prefetched.outputTokens = event.outputTokens;
+            }
+          }
+        } catch (err) {
+          prefetched.error = err instanceof Error ? err.message : String(err);
+        }
+        prefetched.ready = true;
+      })();
+    }
+  }
 
   private buildIdeaContext(): string {
     let context = '';
@@ -97,11 +155,89 @@ export class ConversationOrchestrator {
     this.callbacks.onRoundChange('initial-takes');
     for (const panelist of this.panelists) {
       if (this.aborted) return;
-      await this.runSinglePanelist(panelist, 'initial-takes');
+
+      const prefetched = this.prefetchedInitialTakes.get(panelist.id);
+      if (prefetched) {
+        await this.replayPrefetched(panelist, prefetched, 'initial-takes');
+      } else {
+        await this.runSinglePanelist(panelist, 'initial-takes');
+      }
     }
   }
 
+  /**
+   * Replay a prefetched response — waits for it to finish if still generating,
+   * then streams chunks with a small delay so it looks like live streaming.
+   */
+  private async replayPrefetched(
+    panelist: Panelist,
+    prefetched: PrefetchedResponse,
+    round: RoundType
+  ): Promise<void> {
+    if (this.aborted) return;
+
+    this.callbacks.onPanelistActivated(panelist.id);
+
+    const entry: TranscriptEntry = {
+      id: generateId(),
+      panelistId: panelist.id,
+      panelistName: panelist.name,
+      content: '',
+      round,
+      timestamp: Date.now(),
+    };
+    this.callbacks.onTranscriptEntry(entry);
+
+    // Stream chunks as they arrive (or replay if already done)
+    let emitted = 0;
+
+    while (!this.aborted) {
+      // Emit any new chunks
+      while (emitted < prefetched.chunks.length) {
+        this.callbacks.onStreamChunk(panelist.id, prefetched.chunks[emitted]);
+        emitted++;
+        // Small delay for visual streaming effect when replaying cached chunks
+        if (prefetched.ready) {
+          await new Promise((r) => setTimeout(r, 15));
+        }
+      }
+
+      if (prefetched.ready) break;
+      // Still generating — wait for more data
+      await new Promise((r) => setTimeout(r, 50));
+    }
+
+    if (prefetched.error) {
+      this.callbacks.onError(new Error(prefetched.error));
+      entry.content = '[Error generating response]';
+    } else {
+      entry.content = prefetched.text;
+    }
+
+    if (prefetched.inputTokens || prefetched.outputTokens) {
+      this.callbacks.onTokenUsage(prefetched.inputTokens, prefetched.outputTokens);
+    }
+
+    this.transcript.push(entry);
+    this.callbacks.onPanelistDeactivated();
+  }
+
+  /**
+   * Run a single panelist — uses prefetched data for initial-takes if available.
+   */
   async runSinglePanelist(panelist: Panelist, round: RoundType): Promise<void> {
+    // Use prefetched response if available
+    if (round === 'initial-takes') {
+      const prefetched = this.prefetchedInitialTakes.get(panelist.id);
+      if (prefetched) {
+        await this.replayPrefetched(panelist, prefetched, round);
+        return;
+      }
+    }
+    await this._runSinglePanelist(panelist, round);
+  }
+
+  private async _runSinglePanelist(panelist: Panelist, round: RoundType): Promise<void> {
     if (this.aborted) return;
 
     const ideaContext = this.buildIdeaContext();

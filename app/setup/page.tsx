@@ -31,7 +31,7 @@ export default function SetupPage() {
   const canStart =
     store.panelists.length >= 3 &&
     (store.ideaText.trim() || store.ideaFiles.length > 0) &&
-    (store.provider === 'ollama' || store.apiKey.trim());
+    (store.provider === 'ollama' || store.provider === 'claude-code' || store.apiKey.trim());
 
   const handleStart = () => {
     store.startSession();
