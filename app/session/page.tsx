@@ -14,6 +14,7 @@ import { getModelById } from '@/lib/models';
 import ModerationInput from '@/components/scene/ModerationInput';
 import LiveTranscript from '@/components/scene/LiveTranscript';
 import KeyboardHelp from '@/components/scene/KeyboardHelp';
+import WrapUpOverlay from '@/components/scene/WrapUpOverlay';
 import { loadAllSprites } from '@/lib/spriteLoader';
 import type { RoundType, TranscriptEntry, Panelist } from '@/engine/types';
 
@@ -53,6 +54,10 @@ export default function SessionPage() {
 
   // Moderation state
   const [inModeration, setInModeration] = useState(false);
+
+  // Wrap-up overlay state
+  const [showWrapOverlay, setShowWrapOverlay] = useState(false);
+  const [wrapSummaryReady, setWrapSummaryReady] = useState(false);
 
   // Track whether we're waiting for spacebar (ref doesn't trigger re-renders)
   const [waitingForSpace, setWaitingForSpace] = useState(false);
@@ -104,12 +109,13 @@ export default function SessionPage() {
   useEffect(() => { isSpeakingRef.current = isSpeaking; }, [isSpeaking]);
   useEffect(() => { viewModeRef.current = viewMode; }, [viewMode]);
 
-  // Redirect to setup if no active session
+  // Redirect to setup if no active session (don't redirect during wrap overlay)
   useEffect(() => {
+    if (showWrapOverlay) return;
     if (store.status !== 'running' || store.panelists.length < 3) {
       router.replace('/setup');
     }
-  }, [store.status, store.panelists.length, router]);
+  }, [store.status, store.panelists.length, router, showWrapOverlay]);
 
   // Wait for spacebar — returns promise that resolves on press
   const waitForSpace = useCallback((): Promise<void> => {
@@ -399,26 +405,64 @@ export default function SessionPage() {
         }
       }
 
-      setHint('Generating summary...');
-      const summary = await orchestrator.generateSummary();
-      storeRef.current.setSummary(summary);
-      storeRef.current.setTranscript(orchestrator.getTranscript());
-      storeRef.current.completeSession();
-      router.push('/results');
+      // Show the wrap-up overlay — summary generation happens inside it
+      setHint('');
+      setShowWrapOverlay(true);
     } catch (err) {
       showError(err instanceof Error ? err.message : 'Error during wrap-up.');
       setInModeration(true);
     }
+  }, []);
+
+  // Called by WrapUpOverlay when its animation is ready for summary generation
+  const handleWrapStartSummary = useCallback(async () => {
+    const orchestrator = orchestratorRef.current;
+    if (!orchestrator) return;
+
+    try {
+      const summary = await orchestrator.generateSummary();
+      storeRef.current.setSummary(summary);
+      storeRef.current.setTranscript(orchestrator.getTranscript());
+      storeRef.current.completeSession();
+      setWrapSummaryReady(true);
+    } catch (err) {
+      // Even on error, mark as ready so the overlay can proceed
+      storeRef.current.completeSession();
+      setWrapSummaryReady(true);
+    }
+  }, []);
+
+  // Called by WrapUpOverlay when its animation is fully complete
+  const handleWrapComplete = useCallback(() => {
+    router.push('/results');
   }, [router]);
 
-  // Don't render if not running
-  if (store.status !== 'running' || store.panelists.length < 3) return null;
+  // Don't render if not running (allow 'completed' while wrap overlay is showing)
+  if ((store.status !== 'running' && !(store.status === 'completed' && showWrapOverlay)) || store.panelists.length < 3) return null;
 
   const currentPanelist = briefingIndex >= 0 ? store.panelists[briefingIndex] : null;
+
+  // Compute session stats for wrap-up overlay
+  const sessionDurationMs = store.sessionStartTime ? Date.now() - store.sessionStartTime : 0;
+  const totalResponses = liveTranscript.filter((e) => e.panelistId !== 'user').length;
 
   return (
     <div className="min-h-screen">
       <KeyboardHelp />
+
+      {/* Wrap-up overlay — broadcast sign-off */}
+      {showWrapOverlay && (
+        <WrapUpOverlay
+          panelists={store.panelists.map((p) => ({ id: p.id, name: p.name, role: p.role, color: p.color }))}
+          sessionDurationMs={sessionDurationMs}
+          questionsAsked={store.moderationQuestionCount}
+          totalResponses={totalResponses}
+          onStartSummary={handleWrapStartSummary}
+          summaryReady={wrapSummaryReady}
+          onComplete={handleWrapComplete}
+        />
+      )}
+
       {/* Main session content */}
       <div>
         <div className="max-w-5xl mx-auto px-4 sm:px-6 py-4 sm:py-6">

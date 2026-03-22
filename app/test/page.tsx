@@ -10,6 +10,7 @@ import TransitionOverlay from '@/components/scene/TransitionOverlay';
 import ModerationInput from '@/components/scene/ModerationInput';
 import LiveTranscript from '@/components/scene/LiveTranscript';
 import KeyboardHelp from '@/components/scene/KeyboardHelp';
+import WrapUpOverlay from '@/components/scene/WrapUpOverlay';
 
 const FAKE_PANELISTS: Panelist[] = [
   { id: 'p1', name: 'Mei', role: 'UX Designer', description: 'Ten years of product design at startups and FAANG. Thinks user-first and will challenge any feature that adds complexity without clear user value.', systemPrompt: '', color: '#4a9a7a', spriteIndex: 0 },
@@ -85,6 +86,9 @@ function TestPageContent() {
   const [moderationQuestionCount, setModerationQuestionCount] = useState(0);
   const [transcript, setTranscript] = useState<TranscriptEntry[]>([]);
   const [sessionComplete, setSessionComplete] = useState(false);
+  const [showWrapOverlay, setShowWrapOverlay] = useState(false);
+  const [wrapSummaryReady, setWrapSummaryReady] = useState(false);
+  const [sessionStartTime] = useState(Date.now());
   const [fakeTokens, setFakeTokens] = useState({ input: 0, output: 0 });
   const [testExportMode, setTestExportMode] = useState<'summary' | 'transcript'>('transcript');
   const [layoutSnapshot, setLayoutSnapshot] = useState<LayoutEditorSnapshot | null>(null);
@@ -247,7 +251,7 @@ function TestPageContent() {
     setHint('Ask another question, or press Wrap Up.');
   }, [moderationQuestionCount, streamRoundtableText, addTranscriptEntry, waitForSpace, addFakeTokens]);
 
-  // Handle wrap-up — final one-sentence takeaways
+  // Handle wrap-up — final one-sentence takeaways, then wrap overlay
   const handleWrapUp = useCallback(async () => {
     const s = sceneStateRef.current;
     if (!s || isSpeakingRef.current) return;
@@ -275,9 +279,24 @@ function TestPageContent() {
       setPanelistsSpoken(i + 1);
     }
 
+    // Show the wrap-up overlay instead of immediately completing
+    setHint('');
+    setShowWrapOverlay(true);
+  }, [streamRoundtableText, addTranscriptEntry, waitForSpace, addFakeTokens]);
+
+  // Called by WrapUpOverlay when ready — simulate summary generation
+  const handleWrapStartSummary = useCallback(async () => {
+    // Simulate a brief delay for "summary generation" in test mode
+    await new Promise((r) => setTimeout(r, 1500));
+    setWrapSummaryReady(true);
+  }, []);
+
+  // Called by WrapUpOverlay when animation completes — show results
+  const handleWrapComplete = useCallback(() => {
+    setShowWrapOverlay(false);
     setSessionComplete(true);
     setHint('Session complete! Scroll down to see the full transcript.');
-  }, [streamRoundtableText, addTranscriptEntry, waitForSpace, addFakeTokens]);
+  }, []);
 
   // Run a single round of cross-talk (used both for initial and "Continue Roundtable")
   const runCrosstalkRound = useCallback(async () => {
@@ -444,9 +463,26 @@ function TestPageContent() {
       ].filter(Boolean).join('\n')
     : '';
 
+  const testSessionDurationMs = Date.now() - sessionStartTime;
+  const testTotalResponses = transcript.filter((e) => e.panelistId !== 'user').length;
+
   return (
     <div className="min-h-screen">
       <KeyboardHelp />
+
+      {/* Wrap-up overlay — broadcast sign-off */}
+      {showWrapOverlay && (
+        <WrapUpOverlay
+          panelists={FAKE_PANELISTS.map((p) => ({ id: p.id, name: p.name, role: p.role, color: p.color }))}
+          sessionDurationMs={testSessionDurationMs}
+          questionsAsked={moderationQuestionCount}
+          totalResponses={testTotalResponses}
+          onStartSummary={handleWrapStartSummary}
+          summaryReady={wrapSummaryReady}
+          onComplete={handleWrapComplete}
+        />
+      )}
+
       {/* Main session content */}
       <div>
         <div className="max-w-5xl mx-auto px-4 sm:px-6 py-4 sm:py-6">
