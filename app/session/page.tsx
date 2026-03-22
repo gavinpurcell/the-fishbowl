@@ -437,38 +437,84 @@ export default function SessionPage() {
               {briefingIndex < 0 ? (
                 <div className="text-center py-12 sm:py-20">
                   <p className="text-base sm:text-lg" style={{ color: 'var(--text-secondary)' }}>Your panel of {store.panelists.length} experts is ready.</p>
-                  <div className="flex justify-center gap-3 mt-6 flex-wrap">
+                  <div className="flex justify-center gap-4 mt-6 flex-wrap">
                     {store.panelists.map((p) => (
-                      <div key={p.id} className="flex flex-col items-center gap-1">
-                      <div
-                        className="relative w-10 h-10 sm:w-12 sm:h-12 rounded-full overflow-hidden"
-                        style={{ border: `2px solid ${p.color}` }}
-                      >
-                        <img
-                          src={`/sprites/portraits/char_${p.spriteIndex}_portrait.png`}
-                          alt={p.name}
-                          className="absolute inset-0 w-full h-full object-cover"
+                      <div key={p.id} className="flex flex-col items-center gap-1.5">
+                        <div
+                          className="relative w-10 h-10 sm:w-12 sm:h-12 overflow-hidden"
                           style={{
-                            imageRendering: 'pixelated',
-                            objectPosition: 'center 20%',
-                            transform: 'scale(1.18)',
-                            transformOrigin: 'center 20%',
+                            border: `2px solid ${p.color}`,
+                            borderRadius: '6px',
+                            background: '#0d0b09',
                           }}
-                        />
-                      </div>
+                        >
+                          <img
+                            src={`/sprites/portraits/char_${p.spriteIndex}_portrait.png`}
+                            alt={p.name}
+                            className="absolute inset-0 w-full h-full object-cover"
+                            style={{
+                              imageRendering: 'pixelated',
+                              objectPosition: 'center 20%',
+                              transform: 'scale(1.18)',
+                              transformOrigin: 'center 20%',
+                            }}
+                          />
+                        </div>
                         <span className="text-xs" style={{ color: 'var(--text-muted)' }}>{p.name}</span>
                       </div>
                     ))}
                   </div>
                 </div>
               ) : currentPanelist && (
-                <div className="rounded-xl overflow-hidden animate-fade-in" key={currentPanelist.id} style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)' }}>
+                /* Character Dossier Card — classified document / RPG briefing */
+                <div
+                  className="dossier-slide-in overflow-hidden"
+                  key={currentPanelist.id}
+                  style={{
+                    background: '#1a1714',
+                    border: '1px solid #2a2520',
+                    borderLeft: `3px solid ${currentPanelist.color}`,
+                    borderRadius: '10px',
+                    boxShadow: '0 4px 24px rgba(0,0,0,0.3), 0 0 40px rgba(196,154,42,0.04)',
+                    position: 'relative',
+                  }}
+                >
+                  {/* Top gold accent line */}
+                  <div style={{ height: '1px', background: 'linear-gradient(90deg, ' + currentPanelist.color + ', transparent 80%)' }} />
+
+                  {/* PANELIST BRIEF watermark */}
+                  <div
+                    className="font-pixel hidden sm:block"
+                    style={{
+                      position: 'absolute',
+                      top: '14px',
+                      right: '16px',
+                      fontSize: '8px',
+                      letterSpacing: '0.12em',
+                      color: 'rgba(255,255,255,0.08)',
+                      textTransform: 'uppercase',
+                      pointerEvents: 'none',
+                      userSelect: 'none',
+                    }}
+                  >
+                    PANELIST BRIEF
+                  </div>
+
                   <div className="flex flex-col sm:flex-row">
-                    <div className="sm:w-64 flex-shrink-0 flex flex-col items-center justify-center py-6 sm:py-10 px-4 sm:px-6 border-b sm:border-b-0 sm:border-r"
-                      style={{ background: currentPanelist.color + '12', borderColor: 'var(--border)' }}>
+                    {/* Left: Portrait + Identity */}
+                    <div
+                      className="sm:w-64 flex-shrink-0 flex flex-col items-center justify-center py-6 sm:py-10 px-4 sm:px-6 border-b sm:border-b-0 sm:border-r"
+                      style={{ borderColor: '#2a2520' }}
+                    >
+                      {/* Pixel art portrait */}
                       <div
-                        className="relative w-16 h-16 sm:w-24 sm:h-24 rounded-full overflow-hidden mb-3 sm:mb-4"
-                        style={{ border: `3px solid ${currentPanelist.color}` }}
+                        className="relative w-16 h-16 sm:w-24 sm:h-24 overflow-hidden mb-3 sm:mb-4"
+                        style={{
+                          border: `2px solid ${currentPanelist.color}`,
+                          borderRadius: '8px',
+                          background: '#0d0b09',
+                          boxShadow: `0 0 16px ${currentPanelist.color}20`,
+                        }}
                       >
                         <img
                           src={`/sprites/portraits/char_${currentPanelist.spriteIndex}_portrait.png`}
@@ -482,26 +528,92 @@ export default function SessionPage() {
                           }}
                         />
                       </div>
+
+                      {/* Name — Silkscreen */}
                       <div className="text-center">
-                        <div className="text-base sm:text-lg font-700" style={{ color: 'var(--text-primary)' }}>{currentPanelist.name}</div>
-                        <div className="label-mono mt-1" style={{ color: currentPanelist.color }}>{currentPanelist.role}</div>
+                        <div
+                          className="font-pixel text-sm sm:text-base"
+                          style={{ color: 'rgba(255,255,255,0.9)', letterSpacing: '0.04em' }}
+                        >
+                          {currentPanelist.name}
+                        </div>
+                        {/* Role — DM Mono uppercase pill */}
+                        <div
+                          className="inline-block mt-2 px-2.5 py-0.5"
+                          style={{
+                            fontFamily: "'DM Mono', monospace",
+                            fontSize: '9px',
+                            letterSpacing: '0.08em',
+                            textTransform: 'uppercase',
+                            color: currentPanelist.color,
+                            background: currentPanelist.color + '15',
+                            border: `1px solid ${currentPanelist.color}30`,
+                            borderRadius: '4px',
+                          }}
+                        >
+                          {currentPanelist.role}
+                        </div>
                       </div>
-                      <p className="text-xs text-center mt-2 sm:mt-3 leading-relaxed px-2 hidden sm:block" style={{ color: 'var(--text-muted)' }}>
+
+                      {/* Description */}
+                      <p
+                        className="text-xs text-center mt-3 leading-relaxed px-2 hidden sm:block"
+                        style={{ color: 'rgba(255,255,255,0.4)' }}
+                      >
                         {currentPanelist.description}
                       </p>
-                      <div className="mt-2 sm:mt-4 label-mono" style={{ fontSize: '9px' }}>
-                        Panelist {briefingIndex + 1} of {store.panelists.length}
+
+                      {/* Panelist counter */}
+                      <div
+                        className="mt-3 sm:mt-4"
+                        style={{
+                          fontFamily: "'DM Mono', monospace",
+                          fontSize: '9px',
+                          letterSpacing: '0.12em',
+                          textTransform: 'uppercase',
+                          color: 'rgba(255,255,255,0.2)',
+                        }}
+                      >
+                        {briefingIndex + 1} / {store.panelists.length}
                       </div>
                     </div>
+
+                    {/* Right: Initial Take content */}
                     <div className="flex-1 p-4 sm:p-8">
-                      <div className="label-mono mb-3" style={{ color: currentPanelist.color }}>Initial Take</div>
+                      <div
+                        className="font-pixel mb-4"
+                        style={{
+                          fontSize: '9px',
+                          letterSpacing: '0.1em',
+                          color: currentPanelist.color,
+                        }}
+                      >
+                        INITIAL TAKE
+                      </div>
                       {briefingText ? (
-                        <p className="text-sm leading-relaxed whitespace-pre-wrap" style={{ color: 'var(--text-secondary)' }}>
+                        <p
+                          className="text-sm leading-relaxed whitespace-pre-wrap"
+                          style={{ color: 'rgba(255,255,255,0.65)' }}
+                        >
                           {briefingText}
-                          {isSpeaking && <span className="inline-block w-1 h-3.5 ml-0.5 animate-pulse" style={{ background: currentPanelist.color }} />}
+                          {isSpeaking && (
+                            <span
+                              className="inline-block w-1 h-3.5 ml-0.5 animate-pulse"
+                              style={{ background: currentPanelist.color }}
+                            />
+                          )}
                         </p>
                       ) : (
-                        <p className="text-sm italic" style={{ color: 'var(--text-muted)' }}>Preparing response...</p>
+                        <p
+                          className="text-sm"
+                          style={{
+                            fontFamily: "'DM Mono', monospace",
+                            color: 'rgba(255,255,255,0.3)',
+                            fontStyle: 'italic',
+                          }}
+                        >
+                          Preparing response...
+                        </p>
                       )}
                     </div>
                   </div>
@@ -576,52 +688,79 @@ export default function SessionPage() {
             )}
           </div>
 
-          {/* Error */}
+          {/* Error — Broadcast Technical Difficulty */}
           {error && (
             <div
-              className="max-w-[800px] mx-auto mt-3 rounded-xl text-sm animate-fade-in"
+              className="max-w-[800px] mx-auto mt-3 text-sm error-slide-in"
               style={{
-                background: 'var(--bg-surface)',
-                border: '1px solid var(--accent-warm)',
+                background: '#1a1714',
+                border: '1px solid #3a2520',
+                borderRadius: '10px',
                 overflow: 'hidden',
+                boxShadow: '0 4px 20px rgba(0,0,0,0.3), 0 0 40px rgba(232,90,74,0.06)',
               }}
             >
+              {/* Top accent — red/amber warning stripe */}
+              <div style={{ height: '2px', background: 'linear-gradient(90deg, transparent 5%, #e85a4a 30%, #d4843a 50%, #e85a4a 70%, transparent 95%)' }} />
+
               <div className="flex items-start gap-3 px-4 py-3">
+                {/* Warning triangle icon */}
                 <svg
                   width="16"
                   height="16"
                   viewBox="0 0 24 24"
                   fill="none"
-                  stroke="var(--accent-warm)"
+                  stroke="#e85a4a"
                   strokeWidth="2"
                   strokeLinecap="round"
                   strokeLinejoin="round"
                   className="flex-shrink-0 mt-0.5"
                 >
-                  <circle cx="12" cy="12" r="10" />
-                  <line x1="12" y1="8" x2="12" y2="12" />
-                  <line x1="12" y1="16" x2="12.01" y2="16" />
+                  <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                  <line x1="12" y1="9" x2="12" y2="13" />
+                  <line x1="12" y1="17" x2="12.01" y2="17" />
                 </svg>
                 <div className="flex-1 min-w-0">
-                  <p style={{ color: 'var(--text-primary)' }}>
-                    <strong style={{ color: 'var(--accent-warm)' }}>Something went wrong</strong>
+                  <p
+                    className="font-pixel"
+                    style={{
+                      fontSize: '10px',
+                      letterSpacing: '0.1em',
+                      color: '#e85a4a',
+                    }}
+                  >
+                    TECHNICAL DIFFICULTY
                   </p>
-                  <p className="mt-1" style={{ color: 'var(--text-secondary)', fontSize: '13px', lineHeight: '1.5' }}>
+                  <p
+                    className="mt-1.5"
+                    style={{
+                      fontFamily: "'DM Mono', monospace",
+                      fontSize: '12px',
+                      lineHeight: '1.6',
+                      color: 'rgba(255,255,255,0.65)',
+                    }}
+                  >
                     {error}
                   </p>
                 </div>
                 <button
                   onClick={() => showError(null)}
-                  className="flex-shrink-0 p-1 rounded-md transition-colors"
+                  className="flex-shrink-0 p-1.5 rounded-md transition-all"
                   style={{
                     background: 'transparent',
                     border: 'none',
                     cursor: 'pointer',
-                    color: 'var(--text-muted)',
+                    color: 'rgba(255,255,255,0.3)',
                     lineHeight: 1,
                   }}
-                  onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = 'var(--bg-elevated)'; }}
-                  onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
+                  onMouseEnter={(e) => {
+                    (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.06)';
+                    (e.currentTarget as HTMLElement).style.color = 'rgba(255,255,255,0.6)';
+                  }}
+                  onMouseLeave={(e) => {
+                    (e.currentTarget as HTMLElement).style.background = 'transparent';
+                    (e.currentTarget as HTMLElement).style.color = 'rgba(255,255,255,0.3)';
+                  }}
                   aria-label="Dismiss error"
                 >
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -630,8 +769,10 @@ export default function SessionPage() {
                   </svg>
                 </button>
               </div>
-              {/* Warm accent bar at bottom */}
-              <div style={{ height: '2px', background: 'linear-gradient(90deg, var(--accent-warm), var(--accent-gold), var(--accent-warm))' }} />
+              {/* Auto-dismiss progress bar — red line that shrinks over 10s */}
+              <div style={{ height: '2px', background: 'rgba(255,255,255,0.05)' }}>
+                <div className="error-dismiss-bar" style={{ height: '100%', background: '#e85a4a' }} />
+              </div>
             </div>
           )}
 

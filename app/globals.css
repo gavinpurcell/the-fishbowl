@@ -719,6 +719,46 @@ html, body {
   50% { opacity: 0.4; }
 }
 
+/* Active session banner — slide down from top */
+@keyframes bannerSlideDown {
+  from { transform: translateY(-100%); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.session-banner-enter {
+  animation: bannerSlideDown 0.4s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+/* Error banner — slide in from top */
+@keyframes errorSlideIn {
+  from { transform: translateY(-12px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.error-slide-in {
+  animation: errorSlideIn 0.35s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+/* Error auto-dismiss progress bar — shrinks from 100% to 0 over 10s */
+@keyframes errorDismiss {
+  from { width: 100%; }
+  to { width: 0%; }
+}
+
+.error-dismiss-bar {
+  animation: errorDismiss 10s linear forwards;
+}
+
+/* Dossier card — slide in from the left */
+@keyframes dossierSlideIn {
+  from { transform: translateX(-20px); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+.dossier-slide-in {
+  animation: dossierSlideIn 0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
 /* Timer subtle brightness pulse when session is active */
 @keyframes timerPulse {
   0%, 100% { color: rgba(255,255,255,0.7); }
