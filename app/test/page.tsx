@@ -8,6 +8,7 @@ import type { Panelist, RoundType, TranscriptEntry } from '@/engine/types';
 import StatusBar from '@/components/scene/StatusBar';
 import TransitionOverlay from '@/components/scene/TransitionOverlay';
 import ModerationInput from '@/components/scene/ModerationInput';
+import LiveTranscript from '@/components/scene/LiveTranscript';
 
 const FAKE_PANELISTS: Panelist[] = [
   { id: 'p1', name: 'Mei', role: 'UX Designer', description: 'Ten years of product design at startups and FAANG. Thinks user-first and will challenge any feature that adds complexity without clear user value.', systemPrompt: '', color: '#4a9a7a', spriteIndex: 0 },
@@ -73,6 +74,7 @@ function TestPageContent() {
   const [briefingIndex, setBriefingIndex] = useState(-1); // -1 = not started
   const [briefingText, setBriefingText] = useState('');
   const [isSpeaking, setIsSpeaking] = useState(false);
+  const [activePanelistId, setActivePanelistId] = useState<string | null>(null);
   const [panelistsSpoken, setPanelistsSpoken] = useState(0);
   const [hint, setHint] = useState('Press SPACE to meet your panel');
 
@@ -161,6 +163,7 @@ function TestPageContent() {
   const streamRoundtableText = useCallback(async (scene: FishbowlScene, panelist: Panelist, text: string) => {
     streamAbortRef.current = false;
     setIsSpeaking(true);
+    setActivePanelistId(panelist.id);
 
     scene.setCharacterState(panelist.id, 'talking');
     scene.showSpeechBubble(panelist.id);
@@ -180,6 +183,7 @@ function TestPageContent() {
     scene.setCharacterState(panelist.id, 'idle');
     FAKE_PANELISTS.forEach((p) => scene.setCharacterState(p.id, 'idle'));
     setIsSpeaking(false);
+    setActivePanelistId(null);
   }, []);
 
   // Add an entry to the local transcript
@@ -687,23 +691,13 @@ function TestPageContent() {
         )}
 
         {/* Live Transcript */}
-        {transcript.length > 0 && viewMode === 'roundtable' && (
-          <div className="max-w-[800px] mx-auto mt-6">
-            <div className="label-mono mb-2">Transcript</div>
-            <div className="rounded-xl p-4 max-h-64 overflow-y-auto space-y-3" style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)' }}>
-              {transcript.map((entry) => {
-                const panelist = FAKE_PANELISTS.find((p) => p.id === entry.panelistId);
-                const isUser = entry.panelistId === 'user';
-                const color = panelist?.color || (isUser ? 'var(--accent-gold)' : 'var(--text-muted)');
-                return (
-                  <div key={entry.id} className="text-sm">
-                    <span className="font-600" style={{ color }}>{entry.panelistName}:</span>{' '}
-                    <span style={{ color: isUser ? 'var(--text-primary)' : 'var(--text-secondary)' }}>{entry.content}</span>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
+        {viewMode === 'roundtable' && (
+          <LiveTranscript
+            entries={transcript}
+            panelists={FAKE_PANELISTS}
+            activePanelistId={activePanelistId}
+            isSpeaking={isSpeaking}
+          />
         )}
 
       </div>

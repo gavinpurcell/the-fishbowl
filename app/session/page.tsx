@@ -12,6 +12,7 @@ import TransitionOverlay from '@/components/scene/TransitionOverlay';
 import { getModelById } from '@/lib/models';
 // Note: PixiJS scene is managed directly via ref, not via FishbowlCanvas component
 import ModerationInput from '@/components/scene/ModerationInput';
+import LiveTranscript from '@/components/scene/LiveTranscript';
 import { loadAllSprites } from '@/lib/spriteLoader';
 import type { RoundType, TranscriptEntry, Panelist } from '@/engine/types';
 
@@ -550,23 +551,12 @@ export default function SessionPage() {
           )}
 
           {/* Live Transcript */}
-          {liveTranscript.length > 0 && (
-            <div className="max-w-[800px] mx-auto mt-6">
-              <div className="label-mono mb-2">Transcript</div>
-              <div className="rounded-xl p-4 max-h-64 overflow-y-auto space-y-3" style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)' }}>
-                {liveTranscript.map((entry) => {
-                  const panelist = store.panelists.find((p) => p.id === entry.panelistId);
-                  const color = panelist?.color || (entry.panelistId === 'user' ? '#eea444' : 'var(--text-muted)');
-                  return (
-                    <div key={entry.id} className="text-sm">
-                      <span className="font-600" style={{ color }}>{entry.panelistName}:</span>{' '}
-                      <span style={{ color: 'var(--text-secondary)' }}>{entry.content}</span>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
+          <LiveTranscript
+            entries={liveTranscript}
+            panelists={store.panelists}
+            activePanelistId={store.activePanelistId}
+            isSpeaking={isSpeaking}
+          />
         </div>
       </div>
     </div>
