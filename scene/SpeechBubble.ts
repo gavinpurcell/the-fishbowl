@@ -49,10 +49,10 @@ export class SpeechBubble extends Container {
   private readonly APPEAR_FRAMES = 10;
   private readonly DISAPPEAR_FRAMES = 8;
 
-  // Height clamping
-  private readonly MAX_BUBBLE_HEIGHT = 280;
+  // Height clamping — canvas is 800x450; keep bubble within viewport
+  private readonly MAX_BUBBLE_HEIGHT = 180;
   private readonly LINE_HEIGHT = 16;
-  private readonly MIN_HEIGHT = 80;
+  private readonly MIN_HEIGHT = 50;
 
   // Style constants per mode — pixel-art RPG dialog box palette
   private static readonly STYLES = {
@@ -349,12 +349,10 @@ export class SpeechBubble extends Container {
 
     // Compute the maximum text area height:
     // 1. Hard cap: MAX_BUBBLE_HEIGHT minus padding and tail
-    // 2. Position cap: don't extend above the canvas (position.y is in scene coords)
+    // 2. Position cap: don't extend above the canvas top (y=0); leave 8px margin
     const hardMaxTextH = this.MAX_BUBBLE_HEIGHT - this.PADDING * 2 - this.TAIL_HEIGHT;
-    const positionMaxTextH = Math.max(
-      this.MIN_HEIGHT - this.PADDING * 2,
-      this.position.y - 20 - this.PADDING * 2 - this.TAIL_HEIGHT,
-    );
+    const availableAbove = this.position.y - 8 - this.PADDING * 2 - this.TAIL_HEIGHT;
+    const positionMaxTextH = Math.max(this.MIN_HEIGHT - this.PADDING * 2, availableAbove);
     const maxTextH = Math.min(hardMaxTextH, positionMaxTextH);
 
     const rawTextH = this.textDisplay.height;
