@@ -126,6 +126,9 @@ export default function KeyboardHelp({ extraShortcuts = [] }: KeyboardHelpProps)
           {/* Panel */}
           <div
             className="kbd-overlay-panel"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Keyboard shortcuts"
             style={{
               position: 'relative',
               width: '100%',

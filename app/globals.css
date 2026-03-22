@@ -1736,3 +1736,51 @@ html, body {
     transform: scale(1) translateY(0);
   }
 }
+
+/* ============================================================ */
+/*  Accessibility                                                */
+/* ============================================================ */
+
+/* Respect users who prefer reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Visually hidden — accessible to screen readers, invisible on screen */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/* Skip-to-content link — visible only on focus */
+.skip-to-content {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%) translateY(-100%);
+  z-index: 9999;
+  padding: 8px 16px;
+  background: var(--accent-gold);
+  color: var(--dark-surface);
+  font-family: 'DM Mono', monospace;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  border-radius: 0 0 6px 6px;
+  text-decoration: none;
+  transition: transform 0.15s ease;
+}
+
+.skip-to-content:focus {
+  transform: translateX(-50%) translateY(0);
+}

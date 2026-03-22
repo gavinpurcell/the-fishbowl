@@ -52,7 +52,7 @@ export default function TemplatePicker({ onSelect }: Props) {
                     >
                       <Image
                         src={`/sprites/portraits/char_${pi % 8}_portrait.png`}
-                        alt={p.name}
+                        alt={`${p.name} portrait`}
                         width={40}
                         height={40}
                         style={{

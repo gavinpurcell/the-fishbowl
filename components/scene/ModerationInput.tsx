@@ -152,6 +152,7 @@ export default function ModerationInput({ onSubmit, disabled }: Props) {
           <textarea
             ref={textareaRef}
             value={question}
+            aria-label="Ask the panelists a question"
             onChange={(e) => {
               if (e.target.value.length <= MAX_LENGTH) {
                 setQuestion(e.target.value);
@@ -197,6 +198,7 @@ export default function ModerationInput({ onSubmit, disabled }: Props) {
           <button
             type="submit"
             disabled={!canSubmit}
+            aria-label={disabled ? 'Panelists are responding' : 'Send question'}
             className="flex-shrink-0 flex items-center justify-center gap-1.5 transition-all"
             style={{
               background: canSubmit

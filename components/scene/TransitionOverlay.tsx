@@ -326,7 +326,7 @@ export default function TransitionOverlay({ panelists, onComplete }: TransitionO
         }
       `}</style>
 
-      <div className="broadcast-overlay">
+      <div className="broadcast-overlay" role="status" aria-live="assertive" aria-label="Session starting">
         <div className="broadcast-content">
           {/* Phase 1: STANDBY — 0.2s to 1.1s */}
           <div className="broadcast-standby">STANDBY</div>

@@ -89,7 +89,7 @@ export default function PanelistBuilder({ panelists, onUpdate }: Props) {
                 >
                   <Image
                     src={`/sprites/portraits/char_${p.spriteIndex}_portrait.png`}
-                    alt={p.name}
+                    alt={`${p.name} portrait`}
                     width={56}
                     height={56}
                     style={{

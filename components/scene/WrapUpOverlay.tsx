@@ -470,6 +470,9 @@ export default function WrapUpOverlay({
       `}</style>
 
       <div className={`wrap-overlay phase-${phase}`}
+        role="status"
+        aria-live="assertive"
+        aria-label="Session complete, compiling report"
         style={{
           background: phase === 'done' ? 'var(--dark-deep, #0d0b09)' : 'var(--dark-deep, #0d0b09)',
         }}

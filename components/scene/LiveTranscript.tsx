@@ -114,7 +114,7 @@ export default function LiveTranscript({
   const lastEntry = entries[entries.length - 1];
 
   return (
-    <div className="max-w-[800px] mx-auto mt-6">
+    <div className="max-w-[800px] mx-auto mt-6" role="log" aria-live="polite" aria-label="Live transcript">
       {/* Header bar — broadcast feed style */}
       <div
         className="flex items-center justify-between px-4 py-2.5"
@@ -174,6 +174,8 @@ export default function LiveTranscript({
 
         <button
           onClick={() => setIsCollapsed(!isCollapsed)}
+          aria-label={isCollapsed ? 'Expand transcript' : 'Collapse transcript'}
+          aria-expanded={!isCollapsed}
           className="flex items-center gap-1.5 px-2 py-1 rounded transition-colors"
           style={{
             background: 'transparent',

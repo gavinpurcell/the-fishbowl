@@ -39,8 +39,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <meta name="theme-color" content="#f5f0e8" />
       </head>
       <body className="antialiased">
+        <a href="#main-content" className="skip-to-content">
+          Skip to main content
+        </a>
         <ActiveSessionBanner />
-        <div className="page-transition-wrapper">{children}</div>
+        <main id="main-content" className="page-transition-wrapper">{children}</main>
       </body>
     </html>
   );

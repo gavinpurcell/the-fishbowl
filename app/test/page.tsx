@@ -517,7 +517,7 @@ function TestPageContent() {
                         >
                           <img
                             src={`/sprites/portraits/char_${p.spriteIndex}_portrait.png`}
-                            alt={p.name}
+                            alt={`${p.name} portrait`}
                             className="absolute inset-0 w-full h-full object-contain"
                             style={{
                               imageRendering: 'pixelated',
@@ -582,7 +582,7 @@ function TestPageContent() {
                       >
                         <img
                           src={`/sprites/portraits/char_${currentPanelist.spriteIndex}_portrait.png`}
-                          alt={currentPanelist.name}
+                          alt={`${currentPanelist.name} portrait`}
                           className="absolute inset-0 w-full h-full object-contain"
                           style={{
                             imageRendering: 'pixelated',
