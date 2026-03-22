@@ -15,14 +15,15 @@ function easeInCubic(t: number): number {
 
 /**
  * Speech bubble that appears above characters.
- * Supports streaming text (appendText), auto-sizing, typing dots,
- * appear/disappear animations, question vs response styling,
- * and text truncation with scroll-to-bottom.
+ * Pixel-art RPG dialog box aesthetic with double border,
+ * streaming text, typing dots, and appear/disappear animations.
  */
 export class SpeechBubble extends Container {
   private shadow: Graphics;
   private bubble: Graphics;
+  private innerBorder: Graphics;
   private tail: Graphics;
+  private tailBorder: Graphics;
   private textDisplay: Text;
   private textMask: Graphics;
   private typingDots: Graphics;
@@ -45,30 +46,41 @@ export class SpeechBubble extends Container {
 
   // Text truncation and height clamping
   private readonly MAX_LINES = 5;
-  private readonly LINE_HEIGHT = 15;
+  private readonly LINE_HEIGHT = 16;
   private readonly MIN_HEIGHT = 80;
 
-  // Style constants per mode
+  // Style constants per mode — pixel-art RPG dialog box palette
   private static readonly STYLES = {
     response: {
-      bg: 0xffffff,
-      bgAlpha: 0.95,
-      border: 0xddd8d0,
-      textFill: 0x333333,
-      tailColor: 0xffffff,
+      bg: 0xfaf6ee,           // warm parchment
+      bgAlpha: 0.97,
+      borderOuter: 0x5a4a3a,  // dark brown outer border
+      borderInner: 0xd4c8b0,  // lighter inner border
+      textFill: 0x3a2e22,     // warm dark brown text
+      tailColor: 0xfaf6ee,
+      tailBorder: 0x5a4a3a,
+      shadowColor: 0x3a2e1a,
+      dotColor: 0x8a7a66,
     },
     question: {
-      bg: 0xfff4d6,
-      bgAlpha: 0.97,
-      border: 0xf0c866,
-      textFill: 0x5a4a2a,
-      tailColor: 0xfff4d6,
+      bg: 0xfff3c8,           // warm gold
+      bgAlpha: 0.98,
+      borderOuter: 0x8a6a20,  // dark gold outer border
+      borderInner: 0xe8c44a,  // bright gold inner border
+      textFill: 0x4a3a10,     // dark warm text
+      tailColor: 0xfff3c8,
+      tailBorder: 0x8a6a20,
+      shadowColor: 0x5a4a10,
+      dotColor: 0xc49a2a,
     },
   } as const;
 
   private readonly MAX_WIDTH = 260;
-  private readonly PADDING = 10;
-  private readonly TAIL_HEIGHT = 8;
+  private readonly PADDING = 12;
+  private readonly TAIL_HEIGHT = 10;
+  private readonly BORDER_OUTER = 2;
+  private readonly BORDER_INNER = 1;
+  private readonly CORNER_RADIUS = 4; // tight pixel-art corners
 
   constructor() {
     super();
@@ -78,25 +90,34 @@ export class SpeechBubble extends Container {
     this.shadow = new Graphics();
     this.addChild(this.shadow);
 
-    // Bubble background
+    // Bubble background (outer border filled)
     this.bubble = new Graphics();
     this.addChild(this.bubble);
 
-    // Tail (redrawn per mode)
+    // Inner border highlight
+    this.innerBorder = new Graphics();
+    this.addChild(this.innerBorder);
+
+    // Tail border (drawn behind tail fill)
+    this.tailBorder = new Graphics();
+    this.addChild(this.tailBorder);
+
+    // Tail fill
     this.tail = new Graphics();
     this.addChild(this.tail);
     this.drawTail();
 
-    // Text
+    // Text — DM Mono for readability with pixel character
     this.textDisplay = new Text({
       text: '',
       style: new TextStyle({
-        fontFamily: 'system-ui, -apple-system, sans-serif',
+        fontFamily: '"DM Mono", "Courier New", monospace',
         fontSize: 11,
-        fill: 0x333333,
+        fill: 0x3a2e22,
         wordWrap: true,
         wordWrapWidth: this.MAX_WIDTH - this.PADDING * 2,
         lineHeight: this.LINE_HEIGHT,
+        letterSpacing: 0.2,
       }),
     });
     this.addChild(this.textDisplay);
@@ -218,10 +239,20 @@ export class SpeechBubble extends Container {
   /** Draw (or redraw) the tail triangle for the current mode */
   private drawTail(): void {
     const s = SpeechBubble.STYLES[this.mode];
-    this.tail.clear();
+
+    // Tail border (slightly larger, drawn behind)
+    this.tailBorder.clear();
+    const borderPad = this.BORDER_OUTER;
 
     if (this.mode === 'question') {
-      // Question tail: wider, slightly offset to the left for distinction
+      // Question tail: slightly offset left
+      this.tailBorder.moveTo(-11 - borderPad, 0)
+        .lineTo(-2, this.TAIL_HEIGHT + 3 + borderPad)
+        .lineTo(7 + borderPad, 0)
+        .closePath()
+        .fill({ color: s.tailBorder });
+
+      this.tail.clear();
       this.tail.moveTo(-9, 0)
         .lineTo(-2, this.TAIL_HEIGHT + 2)
         .lineTo(5, 0)
@@ -229,6 +260,13 @@ export class SpeechBubble extends Container {
         .fill({ color: s.tailColor });
     } else {
       // Response tail: centered
+      this.tailBorder.moveTo(-9 - borderPad, 0)
+        .lineTo(0, this.TAIL_HEIGHT + 2 + borderPad)
+        .lineTo(9 + borderPad, 0)
+        .closePath()
+        .fill({ color: s.tailBorder });
+
+      this.tail.clear();
       this.tail.moveTo(-7, 0)
         .lineTo(0, this.TAIL_HEIGHT + 1)
         .lineTo(7, 0)
@@ -244,13 +282,8 @@ export class SpeechBubble extends Container {
   private truncateText(text: string): string {
     if (!text) return ' ';
 
-    // Use a temporary text measurement approach:
-    // We rely on word-wrapping. Set the text, measure how many lines it produces,
-    // and if too many, trim from the front.
-    // Since we can't easily measure without setting it, we do a character-based heuristic.
     const wrapWidth = this.MAX_WIDTH - this.PADDING * 2;
     const charsPerLine = Math.floor(wrapWidth / 6); // ~6px per char at fontSize 11
-    // Allow more lines based on available space (position.y tells us how much room we have)
     const dynamicMaxLines = Math.max(this.MAX_LINES, Math.floor((this.position.y - 40) / this.LINE_HEIGHT));
     const maxChars = charsPerLine * dynamicMaxLines;
 
@@ -271,43 +304,63 @@ export class SpeechBubble extends Container {
 
     // If showing dots, use a fixed small bubble size
     if (this.showingDots) {
-      const dotsW = 50;
-      const dotsH = 28;
+      const dotsW = 54;
+      const dotsH = 30;
 
+      // Shadow
       this.shadow.clear();
-      this.shadow.roundRect(-dotsW / 2 + 1, -this.TAIL_HEIGHT - dotsH + 2, dotsW, dotsH, 10)
-        .fill({ color: 0x000000, alpha: 0.06 });
+      this.shadow.roundRect(-dotsW / 2 + 2, -this.TAIL_HEIGHT - dotsH + 3, dotsW, dotsH, this.CORNER_RADIUS)
+        .fill({ color: s.shadowColor, alpha: 0.15 });
 
+      // Outer border (dark)
       this.bubble.clear();
-      this.bubble.roundRect(-dotsW / 2, -this.TAIL_HEIGHT - dotsH, dotsW, dotsH, 10)
-        .fill({ color: s.bg, alpha: s.bgAlpha })
-        .stroke({ color: s.border, width: 1 });
+      this.bubble.roundRect(-dotsW / 2, -this.TAIL_HEIGHT - dotsH, dotsW, dotsH, this.CORNER_RADIUS)
+        .fill({ color: s.borderOuter });
+
+      // Inner fill with inset
+      const inset = this.BORDER_OUTER;
+      this.innerBorder.clear();
+      this.innerBorder.roundRect(
+        -dotsW / 2 + inset,
+        -this.TAIL_HEIGHT - dotsH + inset,
+        dotsW - inset * 2,
+        dotsH - inset * 2,
+        Math.max(1, this.CORNER_RADIUS - 1),
+      ).fill({ color: s.borderInner });
+
+      // Inner fill
+      const inset2 = inset + this.BORDER_INNER;
+      this.innerBorder.roundRect(
+        -dotsW / 2 + inset2,
+        -this.TAIL_HEIGHT - dotsH + inset2,
+        dotsW - inset2 * 2,
+        dotsH - inset2 * 2,
+        Math.max(1, this.CORNER_RADIUS - 2),
+      ).fill({ color: s.bg, alpha: s.bgAlpha });
 
       // Center the dots container in the bubble
       this.typingDots.position.set(0, -this.TAIL_HEIGHT - dotsH / 2);
 
       this.tail.position.set(0, -this.TAIL_HEIGHT);
+      this.tailBorder.position.set(0, -this.TAIL_HEIGHT);
       return;
     }
 
     const textW = Math.min(this.textDisplay.width + this.PADDING * 2, this.MAX_WIDTH);
-    // Dynamically calculate max height based on how much vertical space
-    // is available above this bubble in the scene (position.y = distance from top)
     const availableHeight = Math.max(this.MIN_HEIGHT, this.position.y - 20);
     const maxTextH = Math.min(availableHeight - this.PADDING * 2 - this.TAIL_HEIGHT, availableHeight);
     const rawTextH = this.textDisplay.height;
     const clampedTextH = Math.min(rawTextH, maxTextH);
     const textH = clampedTextH + this.PADDING * 2;
 
-    // Position text inside bubble — if text is taller than clamped area,
-    // offset upward so the bottom (latest) text is visible (scroll-to-bottom)
+    // Position text inside bubble
     const textYOffset = rawTextH > clampedTextH ? clampedTextH - rawTextH : 0;
     this.textDisplay.position.set(
       -textW / 2 + this.PADDING,
       -this.TAIL_HEIGHT - textH + this.PADDING + textYOffset
     );
 
-    // Update clip mask so text doesn't overflow the bubble bounds
+    // Update clip mask
     this.textMask.clear();
     this.textMask.rect(
       -textW / 2 + this.PADDING,
@@ -316,27 +369,49 @@ export class SpeechBubble extends Container {
       clampedTextH
     ).fill({ color: 0xffffff });
 
-    // Draw drop shadow (offset by 1,2 behind the main bubble)
+    // Drop shadow — offset down-right, warm tone
     this.shadow.clear();
-    this.shadow.roundRect(-textW / 2 + 1, -this.TAIL_HEIGHT - textH + 2, textW, textH, 10)
-      .fill({ color: 0x000000, alpha: 0.06 });
+    this.shadow.roundRect(-textW / 2 + 2, -this.TAIL_HEIGHT - textH + 3, textW, textH, this.CORNER_RADIUS)
+      .fill({ color: s.shadowColor, alpha: 0.15 });
 
-    // Draw bubble background
+    // Outer border (dark frame)
     this.bubble.clear();
-    this.bubble.roundRect(-textW / 2, -this.TAIL_HEIGHT - textH, textW, textH, 10)
-      .fill({ color: s.bg, alpha: s.bgAlpha })
-      .stroke({ color: s.border, width: 1 });
+    this.bubble.roundRect(-textW / 2, -this.TAIL_HEIGHT - textH, textW, textH, this.CORNER_RADIUS)
+      .fill({ color: s.borderOuter });
+
+    // Inner border highlight (1px lighter line inside the dark border)
+    const inset = this.BORDER_OUTER;
+    this.innerBorder.clear();
+    this.innerBorder.roundRect(
+      -textW / 2 + inset,
+      -this.TAIL_HEIGHT - textH + inset,
+      textW - inset * 2,
+      textH - inset * 2,
+      Math.max(1, this.CORNER_RADIUS - 1),
+    ).fill({ color: s.borderInner });
+
+    // Main fill (inside both borders)
+    const inset2 = inset + this.BORDER_INNER;
+    this.innerBorder.roundRect(
+      -textW / 2 + inset2,
+      -this.TAIL_HEIGHT - textH + inset2,
+      textW - inset2 * 2,
+      textH - inset2 * 2,
+      Math.max(1, this.CORNER_RADIUS - 2),
+    ).fill({ color: s.bg, alpha: s.bgAlpha });
 
     // Position tail at bottom center
     this.tail.position.set(0, -this.TAIL_HEIGHT);
+    this.tailBorder.position.set(0, -this.TAIL_HEIGHT);
   }
 
   /** Draw the 3 bouncing typing dots */
   private drawTypingDots(): void {
     this.typingDots.clear();
+    const s = SpeechBubble.STYLES[this.mode];
 
     const dotRadius = 2.5;
-    const spacing = 8;
+    const spacing = 9;
     const baseY = 0;
 
     for (let i = 0; i < 3; i++) {
@@ -345,11 +420,11 @@ export class SpeechBubble extends Container {
       const x = (i - 1) * spacing; // center the 3 dots
       const y = baseY - Math.max(0, -bounce); // only bounce upward
 
-      // Slight alpha variation for liveliness
-      const alpha = 0.5 + 0.3 * Math.max(0, Math.sin(phase));
+      // Alpha variation for liveliness
+      const alpha = 0.6 + 0.35 * Math.max(0, Math.sin(phase));
 
       this.typingDots.circle(x, y, dotRadius)
-        .fill({ color: 0x999999, alpha });
+        .fill({ color: s.dotColor, alpha });
     }
   }
 

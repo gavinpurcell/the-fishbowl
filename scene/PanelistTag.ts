@@ -18,6 +18,7 @@ function parseColor(color: string): number {
 export class PanelistTag extends Container {
   private bg: Graphics;
   private accent: Graphics;
+  private borderGraphics: Graphics;
   private nameText: Text;
   private roleText: Text;
   private align: TagAlign;
@@ -26,6 +27,10 @@ export class PanelistTag extends Container {
     super();
     this.align = align;
 
+    // Border drawn behind bg
+    this.borderGraphics = new Graphics();
+    this.addChild(this.borderGraphics);
+
     this.bg = new Graphics();
     this.addChild(this.bg);
 
@@ -33,13 +38,13 @@ export class PanelistTag extends Container {
     this.addChild(this.accent);
 
     this.nameText = new Text({
-      text: name,
+      text: name.toUpperCase(),
       style: new TextStyle({
-        fontFamily: 'Outfit, system-ui, sans-serif',
-        fontSize: 15,
+        fontFamily: "'Silkscreen', 'Courier New', monospace",
+        fontSize: 11,
         fontWeight: '700',
-        fill: 0xffffff,
-        letterSpacing: 0.3,
+        fill: 0xfff8e8,
+        letterSpacing: 1.0,
       }),
     });
     this.addChild(this.nameText);
@@ -49,8 +54,8 @@ export class PanelistTag extends Container {
       style: new TextStyle({
         fontFamily: '"DM Mono", monospace',
         fontSize: 9,
-        fill: 0xe9dcc4,
-        letterSpacing: 1.2,
+        fill: 0xc8b898,
+        letterSpacing: 1.0,
       }),
     });
     this.addChild(this.roleText);
@@ -59,24 +64,36 @@ export class PanelistTag extends Container {
   }
 
   private render(accentColor: number): void {
-    const paddingX = 12;
-    const paddingTop = 8;
-    const gap = 4;
+    const paddingX = 14;
+    const paddingTop = 7;
+    const gap = 3;
+    const accentWidth = 3;
     const roleY = paddingTop + this.nameText.height + gap;
-    const width = Math.max(this.nameText.width, this.roleText.width) + paddingX * 2;
-    const height = roleY + this.roleText.height + 8;
+    const contentWidth = Math.max(this.nameText.width, this.roleText.width);
+    const width = contentWidth + paddingX * 2 + accentWidth;
+    const height = roleY + this.roleText.height + 7;
     const left = this.align === 'right' ? -width : this.align === 'center' ? -width / 2 : 0;
 
+    // Outer border (1px darker frame)
+    this.borderGraphics.clear();
+    this.borderGraphics.roundRect(left - 1, -1, width + 2, height + 2, 4)
+      .fill({ color: 0x000000, alpha: 0.35 });
+
+    // Background panel
     this.bg.clear();
-    this.bg.roundRect(left, 0, width, height, 12)
-      .fill({ color: 0x241811, alpha: 0.74 })
-      .stroke({ color: 0xf5ddaf, alpha: 0.18, width: 1 });
+    this.bg.roundRect(left, 0, width, height, 3)
+      .fill({ color: 0x1e150e, alpha: 0.82 });
 
+    // Accent stripe — clean left edge, no rounding
     this.accent.clear();
-    this.accent.roundRect(left, 0, 4, height, 12)
+    this.accent.rect(left, 0, accentWidth, height)
       .fill({ color: accentColor, alpha: 0.95 });
+    // Tiny highlight on top half of stripe
+    this.accent.rect(left, 0, accentWidth, height / 2)
+      .fill({ color: 0xffffff, alpha: 0.12 });
 
-    this.nameText.position.set(left + paddingX + 4, paddingTop);
-    this.roleText.position.set(left + paddingX + 4, roleY);
+    const textLeft = left + accentWidth + paddingX;
+    this.nameText.position.set(textLeft, paddingTop);
+    this.roleText.position.set(textLeft, roleY);
   }
 }
