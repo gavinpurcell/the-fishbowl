@@ -26,7 +26,7 @@ const ROUND_LABELS: Record<RoundType, string> = {
 export default function StatusBar({ round, panelistsSpoken, totalPanelists, onWrapUp, canWrapUp, modelLabel, costDollars, totalTokens, isOllama }: Props) {
   return (
     <div
-      className="flex items-center justify-between px-5 py-2.5 max-w-[800px] mx-auto rounded-b-xl"
+      className="flex flex-wrap items-center justify-between gap-2 px-3 sm:px-5 py-2.5 max-w-[800px] mx-auto rounded-b-xl"
       style={{ background: 'var(--bg-surface)', borderTop: '1px solid var(--border)' }}
     >
       <div className="flex items-center gap-2.5">
@@ -35,14 +35,14 @@ export default function StatusBar({ round, panelistsSpoken, totalPanelists, onWr
           {ROUND_LABELS[round]}
         </span>
       </div>
-      <div className="flex items-center gap-4">
+      <div className="flex flex-wrap items-center gap-2 sm:gap-4">
         {modelLabel && (
-          <span className="text-xs font-mono" style={{ color: 'var(--text-muted)' }}>
+          <span className="hidden sm:inline text-xs font-mono" style={{ color: 'var(--text-muted)' }}>
             {modelLabel}
           </span>
         )}
         {totalTokens != null && totalTokens > 0 && (
-          <span className="text-xs font-mono" style={{ color: 'var(--text-muted)' }}>
+          <span className="hidden sm:inline text-xs font-mono" style={{ color: 'var(--text-muted)' }}>
             {isOllama ? 'Free (local)' : `${formatCost(costDollars || 0)} · ${formatTokens(totalTokens)} tokens`}
           </span>
         )}
@@ -58,14 +58,15 @@ export default function StatusBar({ round, panelistsSpoken, totalPanelists, onWr
               fontFamily: "'Outfit', sans-serif",
               fontSize: '13px',
               fontWeight: 600,
-              padding: '8px 18px',
+              padding: '8px 14px',
               borderRadius: '8px',
               border: 'none',
               cursor: 'pointer',
               boxShadow: '0 2px 8px rgba(196, 154, 42, 0.4)',
             }}
           >
-            I'm Done Asking Questions
+            <span className="hidden sm:inline">I&apos;m Done Asking Questions</span>
+            <span className="sm:hidden">Wrap Up</span>
           </button>
         )}
       </div>

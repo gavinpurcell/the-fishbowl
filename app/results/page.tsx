@@ -106,9 +106,9 @@ export default function ResultsPage() {
         style={{ background: 'var(--accent-gold)' }}
       />
 
-      <div className="max-w-3xl mx-auto px-6 py-12">
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
         {/* Header */}
-        <div className="mb-8 animate-fade-in">
+        <div className="mb-6 sm:mb-8 animate-fade-in">
           <div
             className="label-mono text-[10px] mb-2 tracking-widest"
             style={{ color: 'var(--text-muted)' }}
@@ -116,7 +116,7 @@ export default function ResultsPage() {
             SESSION COMPLETE
           </div>
           <h1
-            className="text-3xl font-bold tracking-tight mb-3"
+            className="text-2xl sm:text-3xl font-bold tracking-tight mb-3"
             style={{ color: 'var(--text-primary)' }}
           >
             Your Fishbowl Results
@@ -172,7 +172,7 @@ export default function ResultsPage() {
         >
           {/* Section label inside the card */}
           <div
-            className="px-6 pt-5 pb-3 flex items-center gap-2"
+            className="px-4 sm:px-6 pt-4 sm:pt-5 pb-3 flex items-center gap-2"
             style={{ borderBottom: '1px solid var(--border)' }}
           >
             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: 'var(--accent-gold)' }}>
@@ -195,7 +195,7 @@ export default function ResultsPage() {
             </span>
           </div>
           <div
-            className="p-6 transition-opacity duration-150 ease-in-out"
+            className="p-4 sm:p-6 transition-opacity duration-150 ease-in-out"
             style={{ opacity: viewTransition ? 0 : 1 }}
           >
             {exportMode === 'summary' && store.summary ? (
@@ -273,7 +273,7 @@ export default function ResultsPage() {
         <div className="flex flex-col items-center animate-fade-in animate-fade-in-delay-4">
           <button
             onClick={handleNewSession}
-            className="px-12 py-4 rounded-xl text-lg font-semibold cursor-pointer transition-all duration-200 flex items-center gap-2 cta-glow"
+            className="px-8 sm:px-12 py-3.5 sm:py-4 rounded-xl text-base sm:text-lg font-semibold cursor-pointer transition-all duration-200 flex items-center gap-2 cta-glow"
             style={{
               background: 'var(--accent-gold)',
               color: 'var(--bg-deep)',

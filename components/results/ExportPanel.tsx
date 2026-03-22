@@ -153,7 +153,7 @@ export default function ExportPanel({ transcript, summary, mode, onModeChange }:
       </div>
 
       {/* Action buttons */}
-      <div className="flex gap-2">
+      <div className="flex flex-col sm:flex-row gap-2">
         <button
           onClick={handleCopyToClipboard}
           className="flex-1 rounded-lg px-3 py-2.5 text-sm font-semibold cursor-pointer transition-all duration-200 hover:brightness-95 inline-flex items-center justify-center gap-1.5"

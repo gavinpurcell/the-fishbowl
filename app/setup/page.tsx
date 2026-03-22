@@ -45,14 +45,14 @@ export default function SetupPage() {
       {/* Ambient glow */}
       <div className="fixed top-0 left-1/2 -translate-x-1/2 w-[600px] h-[400px] bg-[var(--accent-gold)] opacity-[0.08] rounded-full blur-[120px] pointer-events-none" />
 
-      <div className="max-w-4xl mx-auto px-6 py-16 relative">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8 sm:py-16 relative">
         {/* Header */}
-        <div className="text-center mb-16 animate-fade-in">
-          <div className="label-mono mb-4">AI Focus Group</div>
-          <h1 className="text-5xl font-800 tracking-tight" style={{ color: 'var(--text-primary)' }}>
+        <div className="text-center mb-8 sm:mb-16 animate-fade-in">
+          <div className="label-mono mb-3 sm:mb-4">AI Focus Group</div>
+          <h1 className="text-3xl sm:text-5xl font-800 tracking-tight" style={{ color: 'var(--text-primary)' }}>
             The Fishbowl
           </h1>
-          <p className="mt-3 text-lg" style={{ color: 'var(--text-secondary)' }}>
+          <p className="mt-2 sm:mt-3 text-base sm:text-lg" style={{ color: 'var(--text-secondary)' }}>
             Watch AI experts debate your ideas. Then step in and ask questions.
           </p>
         </div>
@@ -143,7 +143,7 @@ export default function SetupPage() {
               </div>
             )}
 
-            <div className="flex items-center justify-between pt-6" style={{ borderTop: '1px solid var(--border)' }}>
+            <div className="flex flex-col-reverse sm:flex-row items-center justify-between gap-3 pt-6" style={{ borderTop: '1px solid var(--border)' }}>
               <button
                 onClick={() => setStep('template')}
                 className="text-sm transition-colors"
@@ -156,7 +156,7 @@ export default function SetupPage() {
               <button
                 onClick={handleStart}
                 disabled={!canStart}
-                className="px-8 py-3 rounded-lg font-600 text-sm transition-all disabled:opacity-30 disabled:cursor-not-allowed glow-gold"
+                className="w-full sm:w-auto px-8 py-3 rounded-lg font-600 text-sm transition-all disabled:opacity-30 disabled:cursor-not-allowed glow-gold"
                 style={{
                   background: canStart ? 'var(--accent-gold)' : 'var(--border)',
                   color: canStart ? 'var(--bg-deep)' : 'var(--text-muted)',

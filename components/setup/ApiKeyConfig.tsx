@@ -29,12 +29,12 @@ export default function ApiKeyConfig({ provider, apiKey, modelId, onProviderChan
     <div>
       <div className="label-mono mb-4">API Key</div>
 
-      <div className="flex gap-2 mb-3">
+      <div className="flex flex-wrap gap-2 mb-3">
         {(['claude', 'openai', 'claude-code', 'ollama'] as ProviderType[]).map((p) => (
           <button
             key={p}
             onClick={() => onProviderChange(p)}
-            className="px-4 py-2 rounded-lg text-xs font-500 transition-all"
+            className="px-3 sm:px-4 py-2 rounded-lg text-xs font-500 transition-all"
             style={{
               background: provider === p ? 'var(--accent-gold)' : 'var(--bg-surface)',
               color: provider === p ? 'var(--bg-deep)' : 'var(--text-secondary)',

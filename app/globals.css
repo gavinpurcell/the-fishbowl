@@ -101,7 +101,19 @@ body::before {
 }
 
 /* Global focus-visible ring for keyboard navigation */
-button:focus-visible, input:focus-visible, a:focus-visible {
+button:focus-visible, input:focus-visible, a:focus-visible, textarea:focus-visible, select:focus-visible {
   outline: 2px solid var(--accent-gold);
   outline-offset: 2px;
+}
+
+/* Prevent horizontal overflow on mobile */
+html, body {
+  overflow-x: hidden;
+}
+
+/* Ensure minimum touch target size on mobile */
+@media (max-width: 640px) {
+  button, a, select {
+    min-height: 36px;
+  }
 }

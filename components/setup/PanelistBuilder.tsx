@@ -74,18 +74,18 @@ export default function PanelistBuilder({ panelists, onUpdate }: Props) {
       <div className="space-y-2 mb-4">
         {panelists.map((p) => (
           <div key={p.id} className="rounded-xl overflow-hidden" style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)' }}>
-            <div className="flex items-center gap-3 p-4">
-              <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-600" style={{ backgroundColor: p.color + '25', color: p.color, border: `1px solid ${p.color}50` }}>
+            <div className="flex items-center gap-2 sm:gap-3 p-3 sm:p-4 flex-wrap">
+              <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-600 shrink-0" style={{ backgroundColor: p.color + '25', color: p.color, border: `1px solid ${p.color}50` }}>
                 {p.name.charAt(0)}
               </div>
               <div className="flex-1 min-w-0">
-                <span className="font-500" style={{ color: 'var(--text-primary)' }}>{p.name}</span>
-                <span className="ml-2 text-sm" style={{ color: 'var(--text-muted)' }}>— {p.role}</span>
+                <span className="font-500 text-sm sm:text-base" style={{ color: 'var(--text-primary)' }}>{p.name}</span>
+                <span className="ml-2 text-xs sm:text-sm" style={{ color: 'var(--text-muted)' }}>— {p.role}</span>
               </div>
-              <button onClick={() => editingId === p.id ? setEditingId(null) : startEditing(p)} className="text-xs transition-colors" style={{ color: 'var(--accent-gold)' }}>
-                {editingId === p.id ? 'Close' : 'Edit Prompt'}
+              <button onClick={() => editingId === p.id ? setEditingId(null) : startEditing(p)} className="text-xs transition-colors shrink-0" style={{ color: 'var(--accent-gold)' }}>
+                {editingId === p.id ? 'Close' : 'Edit'}
               </button>
-              <button onClick={() => removePanelist(p.id)} className="text-xs transition-colors" style={{ color: 'var(--text-muted)' }}>
+              <button onClick={() => removePanelist(p.id)} className="text-xs transition-colors shrink-0" style={{ color: 'var(--text-muted)' }}>
                 Remove
               </button>
             </div>
@@ -114,7 +114,7 @@ export default function PanelistBuilder({ panelists, onUpdate }: Props) {
       {panelists.length < 5 && (
         <div className="rounded-xl p-4" style={{ background: 'var(--bg-surface)', border: '1px dashed var(--border-light)' }}>
           <div className="label-mono mb-3">Add a panelist</div>
-          <div className="grid grid-cols-2 gap-3 mb-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
             <input value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="Name" style={inputStyle} />
             <input value={newRole} onChange={(e) => setNewRole(e.target.value)} placeholder="Role" style={inputStyle} />
           </div>

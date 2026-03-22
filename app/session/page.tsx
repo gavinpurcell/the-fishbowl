@@ -401,34 +401,25 @@ export default function SessionPage() {
 
   return (
     <div className="min-h-screen">
-      {/* Mobile fallback */}
-      <div className="md:hidden flex items-center justify-center min-h-screen p-8 text-center">
-        <div>
-          <h2 className="text-xl font-700 mb-2" style={{ color: 'var(--text-primary)' }}>Open on desktop</h2>
-          <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>The Fishbowl requires a larger screen.</p>
-          <button onClick={() => router.replace('/setup')} className="mt-4 px-4 py-2 rounded-lg text-sm" style={{ background: 'var(--accent-gold)', color: 'var(--bg-deep)' }}>Go Back</button>
-        </div>
-      </div>
-
-      {/* Desktop */}
-      <div className="hidden md:block">
-        <div className="max-w-5xl mx-auto px-6 py-6">
+      {/* Main session content */}
+      <div>
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 py-4 sm:py-6">
           <div className="text-center mb-4">
             <div className="label-mono mb-1">Live Session</div>
-            <h1 className="text-2xl font-700 tracking-tight" style={{ color: 'var(--text-primary)' }}>The Fishbowl</h1>
+            <h1 className="text-xl sm:text-2xl font-700 tracking-tight" style={{ color: 'var(--text-primary)' }}>The Fishbowl</h1>
           </div>
 
           {/* === BRIEFING VIEW === */}
           {viewMode === 'briefing' && (
             <div className="max-w-[800px] mx-auto">
               {briefingIndex < 0 ? (
-                <div className="text-center py-20">
-                  <p className="text-lg" style={{ color: 'var(--text-secondary)' }}>Your panel of {store.panelists.length} experts is ready.</p>
-                  <div className="flex justify-center gap-3 mt-6">
+                <div className="text-center py-12 sm:py-20">
+                  <p className="text-base sm:text-lg" style={{ color: 'var(--text-secondary)' }}>Your panel of {store.panelists.length} experts is ready.</p>
+                  <div className="flex justify-center gap-3 mt-6 flex-wrap">
                     {store.panelists.map((p) => (
                       <div key={p.id} className="flex flex-col items-center gap-1">
                       <div
-                        className="relative w-12 h-12 rounded-full overflow-hidden"
+                        className="relative w-10 h-10 sm:w-12 sm:h-12 rounded-full overflow-hidden"
                         style={{ border: `2px solid ${p.color}` }}
                       >
                         <img
@@ -450,11 +441,11 @@ export default function SessionPage() {
                 </div>
               ) : currentPanelist && (
                 <div className="rounded-xl overflow-hidden animate-fade-in" key={currentPanelist.id} style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)' }}>
-                  <div className="flex">
-                    <div className="w-64 flex-shrink-0 flex flex-col items-center justify-center py-10 px-6"
-                      style={{ background: currentPanelist.color + '12', borderRight: '1px solid var(--border)' }}>
+                  <div className="flex flex-col sm:flex-row">
+                    <div className="sm:w-64 flex-shrink-0 flex flex-col items-center justify-center py-6 sm:py-10 px-4 sm:px-6 border-b sm:border-b-0 sm:border-r"
+                      style={{ background: currentPanelist.color + '12', borderColor: 'var(--border)' }}>
                       <div
-                        className="relative w-24 h-24 rounded-full overflow-hidden mb-4"
+                        className="relative w-16 h-16 sm:w-24 sm:h-24 rounded-full overflow-hidden mb-3 sm:mb-4"
                         style={{ border: `3px solid ${currentPanelist.color}` }}
                       >
                         <img
@@ -470,17 +461,17 @@ export default function SessionPage() {
                         />
                       </div>
                       <div className="text-center">
-                        <div className="text-lg font-700" style={{ color: 'var(--text-primary)' }}>{currentPanelist.name}</div>
+                        <div className="text-base sm:text-lg font-700" style={{ color: 'var(--text-primary)' }}>{currentPanelist.name}</div>
                         <div className="label-mono mt-1" style={{ color: currentPanelist.color }}>{currentPanelist.role}</div>
                       </div>
-                      <p className="text-xs text-center mt-3 leading-relaxed px-2" style={{ color: 'var(--text-muted)' }}>
+                      <p className="text-xs text-center mt-2 sm:mt-3 leading-relaxed px-2 hidden sm:block" style={{ color: 'var(--text-muted)' }}>
                         {currentPanelist.description}
                       </p>
-                      <div className="mt-4 label-mono" style={{ fontSize: '9px' }}>
+                      <div className="mt-2 sm:mt-4 label-mono" style={{ fontSize: '9px' }}>
                         Panelist {briefingIndex + 1} of {store.panelists.length}
                       </div>
                     </div>
-                    <div className="flex-1 p-8">
+                    <div className="flex-1 p-4 sm:p-8">
                       <div className="label-mono mb-3" style={{ color: currentPanelist.color }}>Initial Take</div>
                       {briefingText ? (
                         <p className="text-sm leading-relaxed whitespace-pre-wrap" style={{ color: 'var(--text-secondary)' }}>
@@ -507,6 +498,10 @@ export default function SessionPage() {
 
           {/* === ROUNDTABLE (PixiJS canvas always in DOM, hidden until needed) === */}
           <div style={{ display: viewMode === 'roundtable' ? 'block' : 'none' }}>
+            {/* On small screens, show a note that the scene is best on desktop */}
+            <div className="sm:hidden text-center mb-2">
+              <p className="text-xs" style={{ color: 'var(--text-muted)' }}>Scene best viewed on a wider screen</p>
+            </div>
             <div
               ref={sceneContainerRef}
               className="w-full max-w-[800px] mx-auto rounded-t-xl overflow-hidden shadow-lg"
