@@ -38,6 +38,7 @@ export default function WrapUpOverlay({
   const [phase, setPhase] = useState<'dimming' | 'title' | 'stats' | 'compiling' | 'done'>('dimming');
   const summaryStartedRef = useRef(false);
   const completeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const timeoutTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Phase choreography — driven by timers like TransitionOverlay
   useEffect(() => {
@@ -67,9 +68,16 @@ export default function WrapUpOverlay({
     }
   }, [phase, onStartSummary]);
 
-  // When summary is ready, transition to done and then navigate
+  // When summary is ready, transition to done and then navigate.
+  // Handles race condition: if summaryReady arrives before 'compiling' phase,
+  // the effect re-fires when phase changes and catches it.
   useEffect(() => {
     if (summaryReady && phase === 'compiling') {
+      // Clear timeout failsafe since summary arrived
+      if (timeoutTimerRef.current) {
+        clearTimeout(timeoutTimerRef.current);
+        timeoutTimerRef.current = null;
+      }
       // Brief pause so user sees the completion
       completeTimerRef.current = setTimeout(() => {
         setPhase('done');
@@ -80,6 +88,22 @@ export default function WrapUpOverlay({
       if (completeTimerRef.current) clearTimeout(completeTimerRef.current);
     };
   }, [summaryReady, phase]);
+
+  // Timeout failsafe: if compiling phase lasts more than 45s, auto-transition to done
+  useEffect(() => {
+    if (phase === 'compiling') {
+      timeoutTimerRef.current = setTimeout(() => {
+        setPhase('done');
+      }, 45_000);
+    }
+
+    return () => {
+      if (timeoutTimerRef.current) {
+        clearTimeout(timeoutTimerRef.current);
+        timeoutTimerRef.current = null;
+      }
+    };
+  }, [phase]);
 
   // When done phase triggers, wait for fade-out then navigate
   useEffect(() => {

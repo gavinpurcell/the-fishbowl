@@ -128,7 +128,9 @@ export default function SessionPage() {
   }, []);
 
   // Keep refs in sync
-  useEffect(() => { isSpeakingRef.current = isSpeaking; }, [isSpeaking]);
+  // Note: isSpeakingRef is updated directly alongside every setIsSpeaking() call
+  // rather than via useEffect, to avoid async desync during rapid state changes
+  // (e.g., moderation pagination where false→true happens faster than React can flush).
   useEffect(() => { viewModeRef.current = viewMode; }, [viewMode]);
 
   // Redirect to setup if no active session (don't redirect during wrap overlay)

@@ -155,7 +155,6 @@ export const useFishbowlStore = create<FishbowlState>()(
         ideaText: state.ideaText,
         ideaFiles: state.ideaFiles,
         provider: state.provider,
-        apiKey: state.apiKey,
         modelId: state.modelId,
         sessionCost: state.sessionCost,
         status: state.status,
