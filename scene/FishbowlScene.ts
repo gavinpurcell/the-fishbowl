@@ -422,8 +422,11 @@ export class FishbowlScene {
   setBubbleText(id: string, text: string): void {
     const bubble = this.bubbles.get(id);
     if (bubble) {
-      bubble.hide();
-      bubble.show(text);
+      if (!bubble.visible) {
+        bubble.show(text);
+      } else {
+        bubble.replaceText(text);
+      }
     }
   }
 

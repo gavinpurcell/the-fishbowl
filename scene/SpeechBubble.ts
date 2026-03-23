@@ -208,6 +208,26 @@ export class SpeechBubble extends Container {
     }
   }
 
+  /** Replace text content without hiding/showing the bubble (avoids flicker) */
+  replaceText(text: string): void {
+    this.fullText = text;
+    this.textDisplay.text = text;
+
+    // Ensure text is visible (not dots)
+    if (this.showingDots) {
+      this.showingDots = false;
+      this.typingDots.visible = false;
+      this.textDisplay.visible = true;
+    }
+
+    this.dirty = true;
+
+    if (this.visible) {
+      this.layout();
+      this.dirty = false;
+    }
+  }
+
   finishStreaming(): void {
     this.isStreaming = false;
     this.showingDots = false;

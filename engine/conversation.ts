@@ -457,7 +457,13 @@ export class ConversationOrchestrator {
 
     // If prefetch failed, fall back to a fresh live request with retry
     if (prefetched.error) {
-      this.prefetchedInitialTakes.delete(panelist.id);
+      if (round === 'initial-takes') {
+        this.prefetchedInitialTakes.delete(panelist.id);
+      } else if (round === 'cross-talk') {
+        this.prefetchedCrossTalk.delete(panelist.id);
+      } else if (round === 'moderation') {
+        this.prefetchedModeration.delete(panelist.id);
+      }
       await this._runSinglePanelist(panelist, round);
       return;
     }
@@ -609,7 +615,7 @@ export class ConversationOrchestrator {
     this.callbacks.onRoundChange('summary');
     const transcriptContext = this.buildTranscriptContext();
 
-    const prompt = `${transcriptContext}\n\nSynthesize this discussion into a structured summary with these sections:\n\nKey Insights: The most important points raised.\n\nPoints of Agreement: Where the panelists aligned.\n\nPoints of Disagreement: Where they diverged and why.\n\nTop Recommendations: The 3 to 5 most actionable next steps, in priority order.\n\nBe specific and reference which panelists made which points. Write in plain text only. Do not use markdown formatting, em-dashes, bold, italic, headers, or bullet symbols. Use short paragraphs and line breaks to organize the sections.`;
+    const prompt = `${transcriptContext}\n\nSynthesize this discussion into a structured summary using the following markdown formatting:\n\nUse ## headings for each section (e.g., ## Key Insights). Use **bold** to emphasize panelist names and key phrases. Use - bullet lists for individual points. Use numbered lists (1. 2. 3.) for ranked recommendations. Use > blockquote lines for notable quotes from panelists, in the format: > "Quote text" — Panelist Name.\n\nInclude these sections:\n\n## Key Insights\nThe most important points raised, as bullet points.\n\n## Points of Agreement\nWhere the panelists aligned, as bullet points.\n\n## Points of Disagreement\nWhere they diverged and why, as bullet points.\n\n## Top Recommendations\nThe 3 to 5 most actionable next steps, as a numbered list in priority order.\n\nBe specific and reference which panelists made which points. Use **bold** for panelist names. Do not use em-dashes in prose — only use them in blockquote attributions.`;
 
     for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
       try {

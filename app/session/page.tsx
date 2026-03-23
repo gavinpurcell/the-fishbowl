@@ -246,12 +246,20 @@ export default function SessionPage() {
           firstChunkReceivedRef.current = false;
           storeRef.current.setActivePanelist(panelistId);
 
-          // During roundtable, show thinking state until first text chunk arrives
+          // During roundtable, update character state.
+          // Cross-talk responses are pre-cached, so they stream immediately —
+          // show 'talking' directly instead of 'thinking' (no wait for generation).
+          // For other rounds (e.g. moderation), show 'thinking' with indicator.
           const scene = sceneRef.current;
           if (scene && viewModeRef.current === 'roundtable') {
             scene.hideAllThinkingIndicators();
-            scene.setCharacterState(panelistId, 'thinking');
-            scene.showThinkingIndicator(panelistId);
+            const isCrossTalk = storeRef.current.currentRound === 'cross-talk';
+            if (isCrossTalk) {
+              scene.setCharacterState(panelistId, 'talking');
+            } else {
+              scene.setCharacterState(panelistId, 'thinking');
+              scene.showThinkingIndicator(panelistId);
+            }
             storeRef.current.panelists.forEach((p) => {
               if (p.id !== panelistId) {
                 scene.setCharacterState(p.id, 'idle');
@@ -550,7 +558,7 @@ export default function SessionPage() {
     }
     setIsSpeaking(false);
     isSpeakingRef.current = false;
-  }, [inModeration, waitForSpace, typeIntoBubble]);
+  }, [inModeration, waitForSpace, typeIntoBubble, showError]);
 
   const handleWrapUp = useCallback(async () => {
     const orchestrator = orchestratorRef.current;
@@ -604,7 +612,7 @@ export default function SessionPage() {
       showError(err instanceof Error ? err.message : 'Error during wrap-up.');
       setInModeration(true);
     }
-  }, [waitForSpace, typeIntoBubble]);
+  }, [waitForSpace, typeIntoBubble, showError]);
 
   // Called by WrapUpOverlay when its animation is ready for summary generation
   const handleWrapStartSummary = useCallback(async () => {
