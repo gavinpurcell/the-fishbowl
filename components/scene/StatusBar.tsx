@@ -44,7 +44,7 @@ export default function StatusBar({ round, panelistsSpoken, totalPanelists, onWr
 
   return (
     <div
-      className="max-w-[800px] mx-auto rounded-b-xl overflow-hidden"
+      className="max-w-[1000px] mx-auto rounded-b-xl overflow-hidden"
       style={{
         background: 'var(--dark-surface)',
         borderTop: '2px solid var(--dark-border)',

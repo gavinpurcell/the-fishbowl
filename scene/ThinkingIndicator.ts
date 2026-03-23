@@ -8,7 +8,7 @@ import { Container, Graphics } from 'pixi.js';
 export class ThinkingIndicator extends Container {
   private bg: Graphics;
   private borderOuter: Graphics;
-  private dots: Graphics[] = [];
+  private dotsGraphics: Graphics;
   private animTime = 0;
 
   private readonly DOT_RADIUS = 3;
@@ -17,8 +17,8 @@ export class ThinkingIndicator extends Container {
   private readonly NUM_DOTS = 3;
   private readonly PILL_WIDTH = 50;
   private readonly PILL_HEIGHT = 26;
-  private readonly BOUNCE_HEIGHT = 4;
-  private readonly PHASE_OFFSET = 0.6;
+  private readonly BOUNCE_HEIGHT = 8;
+  private readonly PHASE_OFFSET = 0.8;
   private readonly BORDER_COLOR = 0x5a4a3a;
   private readonly BG_COLOR = 0x1e150e;
 
@@ -52,17 +52,10 @@ export class ThinkingIndicator extends Container {
       .fill({ color: this.BG_COLOR, alpha: 0.78 });
     this.addChild(this.bg);
 
-    // Three dots, centered horizontally inside the pill
-    const totalDotsWidth = (this.NUM_DOTS - 1) * this.DOT_SPACING;
-    const startX = -totalDotsWidth / 2;
-
-    for (let i = 0; i < this.NUM_DOTS; i++) {
-      const dot = new Graphics();
-      dot.circle(0, 0, this.DOT_RADIUS).fill({ color: this.DOT_COLOR });
-      dot.position.set(startX + i * this.DOT_SPACING, 0);
-      this.addChild(dot);
-      this.dots.push(dot);
-    }
+    // Single Graphics object for all dots — redrawn each frame for animation
+    this.dotsGraphics = new Graphics();
+    this.addChild(this.dotsGraphics);
+    this.drawDots();
   }
 
   show(): void {
@@ -74,20 +67,36 @@ export class ThinkingIndicator extends Container {
     this.visible = false;
   }
 
+  /** Redraw the 3 dots at their current animated positions */
+  private drawDots(): void {
+    this.dotsGraphics.clear();
+
+    const totalDotsWidth = (this.NUM_DOTS - 1) * this.DOT_SPACING;
+    const startX = -totalDotsWidth / 2;
+
+    for (let i = 0; i < this.NUM_DOTS; i++) {
+      const phase = this.animTime + i * this.PHASE_OFFSET;
+      const bounce = Math.sin(phase * 3);
+      const clampedBounce = Math.max(0, bounce);
+      const x = startX + i * this.DOT_SPACING;
+      const y = -clampedBounce * this.BOUNCE_HEIGHT;
+      const alpha = 0.3 + 0.7 * clampedBounce;
+
+      this.dotsGraphics.circle(x, y, this.DOT_RADIUS)
+        .fill({ color: this.DOT_COLOR, alpha });
+    }
+  }
+
   update(delta: number): void {
     if (!this.visible) return;
 
     this.animTime += delta * 0.08;
 
-    for (let i = 0; i < this.dots.length; i++) {
-      const phase = this.animTime + i * this.PHASE_OFFSET;
-      // Use sin to create a smooth bounce; clamp to only move upward
-      const bounce = Math.sin(phase * 2.5);
-      this.dots[i].y = -Math.max(0, bounce) * this.BOUNCE_HEIGHT;
+    // Pulse the entire pill container — guaranteed visible in PixiJS v8
+    // since Container.scale transforms always trigger re-render
+    const pulse = 0.92 + Math.sin(this.animTime * 3.5) * 0.08;
+    this.scale.set(pulse);
 
-      // Subtle alpha pulse on each dot
-      const alpha = 0.7 + 0.3 * Math.max(0, bounce);
-      this.dots[i].alpha = alpha;
-    }
+    this.drawDots();
   }
 }

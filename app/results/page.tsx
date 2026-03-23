@@ -13,7 +13,6 @@ export default function ResultsPage() {
   const router = useRouter();
   const store = useFishbowlStore();
   const [exportMode, setExportMode] = useState<'summary' | 'transcript'>('summary');
-  const [videoUrl, setVideoUrl] = useState<string | null>(null);
   const [jsonSaved, setJsonSaved] = useState(false);
   const [viewTransition, setViewTransition] = useState(false);
 
@@ -23,12 +22,6 @@ export default function ResultsPage() {
       router.replace('/setup');
     }
   }, [store.status, store.transcript.length, router]);
-
-  // Check for video in sessionStorage
-  useEffect(() => {
-    const url = sessionStorage.getItem('fishbowl-video-url');
-    setVideoUrl(url);
-  }, []);
 
   const handleNewSession = () => {
     store.resetSession();
@@ -41,13 +34,6 @@ export default function ResultsPage() {
     setTimeout(() => setJsonSaved(false), 2000);
   }, [store]);
 
-  const handleDownloadVideo = () => {
-    if (!videoUrl) return;
-    const a = document.createElement('a');
-    a.href = videoUrl;
-    a.download = 'fishbowl-session.mp4';
-    a.click();
-  };
 
   // Smooth mode toggle with crossfade
   const handleModeChange = useCallback((mode: 'summary' | 'transcript') => {
@@ -304,18 +290,6 @@ export default function ResultsPage() {
                   </>
                 )}
               </button>
-              {videoUrl && (
-                <button
-                  onClick={handleDownloadVideo}
-                  className="action-badge"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <polygon points="23 7 16 12 23 17 23 7" />
-                    <rect x="1" y="5" width="15" height="14" rx="2" ry="2" />
-                  </svg>
-                  Video
-                </button>
-              )}
             </div>
           </div>
         </div>
