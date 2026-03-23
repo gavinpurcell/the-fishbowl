@@ -73,13 +73,13 @@ export default function TransitionOverlay({ panelists, onComplete, ready = true 
   }, [phase]);
 
   // When ready + min time passed, transition to LIVE then finish.
-  // Covers both cases: ready arriving after minTimePassed, and minTimePassed
-  // arriving (via phase change to 'thinking') after ready is already true.
+  // The finish timer is NOT in useEffect cleanup because setPhase('live')
+  // triggers a re-render which would cancel it. finish() is already guarded
+  // by hasCompletedRef so double-calls are safe.
   useEffect(() => {
     if (phase === 'thinking' && ready && minTimePassedRef.current && !hasCompletedRef.current) {
       setPhase('live');
-      const timer = setTimeout(finish, 1200);
-      return () => clearTimeout(timer);
+      setTimeout(finish, 1200);
     }
   }, [phase, ready, finish]);
 
