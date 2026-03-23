@@ -149,6 +149,36 @@ html, body {
   font-family: 'DM Mono', monospace;
 }
 
+/* Topic banner above the scene — reminds user what's being discussed */
+.topic-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 14px;
+  background: var(--dark-surface, #1a1a1a);
+  border: 1px solid var(--dark-border, #333);
+  border-bottom: none;
+  border-radius: 10px 10px 0 0;
+  font-family: 'DM Mono', monospace;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.topic-banner-label {
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent-gold);
+  flex-shrink: 0;
+}
+
+.topic-banner-text {
+  color: var(--text-muted, #999);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 /* Scene viewport — retro CRT-style frame */
 .scene-viewport {
   position: relative;
@@ -414,6 +444,9 @@ html, body {
   padding: 2px 8px;
   border-radius: 4px;
   white-space: nowrap;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* Card entrance animation — staggered pop-in */
@@ -581,17 +614,7 @@ html, body {
   overflow: hidden;
 }
 
-.section-header::after {
-  content: '';
-  flex: 1;
-  height: 1px;
-  max-width: 200px;
-  background: linear-gradient(
-    90deg,
-    var(--border) 0%,
-    transparent 100%
-  );
-}
+/* decorative line removed — was causing visual inconsistencies */
 
 /* Provider pill toggle */
 .provider-pill {

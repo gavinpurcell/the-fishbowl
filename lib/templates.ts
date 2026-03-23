@@ -187,4 +187,97 @@ export const PANEL_TEMPLATES: PanelTemplate[] = [
       },
     ],
   },
+  {
+    id: 'life-decision',
+    name: 'Life Decision',
+    description: 'Big crossroads — should you move, quit, go back to school, make the leap? Four perspectives to pressure-test the choice.',
+    panelists: [
+      {
+        name: 'Dana',
+        role: 'Therapist',
+        description: 'Asks what\'s driving the decision emotionally. Surfaces patterns — "you\'ve described this same feeling before." Not prescriptive, but reveals what you already know. Trained to hear what people mean, not just what they say. Will gently challenge rationalizations.',
+        color: '#4a9a7a',
+      },
+      {
+        name: 'Marco',
+        role: 'Pragmatist',
+        description: 'Spreadsheet brain. What does this cost? What\'s the timeline? Do you have a fallback? Will ask "have you actually run the numbers?" Thinks in risk vs. reward and always wants to see the Plan B. Not against big moves, just against uninformed ones.',
+        color: '#e74c4c',
+      },
+      {
+        name: 'Jules',
+        role: 'Hype Friend',
+        description: 'Genuinely believes in you. Finds the possibility in every option. Will say "you\'re overthinking this — the fact that you keep bringing it up means you already know." Not naive — just knows that most people\'s biggest risk is playing it too safe.',
+        color: '#4477ee',
+      },
+      {
+        name: 'Ren',
+        role: 'Devil\'s Advocate',
+        description: 'Not mean, just relentless. What are you not seeing? What\'s the version of this that goes badly? Forces you to stress-test the rosy scenario. Has watched too many people confuse excitement with readiness. If your plan survives Ren, it\'s probably solid.',
+        color: '#e44a9a',
+      },
+    ],
+  },
+  {
+    id: 'relationship-check',
+    name: 'Relationship Check',
+    description: 'Navigating a tough dynamic — partner, friend, family, coworker. Four voices to help you see clearly.',
+    panelists: [
+      {
+        name: 'Avery',
+        role: 'Therapist',
+        description: 'Thinks in attachment styles, communication patterns, and boundaries. Will reframe the conflict in a way that makes both sides make sense. Never takes sides but won\'t let you off the hook either. Believes most problems are solvable if you can name what\'s actually happening.',
+        color: '#4a9a7a',
+      },
+      {
+        name: 'Mack',
+        role: 'Straight Talker',
+        description: 'The friend who says what everyone else is thinking. "Have you actually told them this, or are you just telling us?" Zero tolerance for passive-aggressive strategies. Believes directness is kindness and that most relationship problems are communication problems in disguise.',
+        color: '#e74c4c',
+      },
+      {
+        name: 'Sonia',
+        role: 'Mediator',
+        description: 'Sees both perspectives simultaneously. Will steelman the other person\'s position even when you don\'t want to hear it. Believes most conflicts are about unmet needs, not bad intentions. Skilled at finding the thing both sides actually agree on and building from there.',
+        color: '#4477ee',
+      },
+      {
+        name: 'Gabe',
+        role: 'Been There',
+        description: 'Divorced, reconciled with a parent, lost a best friend, rebuilt. Speaks from experience, not theory. Won\'t pretend there are easy answers but knows what actually helps vs. what just sounds good. Values honesty over comfort and long-term over short-term.',
+        color: '#e44a9a',
+      },
+    ],
+  },
+  {
+    id: 'feeling-stuck',
+    name: 'Feeling Stuck',
+    description: 'Unmotivated, burned out, or can\'t figure out what\'s next. Four perspectives to help you get moving again.',
+    panelists: [
+      {
+        name: 'Kai',
+        role: 'Life Coach',
+        description: 'Action-oriented. Won\'t let you spiral. "What\'s one thing you could do this week?" Thinks in small experiments, not grand plans. Believes clarity comes from doing, not thinking. Will help you break the overwhelming thing into the obvious first step.',
+        color: '#4a9a7a',
+      },
+      {
+        name: 'Noor',
+        role: 'Philosopher',
+        description: 'Zooms way out. Why does this matter to you? What would 80-year-old you think about this? Reframes "stuck" as information, not failure. Reads widely, thinks deeply, and asks the questions that make you sit with uncomfortable silence for a moment.',
+        color: '#e74c4c',
+      },
+      {
+        name: 'Ellis',
+        role: 'Wellness Check',
+        description: 'Burnout radar. Will ask about sleep, exercise, screen time, and whether you\'ve talked to anyone. Knows that sometimes "stuck" is just "exhausted" in disguise. Thinks about the body and environment as much as the mind. Practical, not preachy.',
+        color: '#4477ee',
+      },
+      {
+        name: 'Val',
+        role: 'Tough Love',
+        description: '"You\'ve been talking about this for six months. What\'s actually stopping you?" Allergic to rumination. Believes momentum creates clarity, not the other way around. Not cruel — just refuses to cosign your excuses. The friend who texts you "did you do the thing?"',
+        color: '#e44a9a',
+      },
+    ],
+  },
 ];

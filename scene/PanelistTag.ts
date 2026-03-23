@@ -75,7 +75,7 @@ export class PanelistTag extends Container {
     // estimate as a floor so names are never truncated even if PixiJS measures
     // the text before the web font has fully loaded.
     const nameChars = this.nameText.text.length;
-    const estimatedNameWidth = nameChars * 9;
+    const estimatedNameWidth = nameChars * 11;
     const contentWidth = Math.max(measuredWidth, estimatedNameWidth);
     const width = contentWidth + paddingX * 2 + accentWidth;
     const height = roleY + this.roleText.height + 7;
