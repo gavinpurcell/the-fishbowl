@@ -93,13 +93,25 @@ export default function OnboardingTour({ setStep }: OnboardingTourProps) {
     positionTooltip(stop.targetId);
   }, [visible, stopIndex, showFinale, positionTooltip]);
 
-  const dismiss = () => {
+  const dismiss = useCallback(() => {
     localStorage.setItem(STORAGE_KEY, '1');
     setVisible(false);
     setHighlightRect(null);
     // Reset setup page back to template selection step
     setStep('template');
-  };
+  }, [setStep]);
+
+  // Dismiss tour on Escape key
+  useEffect(() => {
+    if (!visible) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        dismiss();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [visible, dismiss]);
 
   const handleNext = () => {
     if (stopIndex >= TOUR_STOPS.length - 1) {
@@ -127,7 +139,7 @@ export default function OnboardingTour({ setStep }: OnboardingTourProps) {
   const currentStop = TOUR_STOPS[stopIndex];
 
   return (
-    <>
+    <div role="dialog" aria-modal="true" aria-label="Onboarding tour">
       {/* Dark overlay with vignette */}
       <div
         className="tour-overlay"
@@ -297,6 +309,6 @@ export default function OnboardingTour({ setStep }: OnboardingTourProps) {
           </div>
         </div>
       )}
-    </>
+    </div>
   );
 }

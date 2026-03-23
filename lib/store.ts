@@ -153,6 +153,27 @@ export const useFishbowlStore = create<FishbowlState>()(
     {
       name: 'fishbowl-session',
       storage: createJSONStorage(() => sessionStorage),
+      version: 1,
+      migrate: (persisted, version) => {
+        // Merge saved state with defaults so any missing fields get initial values
+        const defaults = {
+          panelists: [],
+          ideaText: '',
+          ideaFiles: [],
+          provider: 'claude' as const,
+          modelId: getDefaultModel('claude').id,
+          sessionCost: { inputTokens: 0, outputTokens: 0 },
+          status: 'setup' as SessionStatus,
+          currentRound: 'initial-takes' as RoundType,
+          transcript: [],
+          activePanelistId: null,
+          summary: null,
+          sessionStartTime: null,
+          sessionEndTime: null,
+          moderationQuestionCount: 0,
+        };
+        return { ...defaults, ...(persisted as Record<string, unknown>) };
+      },
       partialize: (state) => ({
         panelists: state.panelists,
         ideaText: state.ideaText,
