@@ -14,6 +14,7 @@ interface Props {
 export default function ModerationInput({ onSubmit, disabled, onWrapUp }: Props) {
   const [question, setQuestion] = useState('');
   const [mounted, setMounted] = useState(false);
+  const [ready, setReady] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // Trigger entrance animation on mount
@@ -22,11 +23,15 @@ export default function ModerationInput({ onSubmit, disabled, onWrapUp }: Props)
     return () => cancelAnimationFrame(frame);
   }, []);
 
-  // Auto-focus the textarea when it becomes enabled (panelists done responding)
+  // Show a visual "ready" indicator when input becomes enabled (instead of auto-focus,
+  // which triggers the keyboard on mobile without a user gesture).
   useEffect(() => {
-    if (!disabled && textareaRef.current) {
-      textareaRef.current.focus();
+    if (!disabled) {
+      setReady(true);
+      const timer = setTimeout(() => setReady(false), 6000); // 3 pulses at 2s each
+      return () => clearTimeout(timer);
     }
+    setReady(false);
   }, [disabled]);
 
   // Auto-resize textarea to fit content
@@ -167,7 +172,7 @@ export default function ModerationInput({ onSubmit, disabled, onWrapUp }: Props)
             }
             disabled={disabled}
             rows={1}
-            className="flex-1 resize-none"
+            className={`flex-1 resize-none${ready ? ' moderation-input-ready' : ''}`}
             style={{
               background: 'rgba(255,255,255,0.04)',
               border: '1px solid rgba(255,255,255,0.08)',
@@ -180,18 +185,7 @@ export default function ModerationInput({ onSubmit, disabled, onWrapUp }: Props)
               outline: 'none',
               minHeight: '44px',
               maxHeight: '120px',
-              transition: 'border-color 0.2s, background 0.2s',
-              ...(disabled ? {} : {}),
-            }}
-            onFocus={(e) => {
-              if (!disabled) {
-                e.currentTarget.style.borderColor = 'rgba(196,154,42,0.3)';
-                e.currentTarget.style.background = 'rgba(255,255,255,0.06)';
-              }
-            }}
-            onBlur={(e) => {
-              e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)';
-              e.currentTarget.style.background = 'rgba(255,255,255,0.04)';
+              transition: 'border-color 0.2s, background 0.2s, box-shadow 0.2s',
             }}
           />
 
@@ -200,7 +194,7 @@ export default function ModerationInput({ onSubmit, disabled, onWrapUp }: Props)
             type="submit"
             disabled={!canSubmit}
             aria-label={disabled ? 'Panelists are responding' : 'Send question'}
-            className="flex-shrink-0 flex items-center justify-center gap-1.5 transition-all"
+            className="moderation-send-btn flex-shrink-0 flex items-center justify-center gap-1.5 transition-all"
             style={{
               background: canSubmit
                 ? 'var(--accent-gold)'
@@ -227,32 +221,6 @@ export default function ModerationInput({ onSubmit, disabled, onWrapUp }: Props)
               height: '44px',
               transition: 'all 0.15s ease',
               boxShadow: canSubmit ? '0 0 12px rgba(196, 154, 42, 0.25)' : 'none',
-            }}
-            onMouseEnter={(e) => {
-              if (canSubmit) {
-                const el = e.currentTarget;
-                el.style.background = 'var(--accent-gold-dim)';
-                el.style.transform = 'translateY(-1px)';
-                el.style.boxShadow = '0 0 20px rgba(196, 154, 42, 0.4)';
-              }
-            }}
-            onMouseLeave={(e) => {
-              if (canSubmit) {
-                const el = e.currentTarget;
-                el.style.background = 'var(--accent-gold)';
-                el.style.transform = 'translateY(0)';
-                el.style.boxShadow = '0 0 12px rgba(196, 154, 42, 0.25)';
-              }
-            }}
-            onMouseDown={(e) => {
-              if (canSubmit) {
-                (e.currentTarget as HTMLElement).style.transform = 'translateY(1px)';
-              }
-            }}
-            onMouseUp={(e) => {
-              if (canSubmit) {
-                (e.currentTarget as HTMLElement).style.transform = 'translateY(-1px)';
-              }
             }}
           >
             {disabled ? (
@@ -331,6 +299,7 @@ export default function ModerationInput({ onSubmit, disabled, onWrapUp }: Props)
             Ask another question, or{' '}
             <button
               onClick={onWrapUp}
+              className="moderation-wrap-link"
               style={{
                 background: 'none',
                 border: 'none',
@@ -345,14 +314,6 @@ export default function ModerationInput({ onSubmit, disabled, onWrapUp }: Props)
                 padding: 0,
                 transition: 'color 0.15s ease, text-decoration-color 0.15s ease',
               }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.color = 'var(--accent-gold-light)';
-                e.currentTarget.style.textDecorationColor = 'var(--accent-gold)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.color = 'var(--accent-gold)';
-                e.currentTarget.style.textDecorationColor = 'rgba(196, 154, 42, 0.4)';
-              }}
             >
               wrap up the session
             </button>
@@ -361,6 +322,7 @@ export default function ModerationInput({ onSubmit, disabled, onWrapUp }: Props)
           {/* Big END SHOW button */}
           <button
             onClick={onWrapUp}
+            className="moderation-end-btn"
             style={{
               fontFamily: "'Silkscreen', monospace",
               fontSize: '14px',
@@ -375,28 +337,6 @@ export default function ModerationInput({ onSubmit, disabled, onWrapUp }: Props)
               animation: 'wrapGoldPulse 3s ease-in-out infinite',
               position: 'relative',
               transition: 'all 0.15s ease',
-            }}
-            onMouseEnter={(e) => {
-              const el = e.currentTarget;
-              el.style.background = 'linear-gradient(180deg, rgba(196, 154, 42, 0.35) 0%, rgba(196, 154, 42, 0.15) 100%)';
-              el.style.transform = 'translateY(-2px)';
-              el.style.boxShadow = '0 0 24px rgba(196, 154, 42, 0.5), 0 0 48px rgba(196, 154, 42, 0.2), 0 4px 12px rgba(0,0,0,0.3)';
-            }}
-            onMouseLeave={(e) => {
-              const el = e.currentTarget;
-              el.style.background = 'linear-gradient(180deg, rgba(196, 154, 42, 0.2) 0%, rgba(196, 154, 42, 0.08) 100%)';
-              el.style.transform = 'translateY(0)';
-              el.style.boxShadow = '';
-            }}
-            onMouseDown={(e) => {
-              const el = e.currentTarget;
-              el.style.transform = 'translateY(1px)';
-              el.style.boxShadow = '0 0 12px rgba(196, 154, 42, 0.3), inset 0 2px 4px rgba(0,0,0,0.2)';
-            }}
-            onMouseUp={(e) => {
-              const el = e.currentTarget;
-              el.style.transform = 'translateY(-2px)';
-              el.style.boxShadow = '0 0 24px rgba(196, 154, 42, 0.5), 0 0 48px rgba(196, 154, 42, 0.2), 0 4px 12px rgba(0,0,0,0.3)';
             }}
           >
             END SHOW

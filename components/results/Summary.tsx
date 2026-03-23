@@ -4,10 +4,22 @@ interface Props {
   summary: string | null;
 }
 
+/** Escape HTML entities to prevent unsanitized LLM output from rendering as HTML */
+function escapeHtml(text: string): string {
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 /**
  * Renders the AI-generated summary as a research brief with clear
  * typography hierarchy. Handles ## headings, **bold**, bullet lists,
  * blockquotes (> lines become pull-quotes), and paragraphs.
+ *
+ * Raw LLM text is HTML-escaped before markdown parsing to prevent XSS.
  */
 export default function Summary({ summary }: Props) {
   if (!summary) {
@@ -23,8 +35,11 @@ export default function Summary({ summary }: Props) {
     );
   }
 
-  // Parse the summary into rendered elements
-  const lines = summary.split('\n');
+  // Escape HTML entities before parsing markdown to prevent XSS from LLM output
+  const sanitized = escapeHtml(summary);
+
+  // Parse the sanitized summary into rendered elements
+  const lines = sanitized.split('\n');
   const elements: React.ReactNode[] = [];
 
   for (let i = 0; i < lines.length; i++) {
