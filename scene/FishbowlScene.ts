@@ -418,26 +418,6 @@ export class FishbowlScene {
     }
   }
 
-  /** Replace a character's speech bubble text (for paragraph pagination) */
-  setBubbleText(id: string, text: string): void {
-    const bubble = this.bubbles.get(id);
-    if (bubble) {
-      if (!bubble.visible) {
-        bubble.show(text);
-      } else {
-        bubble.replaceText(text);
-      }
-    }
-  }
-
-  /** Hide all speech bubbles */
-  hideAllSpeechBubbles(): void {
-    this.bubbles.forEach((b) => {
-      b.finishStreaming();
-      b.hide();
-    });
-  }
-
   /** Hide a character's speech bubble */
   hideSpeechBubble(id: string): void {
     const bubble = this.bubbles.get(id);
@@ -697,6 +677,5 @@ export class FishbowlScene {
       }
       this.app = null;
     }
-
   }
 }

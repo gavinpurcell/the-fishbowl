@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useFishbowlStore } from '@/lib/store';
 import { createPanelistFromTemplate } from '@/engine/panelist';
@@ -15,26 +15,16 @@ import { estimateSessionCost, formatCost } from '@/lib/models';
 export default function SetupPage() {
   const router = useRouter();
   const store = useFishbowlStore();
-
-  // Auto-reset stale session data when arriving at setup after a completed session
-  useEffect(() => {
-    if (store.status === 'completed') {
-      store.resetSession();
-    }
-  }, []);  // eslint-disable-line react-hooks/exhaustive-deps
   const [step, setStep] = useState<'template' | 'configure'>('template');
-  const [templateName, setTemplateName] = useState<string | null>(null);
 
   const handleTemplateSelect = (template: PanelTemplate) => {
     const panelists = template.panelists.map((p, i) => createPanelistFromTemplate(p, i));
     store.setPanelists(panelists);
-    setTemplateName(template.name);
     setStep('configure');
   };
 
   const handleBuildOwn = () => {
     store.setPanelists([]);
-    setTemplateName(null);
     setStep('configure');
   };
 
@@ -143,9 +133,6 @@ export default function SetupPage() {
               {/* Left column: Panel */}
               <div className="space-y-8">
                 <div id="section-panelists">
-                  {templateName && (
-                    <h2 className="font-pixel text-lg tracking-tight title-text mb-4">{templateName}</h2>
-                  )}
                   <PanelistBuilder
                     panelists={store.panelists}
                     onUpdate={store.setPanelists}

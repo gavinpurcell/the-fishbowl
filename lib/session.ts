@@ -40,26 +40,19 @@ export async function importSession(file: File): Promise<SavedSession> {
 export function exportAsMarkdown(transcript: TranscriptEntry[], summary: string | null): string {
   let md = '# The Fishbowl — Session Transcript\n\n';
 
-  const roundLabels: Record<string, string> = {
-    'initial-takes': 'Initial Takes',
-    'cross-talk': 'Cross-Talk',
-    'moderation': 'Q&A',
-    'wrap-up': 'Wrap-Up',
-  };
-
   let currentRound = '';
   for (const entry of transcript) {
     if (entry.round !== currentRound) {
       currentRound = entry.round;
+      const roundLabels: Record<string, string> = {
+        'initial-takes': 'Round 1: Initial Takes',
+        'cross-talk': 'Round 2: Cross-Talk',
+        'moderation': 'Round 3: Moderation',
+        'wrap-up': 'Final Takeaways',
+      };
       md += `## ${roundLabels[currentRound] || currentRound}\n\n`;
     }
-
-    // Distinguish moderator questions from panelist responses
-    if (entry.panelistId === 'user') {
-      md += `> **${entry.panelistName}:** ${entry.content}\n\n`;
-    } else {
-      md += `**${entry.panelistName}:** ${entry.content}\n\n`;
-    }
+    md += `**${entry.panelistName}:** ${entry.content}\n\n`;
   }
 
   if (summary) {

@@ -6,18 +6,19 @@ import { useFishbowlStore } from '@/lib/store';
 import { FishbowlScene } from '@/scene/FishbowlScene';
 import { ConversationOrchestrator } from '@/engine/conversation';
 import { createProvider } from '@/providers/index';
+import { VideoRecorder } from '@/scene/VideoRecorder';
 import StatusBar from '@/components/scene/StatusBar';
-import IntroOverlay from '@/components/scene/IntroOverlay';
 import TransitionOverlay from '@/components/scene/TransitionOverlay';
 import { getModelById } from '@/lib/models';
 // Note: PixiJS scene is managed directly via ref, not via FishbowlCanvas component
 import ModerationInput from '@/components/scene/ModerationInput';
+import LiveTranscript from '@/components/scene/LiveTranscript';
 import KeyboardHelp from '@/components/scene/KeyboardHelp';
 import WrapUpOverlay from '@/components/scene/WrapUpOverlay';
 import { loadAllSprites } from '@/lib/spriteLoader';
 import type { RoundType, TranscriptEntry, Panelist } from '@/engine/types';
 
-type ViewMode = 'intro' | 'briefing' | 'transition' | 'roundtable';
+type ViewMode = 'briefing' | 'transition' | 'roundtable';
 
 export default function SessionPage() {
   const router = useRouter();
@@ -28,38 +29,21 @@ export default function SessionPage() {
   storeRef.current = store;
   const sceneRef = useRef<FishbowlScene | null>(null);
   const orchestratorRef = useRef<ConversationOrchestrator | null>(null);
+  const recorderRef = useRef<VideoRecorder | null>(null);
   const startedRef = useRef(false);
   const advanceResolverRef = useRef<(() => void) | null>(null);
   const transitionResolverRef = useRef<(() => void) | null>(null);
-  const introResolverRef = useRef<(() => void) | null>(null);
   const isSpeakingRef = useRef(false);
   const speakerTextRef = useRef('');
   const textUpdateTimerRef = useRef<NodeJS.Timeout | null>(null);
   const localTranscriptRef = useRef<TranscriptEntry[]>([]);
   const firstChunkReceivedRef = useRef(false);
   const isMountedRef = useRef(true);
-  // Track all active polling intervals so they can be cleared on unmount
-  const activeIntervalsRef = useRef<Set<ReturnType<typeof setInterval>>>(new Set());
 
-  // Comprehensive cleanup on unmount — clear all timers, intervals, and isMountedRef
+  // Clean up isMountedRef on unmount to prevent stale closures from calling setState
   useEffect(() => {
     isMountedRef.current = true;
-    return () => {
-      isMountedRef.current = false;
-      // Clear error auto-dismiss timer
-      if (errorTimerRef.current) {
-        clearTimeout(errorTimerRef.current);
-        errorTimerRef.current = null;
-      }
-      // Clear text update throttle timer
-      if (textUpdateTimerRef.current) {
-        clearTimeout(textUpdateTimerRef.current);
-        textUpdateTimerRef.current = null;
-      }
-      // Clear all active polling intervals (firstTakePoll, readyPoll, crossTalkPoll)
-      activeIntervalsRef.current.forEach((id) => clearInterval(id));
-      activeIntervalsRef.current.clear();
-    };
+    return () => { isMountedRef.current = false; };
   }, []);
 
   // UI state
@@ -70,16 +54,11 @@ export default function SessionPage() {
   const [error, setError] = useState<string | null>(null);
   const [hint, setHint] = useState('Press SPACE to meet your panel');
   const [isSpeaking, setIsSpeaking] = useState(false);
+  const [liveTranscript, setLiveTranscript] = useState<TranscriptEntry[]>([]);
+
   // Briefing state
   const [briefingIndex, setBriefingIndex] = useState(-1);
   const [briefingText, setBriefingText] = useState('');
-  const [prefetchReady, setPrefetchReady] = useState(false);
-
-  // Intro readiness (first initial take ready)
-  const [firstTakeReady, setFirstTakeReady] = useState(false);
-
-  // Cross-talk readiness (for transition overlay)
-  const [crossTalkReady, setCrossTalkReady] = useState(false);
 
   // Moderation state
   const [inModeration, setInModeration] = useState(false);
@@ -119,7 +98,6 @@ export default function SessionPage() {
     setError(msg);
     if (msg) {
       errorTimerRef.current = setTimeout(() => {
-        if (!isMountedRef.current) return;
         setError(null);
         errorTimerRef.current = null;
       }, 10000);
@@ -127,15 +105,6 @@ export default function SessionPage() {
   }, []);
 
   // Transition overlay complete handler — guarded against unmount
-  const handleIntroComplete = useCallback(() => {
-    if (!isMountedRef.current) return;
-    if (introResolverRef.current) {
-      const resolver = introResolverRef.current;
-      introResolverRef.current = null;
-      resolver();
-    }
-  }, []);
-
   const handleTransitionComplete = useCallback(() => {
     if (!isMountedRef.current) return;
     if (transitionResolverRef.current) {
@@ -146,9 +115,7 @@ export default function SessionPage() {
   }, []);
 
   // Keep refs in sync
-  // Note: isSpeakingRef is updated directly alongside every setIsSpeaking() call
-  // rather than via useEffect, to avoid async desync during rapid state changes
-  // (e.g., moderation pagination where false→true happens faster than React can flush).
+  useEffect(() => { isSpeakingRef.current = isSpeaking; }, [isSpeaking]);
   useEffect(() => { viewModeRef.current = viewMode; }, [viewMode]);
 
   // Redirect to setup if no active session (don't redirect during wrap overlay)
@@ -189,24 +156,6 @@ export default function SessionPage() {
     return () => window.removeEventListener('keydown', handleKey);
   }, []);
 
-  // Type text into a speech bubble with a natural typing effect
-  const typeIntoBubble = useCallback(async (panelistId: string, text: string, suffix?: string) => {
-    const scene = sceneRef.current;
-    if (!scene) return;
-    scene.showSpeechBubble(panelistId);
-    // Stream in 3-word chunks for a natural typing feel
-    const words = text.split(' ');
-    let displayed = '';
-    for (let i = 0; i < words.length; i += 3) {
-      const chunk = words.slice(i, Math.min(i + 3, words.length)).join(' ');
-      displayed += (i > 0 ? ' ' : '') + chunk;
-      scene.setBubbleText(panelistId, displayed + (suffix || ''));
-      await new Promise((r) => setTimeout(r, 60));
-    }
-    // Ensure final text is exact
-    scene.setBubbleText(panelistId, text + (suffix || ''));
-  }, []);
-
   // PixiJS scene container ref (always in DOM, hidden until roundtable)
   const sceneContainerRef = useRef<HTMLDivElement>(null);
   const sceneInitializedRef = useRef(false);
@@ -217,15 +166,20 @@ export default function SessionPage() {
     sceneInitializedRef.current = true;
 
     const fishbowlScene = new FishbowlScene();
+    sceneRef.current = fishbowlScene;
 
     loadAllSprites().then(() => {
       if (!sceneContainerRef.current) return;
       fishbowlScene.initWithContainer(sceneContainerRef.current, {
         panelists: store.panelists,
         onReady: () => {
-          // Scene is fully initialized — bubbles, characters, tags all created
-          sceneRef.current = fishbowlScene;
-
+          // Start video recording
+          const canvas = fishbowlScene.getCanvas();
+          if (canvas) {
+            const recorder = new VideoRecorder();
+            recorderRef.current = recorder;
+            recorder.start(canvas);
+          }
         },
       });
     });
@@ -266,20 +220,12 @@ export default function SessionPage() {
           firstChunkReceivedRef.current = false;
           storeRef.current.setActivePanelist(panelistId);
 
-          // During roundtable, update character state.
-          // Cross-talk responses are pre-cached, so they stream immediately —
-          // show 'talking' directly instead of 'thinking' (no wait for generation).
-          // For other rounds (e.g. moderation), show 'thinking' with indicator.
+          // During roundtable, show thinking state until first text chunk arrives
           const scene = sceneRef.current;
           if (scene && viewModeRef.current === 'roundtable') {
             scene.hideAllThinkingIndicators();
-            const isCrossTalk = storeRef.current.currentRound === 'cross-talk';
-            if (isCrossTalk) {
-              scene.setCharacterState(panelistId, 'talking');
-            } else {
-              scene.setCharacterState(panelistId, 'thinking');
-              scene.showThinkingIndicator(panelistId);
-            }
+            scene.setCharacterState(panelistId, 'thinking');
+            scene.showThinkingIndicator(panelistId);
             storeRef.current.panelists.forEach((p) => {
               if (p.id !== panelistId) {
                 scene.setCharacterState(p.id, 'idle');
@@ -294,6 +240,7 @@ export default function SessionPage() {
             textUpdateTimerRef.current = null;
           }
           setBriefingText(speakerTextRef.current);
+          setLiveTranscript([...localTranscript]);
 
           setIsSpeaking(false);
           isSpeakingRef.current = false;
@@ -303,16 +250,13 @@ export default function SessionPage() {
           const scene = sceneRef.current;
           if (scene) {
             scene.hideAllThinkingIndicators();
-            // DON'T hide the speech bubble here — leave it visible so the user
-            // can read the final text. It will be cleared when:
-            // - The next panelist's showSpeechBubble() fires (hides all others)
-            // - hideAllSpeechBubbles() is called explicitly (observer walk-in, etc.)
             storeRef.current.panelists.forEach((p) => scene.setCharacterState(p.id, 'idle'));
           }
         },
         onTranscriptEntry: (entry) => {
           storeRef.current.addTranscriptEntry(entry);
           localTranscript.push(entry);
+          setLiveTranscript([...localTranscript]);
         },
         onStreamChunk: (_panelistId: string, chunk: string) => {
           speakerTextRef.current += chunk;
@@ -320,28 +264,47 @@ export default function SessionPage() {
             localTranscript[localTranscript.length - 1].content += chunk;
           }
 
-          // During roundtable, just buffer — pagination handles display
-          if (viewModeRef.current === 'roundtable') return;
-
           const isFirstChunk = !firstChunkReceivedRef.current;
-          if (isFirstChunk) firstChunkReceivedRef.current = true;
+
+          // Drive scene bubbles during roundtable
+          const scene = sceneRef.current;
+          if (scene) {
+            // On first chunk: transition from thinking to talking
+            if (isFirstChunk) {
+              firstChunkReceivedRef.current = true;
+              scene.hideThinkingIndicator(_panelistId);
+              scene.setCharacterState(_panelistId, 'talking');
+              scene.showSpeechBubble(_panelistId);
+              // Set other panelists to listening reactions
+              storeRef.current.panelists.forEach((p) => {
+                if (p.id !== _panelistId) {
+                  scene.setCharacterState(p.id, Math.random() > 0.7 ? 'reacting' : 'thinking');
+                }
+              });
+            }
+            scene.appendToBubble(_panelistId, chunk);
+          } else if (isFirstChunk) {
+            firstChunkReceivedRef.current = true;
+          }
 
           // On first chunk during briefing, immediately update text (skip throttle)
+          // so the briefing card transitions from thinking dots to text right away
           if (isFirstChunk && viewModeRef.current === 'briefing') {
             if (textUpdateTimerRef.current) {
               clearTimeout(textUpdateTimerRef.current);
               textUpdateTimerRef.current = null;
             }
             setBriefingText(speakerTextRef.current);
+            setLiveTranscript([...localTranscript]);
             return;
           }
 
-          // Throttle React updates (briefing)
+          // Throttle React updates
           if (!textUpdateTimerRef.current) {
             textUpdateTimerRef.current = setTimeout(() => {
               textUpdateTimerRef.current = null;
-              if (!isMountedRef.current) return;
               setBriefingText(speakerTextRef.current);
+              setLiveTranscript([...localTranscript]);
             }, 150);
           }
         },
@@ -359,37 +322,21 @@ export default function SessionPage() {
     // Start pre-fetching all initial takes immediately (parallel, in background)
     orchestrator.prefetchInitialTakes();
 
-    // Poll for first take readiness (drives intro overlay)
-    const firstTakePoll = setInterval(() => {
-      if (!isMountedRef.current) { clearInterval(firstTakePoll); activeIntervalsRef.current.delete(firstTakePoll); return; }
-      if (s.panelists.length > 0 && orchestrator.isInitialTakeReady(s.panelists[0].id)) {
-        setFirstTakeReady(true);
-        clearInterval(firstTakePoll);
-        activeIntervalsRef.current.delete(firstTakePoll);
-      }
-    }, 200);
-    activeIntervalsRef.current.add(firstTakePoll);
-
     // Run the session flow
     (async () => {
       try {
-        // === INTRO OVERLAY — shows topic + panel while prefetch runs ===
-        setViewMode('intro');
-        setCurrentRound('initial-takes');
-        await new Promise<void>((r) => { introResolverRef.current = r; });
-        clearInterval(firstTakePoll);
-        activeIntervalsRef.current.delete(firstTakePoll);
-
         // === PHASE 1: INDIVIDUAL BRIEFINGS (uses prefetched responses) ===
         setViewMode('briefing');
+        setCurrentRound('initial-takes');
 
         for (let i = 0; i < s.panelists.length; i++) {
           const panelist = s.panelists[i];
 
           if (i === 0) {
-            // First take should be ready (intro waited for it)
             setBriefingIndex(0);
             setBriefingText('');
+            setHint(`Press SPACE to hear ${panelist.name}'s take`);
+            await waitForSpace();
           }
 
           setHint(`${panelist.name} is sharing their initial take...`);
@@ -399,24 +346,8 @@ export default function SessionPage() {
           await orchestrator.runSinglePanelist(panelist, 'initial-takes');
 
           if (i < s.panelists.length - 1) {
-            // Poll until next panelist's prefetch is ready
-            const nextPanelist = s.panelists[i + 1];
-            setPrefetchReady(false);
-            setHint(`Preparing ${nextPanelist.name}'s take...`);
-            const readyPoll = setInterval(() => {
-              if (!isMountedRef.current) { clearInterval(readyPoll); activeIntervalsRef.current.delete(readyPoll); return; }
-              if (orchestrator.isInitialTakeReady(nextPanelist.id)) {
-                setHint(`${nextPanelist.name}'s response is ready — press SPACE`);
-                setPrefetchReady(true);
-                clearInterval(readyPoll);
-                activeIntervalsRef.current.delete(readyPoll);
-              }
-            }, 200);
-            activeIntervalsRef.current.add(readyPoll);
+            setHint(`Press SPACE for ${s.panelists[i + 1].name}'s take`);
             await waitForSpace();
-            clearInterval(readyPoll);
-            activeIntervalsRef.current.delete(readyPoll);
-            setPrefetchReady(false);
             setBriefingIndex(i + 1);
             setBriefingText('');
           } else {
@@ -424,91 +355,33 @@ export default function SessionPage() {
           }
         }
 
-        // Start prefetching cross-talk responses now — all initial takes are
-        // in the transcript, so each panelist's cross-talk will reference them.
-        orchestrator.prefetchCrossTalk();
-
-        // Poll cross-talk readiness so the transition overlay knows when to finish
-        setCrossTalkReady(false);
-        const crossTalkPoll = setInterval(() => {
-          if (!isMountedRef.current) { clearInterval(crossTalkPoll); activeIntervalsRef.current.delete(crossTalkPoll); return; }
-          if (orchestrator.isAllCrossTalkReady()) {
-            setCrossTalkReady(true);
-            clearInterval(crossTalkPoll);
-            activeIntervalsRef.current.delete(crossTalkPoll);
-          }
-        }, 200);
-        activeIntervalsRef.current.add(crossTalkPoll);
-
         // === TRANSITION ===
         await waitForSpace();
         setViewMode('transition');
         setHint('');
-        // Transition overlay waits for crossTalkReady before calling onComplete
         await new Promise<void>((r) => { transitionResolverRef.current = r; });
-        clearInterval(crossTalkPoll);
-        activeIntervalsRef.current.delete(crossTalkPoll);
 
         // === PHASE 2: ROUNDTABLE CROSS-TALK ===
         setViewMode('roundtable');
         setCurrentRound('cross-talk');
         setPanelistsSpoken(0);
 
-        // Clear any stale bubbles from the briefing phase
-        const sceneForClear = sceneRef.current;
-        if (sceneForClear) {
-          sceneForClear.hideAllSpeechBubbles();
-        }
-
-        // All cross-talk responses are pre-generated — show them immediately
-        // First panelist starts typing right away (no SPACE wait)
-        for (let ci = 0; ci < s.panelists.length; ci++) {
-          const panelist = s.panelists[ci];
-          if (orchestrator.isAborted) return;
-
-          // First panelist plays immediately, rest wait for SPACE
-          if (ci > 0) {
+        // Cross-talk with spacebar pacing between each speaker
+        for (let round = 0; round < 2; round++) {
+          for (const panelist of s.panelists) {
+            if (orchestrator.isAborted) return;
             setHint(`Press SPACE to hear ${panelist.name}`);
             await waitForSpace();
-          }
-
-          const scene = sceneRef.current;
-          if (scene) {
-            scene.hideAllSpeechBubbles();
-            scene.hideAllThinkingIndicators();
-            // Speaker talks, others react
-            scene.setCharacterState(panelist.id, 'talking');
-            s.panelists.forEach((p) => {
-              if (p.id !== panelist.id) {
-                scene.setCharacterState(p.id, Math.random() > 0.7 ? 'reacting' : 'idle');
-              }
-            });
-          }
-
-          // Replay prefetched response (near-instant since already generated)
-          setHint(`${panelist.name} is speaking...`);
-          await orchestrator.runSinglePanelist(panelist, 'cross-talk');
-
-          // Show response in bubble with typing effect + paragraph pagination
-          const lastEntry = localTranscript[localTranscript.length - 1];
-          if (lastEntry && sceneRef.current) {
-            const paragraphs = lastEntry.content.split('\n\n').filter((p: string) => p.trim());
-            for (let p = 0; p < paragraphs.length; p++) {
-              const isLast = p === paragraphs.length - 1;
-              const suffix = isLast ? '' : '\n\n▸ continue';
-              await typeIntoBubble(panelist.id, paragraphs[p], suffix);
-              if (!isLast) {
-                setHint('Press SPACE to continue reading...');
-                await waitForSpace();
-              }
+            // Show thinking indicator before speech starts
+            const scene = sceneRef.current;
+            if (scene) {
+              scene.showThinkingIndicator(panelist.id);
+              scene.setCharacterState(panelist.id, 'thinking');
             }
+            setHint(`${panelist.name} is responding...`);
+            await orchestrator.runSinglePanelist(panelist, 'cross-talk');
+            setHint(`${panelist.name} finished.`);
           }
-
-          // Return speaker to idle
-          if (sceneRef.current) {
-            sceneRef.current.setCharacterState(panelist.id, 'idle');
-          }
-          setHint(`${panelist.name} finished.`);
         }
 
         // === PHASE 3: MODERATION ===
@@ -531,110 +404,43 @@ export default function SessionPage() {
     if (!orchestrator || !inModeration) return;
 
     storeRef.current.incrementModerationCount();
+    setIsSpeaking(true);
+    isSpeakingRef.current = true;
+    setHint('Panelists are responding...');
     showError(null);
 
-    orchestrator.recordModerationQuestion(question);
-    // Prefetch all panelist responses to this question in parallel
-    orchestrator.prefetchModerationResponses(question);
-    const panelists = storeRef.current.panelists;
+    // Show thinking indicator on first panelist while processing
+    const scene = sceneRef.current;
+    if (scene && storeRef.current.panelists.length > 0) {
+      scene.showThinkingIndicator(storeRef.current.panelists[0].id);
+    }
 
     try {
-      for (const panelist of panelists) {
-        if (orchestrator.isAborted) break;
-
-        setHint(`Press SPACE to hear ${panelist.name}'s response`);
-        setIsSpeaking(false);
-        isSpeakingRef.current = false;
-        await waitForSpace();
-
-        const scene = sceneRef.current;
-        if (scene) {
-          scene.hideAllSpeechBubbles();
-          scene.hideAllThinkingIndicators();
-          scene.setCharacterState(panelist.id, 'talking');
-          panelists.forEach((p) => {
-            if (p.id !== panelist.id) scene.setCharacterState(p.id, Math.random() > 0.7 ? 'reacting' : 'idle');
-          });
-        }
-
-        setIsSpeaking(true);
-        isSpeakingRef.current = true;
-        setHint(`${panelist.name} is responding...`);
-
-        await orchestrator.runModerationPanelist(panelist, question);
-
-        // Show response in bubble with typing effect + paragraph pagination
-        const localTranscript = localTranscriptRef.current;
-        const lastEntry = localTranscript[localTranscript.length - 1];
-        if (lastEntry && sceneRef.current) {
-          const paragraphs = lastEntry.content.split('\n\n').filter((p: string) => p.trim());
-          for (let p = 0; p < paragraphs.length; p++) {
-            const isLast = p === paragraphs.length - 1;
-            const suffix = isLast ? '' : '\n\n▸ continue';
-            await typeIntoBubble(panelist.id, paragraphs[p], suffix);
-            if (!isLast) {
-              setHint('Press SPACE to continue reading...');
-              setIsSpeaking(false);
-              isSpeakingRef.current = false;
-              await waitForSpace();
-            }
-          }
-        }
-
-        // Now that pagination is done, update visible transcript
-        setHint(`${panelist.name} finished.`);
-      }
-
+      await orchestrator.handleModerationQuestion(question);
       setHint('Ask another question, or end the show below.');
     } catch (err) {
       showError(err instanceof Error ? err.message : 'Error processing question.');
     }
     setIsSpeaking(false);
     isSpeakingRef.current = false;
-  }, [inModeration, waitForSpace, typeIntoBubble, showError]);
+  }, [inModeration]);
 
   const handleWrapUp = useCallback(async () => {
     const orchestrator = orchestratorRef.current;
     if (!orchestrator) return;
 
     setInModeration(false);
-    setCurrentRound('wrap-up');
-    orchestrator.setRound('wrap-up');
+    setHint('Getting final takeaways...');
     showError(null);
 
     try {
-      // Run each panelist's final thought with typing effect in bubbles
-      const panelists = storeRef.current.panelists;
-      for (let i = 0; i < panelists.length; i++) {
-        const panelist = panelists[i];
-        if (orchestrator.isAborted) break;
+      await orchestrator.runWrapUp();
 
-        const scene = sceneRef.current;
-        if (scene) {
-          scene.hideAllSpeechBubbles();
-          scene.hideAllThinkingIndicators();
-          scene.setCharacterState(panelist.id, 'talking');
-          panelists.forEach((p) => {
-            if (p.id !== panelist.id) scene.setCharacterState(p.id, 'idle');
-          });
-        }
-
-        setHint(`${panelist.name} — final thought...`);
-        await orchestrator.runSinglePanelist(panelist, 'wrap-up');
-
-        // Show in bubble with typing effect
-        const transcript = localTranscriptRef.current;
-        const lastEntry = transcript[transcript.length - 1];
-        if (lastEntry && sceneRef.current) {
-          await typeIntoBubble(panelist.id, lastEntry.content.trim());
-        }
-
-        if (sceneRef.current) sceneRef.current.setCharacterState(panelist.id, 'idle');
-
-        // Wait for SPACE between panelists (except after last)
-        if (i < panelists.length - 1) {
-          setHint(`Press SPACE to hear ${panelists[i + 1].name}'s final thought`);
-          await waitForSpace();
+      if (recorderRef.current?.isRecording) {
+        const blob = await recorderRef.current.stop();
+        if (blob.size > 0) {
+          const url = URL.createObjectURL(blob);
+          sessionStorage.setItem('fishbowl-video-url', url);
         }
       }
 
@@ -645,7 +451,7 @@ export default function SessionPage() {
       showError(err instanceof Error ? err.message : 'Error during wrap-up.');
       setInModeration(true);
     }
-  }, [waitForSpace, typeIntoBubble, showError]);
+  }, []);
 
   // Called by WrapUpOverlay when its animation is ready for summary generation
   const handleWrapStartSummary = useCallback(async () => {
@@ -677,7 +483,7 @@ export default function SessionPage() {
 
   // Compute session stats for wrap-up overlay
   const sessionDurationMs = store.sessionStartTime ? Date.now() - store.sessionStartTime : 0;
-  const totalResponses = localTranscriptRef.current.filter((e) => e.panelistId !== 'user').length;
+  const totalResponses = liveTranscript.filter((e) => e.panelistId !== 'user').length;
 
   return (
     <div className="min-h-screen">
@@ -709,16 +515,6 @@ export default function SessionPage() {
             </div>
             <div className="h-px flex-1 max-w-16" style={{ background: 'linear-gradient(90deg, var(--border), transparent)' }} />
           </div>
-
-          {/* === INTRO OVERLAY === */}
-          {viewMode === 'intro' && (
-            <IntroOverlay
-              topic={store.ideaText}
-              panelists={store.panelists.map((p) => ({ id: p.id, name: p.name, role: p.role, color: p.color }))}
-              onComplete={handleIntroComplete}
-              ready={firstTakeReady}
-            />
-          )}
 
           {/* === BRIEFING VIEW === */}
           {viewMode === 'briefing' && (
@@ -763,7 +559,6 @@ export default function SessionPage() {
                     borderRadius: '10px',
                     boxShadow: '0 4px 24px rgba(0,0,0,0.3), 0 0 40px rgba(196,154,42,0.04)',
                     position: 'relative',
-                    maxHeight: '70vh',
                   }}
                 >
                   {/* Top gold accent line */}
@@ -862,8 +657,8 @@ export default function SessionPage() {
                       </div>
                     </div>
 
-                    {/* Right: Initial Take content — scrollable so long responses don't push the page */}
-                    <div className="flex-1 p-4 sm:p-8 overflow-y-auto" style={{ maxHeight: '60vh' }}>
+                    {/* Right: Initial Take content */}
+                    <div className="flex-1 p-4 sm:p-8">
                       <div
                         className="font-pixel mb-4"
                         style={{
@@ -879,7 +674,7 @@ export default function SessionPage() {
                           className="text-sm leading-relaxed whitespace-pre-wrap"
                           style={{ color: 'rgba(255,255,255,0.65)' }}
                         >
-                          {briefingText.replace(/\n*▸ continue\n*/g, '\n\n')}
+                          {briefingText}
                           {isSpeaking && (
                             <span
                               className="inline-block w-1 h-3.5 ml-0.5 animate-pulse"
@@ -889,19 +684,10 @@ export default function SessionPage() {
                         </p>
                       ) : (
                         <div className="thinking-dots">
-                          <span className="thinking-text">{prefetchReady ? 'Response ready' : 'Preparing response'}</span>
-                          {!prefetchReady && (
-                            <>
-                              <span className="dot" />
-                              <span className="dot" />
-                              <span className="dot" />
-                            </>
-                          )}
-                          {prefetchReady && (
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--accent-gold)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginLeft: '4px', opacity: 0.7 }}>
-                              <polyline points="20 6 9 17 4 12" />
-                            </svg>
-                          )}
+                          <span className="thinking-text">Preparing response</span>
+                          <span className="dot" />
+                          <span className="dot" />
+                          <span className="dot" />
                         </div>
                       )}
                     </div>
@@ -916,28 +702,20 @@ export default function SessionPage() {
             <TransitionOverlay
               panelists={store.panelists.map((p) => ({ id: p.id, name: p.name, role: p.role, color: p.color }))}
               onComplete={handleTransitionComplete}
-              ready={crossTalkReady}
             />
           )}
 
           {/* === ROUNDTABLE (PixiJS canvas always in DOM, hidden until needed) === */}
           <div style={{ display: viewMode === 'roundtable' ? 'block' : 'none' }}>
-            {/* Scene + status bar */}
-            <div>
-              {/* Topic banner so users remember what this panel is discussing */}
-              {store.ideaText && (
-                <div className="max-w-[1000px] mx-auto topic-banner">
-                  <span className="topic-banner-label">Topic</span>
-                  <span className="topic-banner-text">{store.ideaText}</span>
-                </div>
-              )}
+            {/* Scene + status bar pinned at top so transcript never pushes it off-screen */}
+            <div style={{ position: 'sticky', top: 0, zIndex: 10 }}>
               {/* On small screens, show a note that the scene is best on desktop */}
               <div className="sm:hidden text-center mb-2">
                 <p className="text-xs" style={{ color: 'var(--text-muted)' }}>Scene best viewed on a wider screen</p>
               </div>
               <div
                 ref={sceneContainerRef}
-                className="w-full max-w-[1000px] mx-auto scene-viewport overflow-hidden"
+                className="w-full max-w-[800px] mx-auto scene-viewport overflow-hidden"
                 style={{ aspectRatio: '16/9', borderRadius: '10px 10px 0 0', borderBottom: 'none' }}
               />
               {(() => {
@@ -965,12 +743,12 @@ export default function SessionPage() {
           </div>
 
           {/* Hint bar */}
-          <div className="max-w-[1000px] mx-auto mt-4 text-center">
+          <div className="max-w-[800px] mx-auto mt-4 text-center">
             <p className={`text-sm ${!isSpeaking && waitingForSpace ? 'animate-pulse' : ''}`}
               style={{ color: !isSpeaking && waitingForSpace ? 'var(--accent-gold)' : 'var(--text-muted)' }}>
               {hint}
             </p>
-            {!isSpeaking && waitingForSpace && viewMode === 'roundtable' && (
+            {!isSpeaking && waitingForSpace && (
               <button
                 onClick={() => {
                   if (advanceResolverRef.current) {
@@ -991,7 +769,7 @@ export default function SessionPage() {
           {/* Error — Broadcast Technical Difficulty */}
           {error && (
             <div
-              className="max-w-[1000px] mx-auto mt-3 text-sm error-slide-in"
+              className="max-w-[800px] mx-auto mt-3 text-sm error-slide-in"
               style={{
                 background: 'var(--dark-surface)',
                 border: '1px solid var(--dark-border)',
@@ -1078,12 +856,18 @@ export default function SessionPage() {
 
           {/* Moderation Input */}
           {inModeration && (
-            <div className="max-w-[1000px] mx-auto mt-4">
+            <div className="max-w-[800px] mx-auto mt-4">
               <ModerationInput onSubmit={handleModeration} disabled={isSpeaking} onWrapUp={handleWrapUp} />
             </div>
           )}
 
-          {/* Transcript is shown on the results page after the session */}
+          {/* Live Transcript */}
+          <LiveTranscript
+            entries={liveTranscript}
+            panelists={store.panelists}
+            activePanelistId={store.activePanelistId}
+            isSpeaking={isSpeaking}
+          />
         </div>
       </div>
     </div>

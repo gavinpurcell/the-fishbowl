@@ -3,15 +3,9 @@
 import { useState } from 'react';
 import Image from 'next/image';
 import type { Panelist } from '@/engine/types';
-import { createCustomPanelist, createCustomPanelistLocal, createPanelistFromTemplate, pickUnusedSpriteIndex } from '@/engine/panelist';
+import { createCustomPanelist, createCustomPanelistLocal } from '@/engine/panelist';
 import { createProvider } from '@/providers';
 import { useFishbowlStore } from '@/lib/store';
-import { PANEL_TEMPLATES } from '@/lib/templates';
-
-// Flat roster of all pre-built panelists, deduplicated by name
-const ROSTER = PANEL_TEMPLATES.flatMap((t) => t.panelists).filter(
-  (p, i, arr) => arr.findIndex((q) => q.name === p.name) === i
-);
 
 interface Props {
   panelists: Panelist[];
@@ -25,7 +19,6 @@ export default function PanelistBuilder({ panelists, onUpdate }: Props) {
   const [isExpanding, setIsExpanding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editPrompt, setEditPrompt] = useState('');
-  const [showCustomForm, setShowCustomForm] = useState(false);
   const { provider: providerType, apiKey } = useFishbowlStore();
 
   const addPanelist = async () => {
@@ -61,22 +54,6 @@ export default function PanelistBuilder({ panelists, onUpdate }: Props) {
     onUpdate(panelists.map((p) => p.id === editingId ? { ...p, systemPrompt: editPrompt } : p));
     setEditingId(null);
   };
-
-  const addFromRoster = (rosterPanelist: typeof ROSTER[number]) => {
-    if (panelists.length >= 4) return;
-    const spriteIndex = pickUnusedSpriteIndex(panelists);
-    const newP = createPanelistFromTemplate(
-      { name: rosterPanelist.name, role: rosterPanelist.role, description: rosterPanelist.description, color: rosterPanelist.color },
-      spriteIndex
-    );
-    onUpdate([...panelists, newP]);
-    setShowCustomForm(false);
-  };
-
-  // Available roster panelists (not already on the panel)
-  const availableRoster = ROSTER.filter(
-    (r) => !panelists.some((p) => p.name === r.name)
-  );
 
   // Empty slots to show available seats (max 4)
   const emptySlots = Math.max(0, 4 - panelists.length);
@@ -156,7 +133,6 @@ export default function PanelistBuilder({ panelists, onUpdate }: Props) {
               <div className="flex items-center gap-2 mt-3 pt-2" style={{ borderTop: `1px solid var(--border)` }}>
                 <button
                   onClick={() => editingId === p.id ? setEditingId(null) : startEditing(p)}
-                  aria-label={editingId === p.id ? `Close prompt editor for ${p.name}` : `Edit prompt for ${p.name}`}
                   className="text-[10px] font-500 px-2 py-1 rounded transition-colors"
                   style={{
                     color: 'var(--accent-gold)',
@@ -168,7 +144,6 @@ export default function PanelistBuilder({ panelists, onUpdate }: Props) {
                 <div style={{ flex: 1 }} />
                 <button
                   onClick={() => removePanelist(p.id)}
-                  aria-label={`Remove ${p.name}`}
                   className="text-[10px] px-2 py-1 rounded transition-colors"
                   style={{ color: 'var(--text-muted)' }}
                   onMouseEnter={(e) => e.currentTarget.style.color = 'var(--accent-red)'}
@@ -239,125 +214,65 @@ export default function PanelistBuilder({ panelists, onUpdate }: Props) {
         ))}
       </div>
 
-      {/* Add panelist — roster picker + custom option */}
+      {/* Add panelist form */}
       {panelists.length < 4 && (
         <div className="add-panelist-card p-4">
           <div className="label-mono mb-3">Add a panelist</div>
-
-          {/* Roster grid */}
-          {!showCustomForm && availableRoster.length > 0 && (
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-3">
-              {availableRoster.map((r) => (
-                <button
-                  key={r.name}
-                  onClick={() => addFromRoster(r)}
-                  className="text-left rounded-lg p-2.5 transition-all"
-                  style={{
-                    background: 'var(--bg-elevated)',
-                    border: '1px solid var(--border)',
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.borderColor = r.color;
-                    e.currentTarget.style.background = r.color + '08';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.borderColor = 'var(--border)';
-                    e.currentTarget.style.background = 'var(--bg-elevated)';
-                  }}
-                >
-                  <div className="text-xs font-medium" style={{ color: 'var(--text-primary)', fontFamily: "'Silkscreen', monospace", fontSize: '10px' }}>
-                    {r.name}
-                  </div>
-                  <div
-                    className="text-[9px] mt-0.5"
-                    style={{ color: r.color, fontFamily: "'DM Mono', monospace", letterSpacing: '0.04em', textTransform: 'uppercase' }}
-                  >
-                    {r.role}
-                  </div>
-                </button>
-              ))}
-            </div>
-          )}
-
-          {/* Toggle to custom form */}
-          {!showCustomForm ? (
-            <button
-              onClick={() => setShowCustomForm(true)}
-              className="text-[11px] transition-colors"
-              style={{ color: 'var(--accent-gold)', fontFamily: "'DM Mono', monospace" }}
-              onMouseEnter={(e) => e.currentTarget.style.color = 'var(--accent-amber)'}
-              onMouseLeave={(e) => e.currentTarget.style.color = 'var(--accent-gold)'}
-            >
-              + Create custom panelist
-            </button>
-          ) : (
-            <>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
-                <input
-                  value={newName}
-                  onChange={(e) => setNewName(e.target.value)}
-                  placeholder="Name"
-                  className="rounded-lg text-sm p-2.5"
-                  style={{
-                    background: 'var(--bg-elevated)',
-                    border: '1px solid var(--border)',
-                    color: 'var(--text-primary)',
-                    outline: 'none',
-                    width: '100%',
-                  }}
-                />
-                <input
-                  value={newRole}
-                  onChange={(e) => setNewRole(e.target.value)}
-                  placeholder="Role (e.g. UX Designer)"
-                  className="rounded-lg text-sm p-2.5"
-                  style={{
-                    background: 'var(--bg-elevated)',
-                    border: '1px solid var(--border)',
-                    color: 'var(--text-primary)',
-                    outline: 'none',
-                    width: '100%',
-                  }}
-                />
-              </div>
-              <input
-                value={newDesc}
-                onChange={(e) => setNewDesc(e.target.value)}
-                placeholder="Personality (optional — e.g., Data-driven, blunt, skeptical)"
-                className="rounded-lg text-sm p-2.5 mb-3"
-                style={{
-                  background: 'var(--bg-elevated)',
-                  border: '1px solid var(--border)',
-                  color: 'var(--text-primary)',
-                  outline: 'none',
-                  width: '100%',
-                }}
-              />
-              <div className="flex items-center gap-3">
-                <button
-                  onClick={addPanelist}
-                  disabled={!newName.trim() || !newRole.trim() || isExpanding}
-                  className="px-4 py-2.5 rounded-lg text-xs font-500 transition-all disabled:opacity-30"
-                  style={{
-                    background: 'var(--accent-gold)',
-                    color: 'var(--bg-deep)',
-                    fontFamily: "'DM Mono', monospace",
-                    letterSpacing: '0.04em',
-                    textTransform: 'uppercase',
-                  }}
-                >
-                  {isExpanding ? 'Building persona...' : 'Add to Panel'}
-                </button>
-                <button
-                  onClick={() => setShowCustomForm(false)}
-                  className="text-[11px] transition-colors"
-                  style={{ color: 'var(--text-muted)', fontFamily: "'DM Mono', monospace" }}
-                >
-                  Back to roster
-                </button>
-              </div>
-            </>
-          )}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
+            <input
+              value={newName}
+              onChange={(e) => setNewName(e.target.value)}
+              placeholder="Name"
+              className="rounded-lg text-sm p-2.5"
+              style={{
+                background: 'var(--bg-elevated)',
+                border: '1px solid var(--border)',
+                color: 'var(--text-primary)',
+                outline: 'none',
+                width: '100%',
+              }}
+            />
+            <input
+              value={newRole}
+              onChange={(e) => setNewRole(e.target.value)}
+              placeholder="Role (e.g. UX Designer)"
+              className="rounded-lg text-sm p-2.5"
+              style={{
+                background: 'var(--bg-elevated)',
+                border: '1px solid var(--border)',
+                color: 'var(--text-primary)',
+                outline: 'none',
+                width: '100%',
+              }}
+            />
+          </div>
+          <input
+            value={newDesc}
+            onChange={(e) => setNewDesc(e.target.value)}
+            placeholder="Personality (optional — e.g., Data-driven, blunt, skeptical)"
+            className="rounded-lg text-sm p-2.5 mb-3"
+            style={{
+              background: 'var(--bg-elevated)',
+              border: '1px solid var(--border)',
+              color: 'var(--text-primary)',
+              outline: 'none',
+              width: '100%',
+            }}
+          />
+          <button
+            onClick={addPanelist}
+            disabled={!newName.trim() || !newRole.trim() || isExpanding}
+            className="px-4 py-2.5 rounded-lg text-xs font-500 transition-all disabled:opacity-30"
+            style={{
+              background: 'var(--accent-gold)',
+              color: 'var(--bg-deep)',
+              fontFamily: "'DM Mono', monospace",
+              letterSpacing: '0.04em',
+              textTransform: 'uppercase',
+            }}
+          >
+            {isExpanding ? 'Building persona...' : 'Add to Panel'}
+          </button>
         </div>
       )}
 

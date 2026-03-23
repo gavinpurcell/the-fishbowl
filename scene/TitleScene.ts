@@ -1,27 +1,15 @@
 import { Application } from 'pixi.js';
 import { Character } from './Character';
 import { Room } from './Room';
-import { SpeechBubble } from './SpeechBubble';
-import { PanelistTag } from './PanelistTag';
 
 type CharacterState = 'idle' | 'talking' | 'thinking' | 'reacting' | 'gesturing' | 'skeptical';
 
 const DEMO_CHARACTERS = [
-  { id: 'alex', name: 'ALEX', role: 'Strategist', color: '#9a6ab4', spriteIndex: 4, state: 'skeptical' as const },
+  { id: 'maya', name: 'MAYA', role: 'Designer', color: '#4a9e6e', spriteIndex: 0, state: 'gesturing' as const },
   { id: 'derek', name: 'DEREK', role: 'CFO', color: '#c45a5a', spriteIndex: 1, state: 'thinking' as const },
-  { id: 'sam', name: 'SAM', role: 'Marketer', color: '#d4a040', spriteIndex: 3, state: 'reacting' as const },
   { id: 'priya', name: 'PRIYA', role: 'Engineer', color: '#5a7ec4', spriteIndex: 2, state: 'talking' as const },
-];
-
-const DEMO_QUOTES = [
-  'The market timing feels right, but the unit economics need work.',
-  'I keep coming back to the retention numbers. They tell the real story.',
-  'This could work, but only if we nail the onboarding experience first.',
-  'Look, the TAM is there. The question is whether this team can execute.',
-  'The competitive moat is thinner than you think. What happens when a big player copies this?',
-  'I would use this. Actually, I would pay for this. That says something.',
-  'The brand positioning is off. You are selling features when you should be selling outcomes.',
-  'Ship it. Learn. Iterate. We are overthinking this.',
+  { id: 'sam', name: 'SAM', role: 'Marketer', color: '#d4a040', spriteIndex: 3, state: 'reacting' as const },
+  { id: 'alex', name: 'ALEX', role: 'Strategist', color: '#9a6ab4', spriteIndex: 4, state: 'skeptical' as const },
 ];
 
 const SPEAKER_STATES: CharacterState[] = ['talking', 'gesturing'];
@@ -38,18 +26,13 @@ function randInt(min: number, max: number): number {
 export class TitleScene {
   private app: Application | null = null;
   private characters: Character[] = [];
-  private tags: PanelistTag[] = [];
-  private bubble: SpeechBubble | null = null;
   private room: Room | null = null;
-  private readonly BASE_BUBBLE_HEIGHT = 146;
 
-  // Use the same seat positions as FishbowlScene for 4 characters
-  private SEATS = [
-    { x: 329, y: 348, scale: 0.72, facing: 'right' as const, tagX: -81, tagY: -90, tagAlign: 'right' as const },
-    { x: 473, y: 346, scale: 0.72, facing: 'left' as const, tagX: 79, tagY: -87, tagAlign: 'left' as const },
-    { x: 304, y: 402, scale: 0.80, facing: 'right' as const, tagX: -43, tagY: -71, tagAlign: 'right' as const },
-    { x: 489, y: 409, scale: 0.80, facing: 'left' as const, tagX: 49, tagY: -78, tagAlign: 'left' as const },
-  ];
+  // Same ellipse layout as FishbowlScene
+  private CIRCLE_CX = 400;
+  private CIRCLE_CY = 390;
+  private CIRCLE_RX = 180;
+  private CIRCLE_RY = 55;
 
   // Conversation simulation state
   private conversationTimer = 0;
@@ -81,10 +64,12 @@ export class TitleScene {
     this.room = new Room();
     this.app.stage.addChild(this.room);
 
-    // 4 characters in fixed seat positions matching the session layout
+    // 5 characters in ellipse
     for (let i = 0; i < DEMO_CHARACTERS.length; i++) {
       const cfg = DEMO_CHARACTERS[i];
-      const seat = this.SEATS[i];
+      const angle = (i / DEMO_CHARACTERS.length) * Math.PI * 2 - Math.PI / 2;
+      const x = this.CIRCLE_CX + Math.cos(angle) * this.CIRCLE_RX;
+      const y = this.CIRCLE_CY + Math.sin(angle) * this.CIRCLE_RY;
 
       const character = new Character({
         panelistId: cfg.id,
@@ -93,36 +78,27 @@ export class TitleScene {
         color: cfg.color,
         spriteIndex: cfg.spriteIndex,
       });
-      character.position.set(seat.x, seat.y);
-      character.scale.set(seat.scale);
-      character.setFacing(seat.facing);
+      character.position.set(x, y);
       character.setState(cfg.state);
-      character.zIndex = Math.floor(seat.y * 10);
+
+      // Scale based on y-position for depth perspective
+      const depthScale = 0.8 + ((y - (this.CIRCLE_CY - this.CIRCLE_RY)) / (2 * this.CIRCLE_RY)) * 0.4;
+      character.scale.set(depthScale);
+
+      // Set facing based on position
+      if (x > this.CIRCLE_CX) {
+        character.setFacing('left');
+      } else {
+        character.setFacing('right');
+      }
 
       this.app.stage.addChild(character);
       this.characters.push(character);
-
-      // Name tags
-      const tag = new PanelistTag({
-        name: cfg.name,
-        role: cfg.role,
-        align: seat.tagAlign,
-        accentColor: cfg.color,
-      });
-      tag.position.set(seat.x + seat.tagX, seat.y + seat.tagY);
-      tag.zIndex = 15000;
-      this.app.stage.addChild(tag);
-      this.tags.push(tag);
     }
-
-    // Speech bubble (shared, repositioned per speaker)
-    this.bubble = new SpeechBubble();
-    this.bubble.zIndex = 20000;
-    this.bubble.visible = false;
-    this.app.stage.addChild(this.bubble);
 
     // Z-sorting
     this.app.stage.sortableChildren = true;
+    this.characters.forEach(c => { c.zIndex = Math.floor(c.y); });
     this.app.stage.sortChildren();
 
     // Kick off the first conversation turn
@@ -133,7 +109,6 @@ export class TitleScene {
       const delta = ticker.deltaTime;
       this.room?.update(delta);
       this.characters.forEach(c => c.update(delta));
-      this.bubble?.update(delta);
       this.updateConversation(delta);
     });
   }
@@ -150,13 +125,6 @@ export class TitleScene {
 
     // Set the speaker to talking or gesturing
     this.characters[nextSpeaker].setState(pick(SPEAKER_STATES));
-
-    // Show speech bubble above the speaker
-    if (this.bubble) {
-      const seat = this.SEATS[nextSpeaker];
-      this.bubble.position.set(seat.x, seat.y - this.BASE_BUBBLE_HEIGHT * seat.scale);
-      this.bubble.show(pick(DEMO_QUOTES));
-    }
 
     // Build list of non-speaker indices
     const others = this.characters
@@ -201,9 +169,6 @@ export class TitleScene {
     this.isPausing = true;
     this.pauseTimer = 0;
     this.pauseDuration = randInt(60, 120);
-
-    // Hide speech bubble during pause
-    if (this.bubble) this.bubble.hide();
 
     // Speaker transitions to thinking (brief pause before next speaker)
     if (this.currentSpeakerIndex >= 0) {

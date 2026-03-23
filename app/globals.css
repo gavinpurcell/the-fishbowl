@@ -8,7 +8,7 @@
   --bg-card: #ffffff;
   --text-primary: #1a1714;
   --text-secondary: #5a5248;
-  --text-muted: #6b6058;
+  --text-muted: #8a8078;
   --accent-gold: #c49a2a;
   --accent-gold-dim: #a88020;
   --accent-gold-light: #f0c866;
@@ -84,10 +84,7 @@ body::before {
   50% { box-shadow: 0 0 0 6px rgba(232, 184, 75, 0); }
 }
 
-.pulse-ring {
-  animation: pulseRing 2s ease-in-out infinite;
-  will-change: box-shadow;
-}
+.pulse-ring { animation: pulseRing 2s ease-in-out infinite; }
 
 /* CTA button glow pulse */
 @keyframes ctaGlow {
@@ -95,10 +92,7 @@ body::before {
   50% { box-shadow: 0 4px 24px rgba(196, 154, 42, 0.5), 0 0 40px rgba(196, 154, 42, 0.15); }
 }
 
-.cta-glow {
-  animation: ctaGlow 3s ease-in-out infinite;
-  will-change: box-shadow;
-}
+.cta-glow { animation: ctaGlow 3s ease-in-out infinite; }
 .cta-glow:hover {
   transform: translateY(-1px) scale(1.02);
   box-shadow: 0 6px 24px rgba(196, 154, 42, 0.45) !important;
@@ -153,36 +147,6 @@ html, body {
 /* Mono font utility class — DM Mono for data, labels, code */
 .font-mono-ui {
   font-family: 'DM Mono', monospace;
-}
-
-/* Topic banner above the scene — reminds user what's being discussed */
-.topic-banner {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 8px 14px;
-  background: var(--dark-surface, #1a1a1a);
-  border: 1px solid var(--dark-border, #333);
-  border-bottom: none;
-  border-radius: 10px 10px 0 0;
-  font-family: 'DM Mono', monospace;
-  font-size: 12px;
-  line-height: 1.4;
-}
-
-.topic-banner-label {
-  font-size: 9px;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--accent-gold);
-  flex-shrink: 0;
-}
-
-.topic-banner-text {
-  color: var(--text-muted, #999);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 /* Scene viewport — retro CRT-style frame */
@@ -252,7 +216,7 @@ html, body {
 
 /* Decorative gold rule below title */
 .title-rule {
-  width: min(240px, 60vw);
+  width: 0;
   height: 2px;
   background: linear-gradient(
     90deg,
@@ -262,14 +226,12 @@ html, body {
     var(--accent-gold) 80%,
     transparent 100%
   );
-  transform: scaleX(0);
-  transform-origin: center;
   animation: titleRuleExpand 0.8s cubic-bezier(0.22, 1, 0.36, 1) 0.5s forwards;
 }
 
 @keyframes titleRuleExpand {
-  from { transform: scaleX(0); opacity: 0; }
-  to { transform: scaleX(1); opacity: 1; }
+  from { width: 0; opacity: 0; }
+  to { width: min(240px, 60vw); opacity: 1; }
 }
 
 /* Scene "LIVE" badge with recording pulse */
@@ -294,8 +256,6 @@ html, body {
   border-radius: 50%;
   background: var(--accent-red);
   animation: badgePulse 2s ease-in-out infinite;
-  will-change: opacity, box-shadow;
-  transform: translateZ(0);
 }
 
 @keyframes badgePulse {
@@ -454,9 +414,6 @@ html, body {
   padding: 2px 8px;
   border-radius: 4px;
   white-space: nowrap;
-  max-width: 100%;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 /* Card entrance animation — staggered pop-in */
@@ -609,7 +566,6 @@ html, body {
 
 .start-button-dramatic:not(:disabled) {
   animation: startButtonPulse 3s ease-in-out infinite;
-  will-change: box-shadow;
 }
 
 .start-button-dramatic:hover:not(:disabled) {
@@ -625,7 +581,17 @@ html, body {
   overflow: hidden;
 }
 
-/* decorative line removed — was causing visual inconsistencies */
+.section-header::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  max-width: 200px;
+  background: linear-gradient(
+    90deg,
+    var(--border) 0%,
+    transparent 100%
+  );
+}
 
 /* Provider pill toggle */
 .provider-pill {
@@ -981,7 +947,6 @@ html, body {
   border-radius: 12px;
   pointer-events: none;
   animation: tourHighlightPulse 2s ease-in-out infinite;
-  will-change: box-shadow;
 }
 
 @keyframes tourHighlightPulse {
@@ -1273,7 +1238,6 @@ html, body {
   align-items: center;
   gap: 4px;
   min-height: 24px;
-  contain: layout;
 }
 
 .thinking-dots .thinking-text {
@@ -1291,7 +1255,6 @@ html, body {
   background: var(--accent-gold);
   opacity: 0.3;
   animation: thinkingBounce 1.4s ease-in-out infinite;
-  will-change: transform, opacity;
 }
 
 /* nth-child accounts for the .thinking-text span as child 1 */
@@ -1404,13 +1367,12 @@ html, body {
 
 /* Error auto-dismiss progress bar — shrinks from 100% to 0 over 10s */
 @keyframes errorDismiss {
-  from { transform: scaleX(1); }
-  to { transform: scaleX(0); }
+  from { width: 100%; }
+  to { width: 0%; }
 }
 
 .error-dismiss-bar {
   animation: errorDismiss 10s linear forwards;
-  transform-origin: left;
 }
 
 /* Dossier card — slide in from the left */
@@ -1459,54 +1421,6 @@ html, body {
       0 0 24px rgba(196, 154, 42, 0.15),
       inset 0 1px 0 rgba(255, 255, 255, 0.12);
   }
-}
-
-/* ---- Moderation Input: SEND button interactive states ---- */
-.moderation-send-btn:not(:disabled):hover {
-  background: var(--accent-gold-dim) !important;
-  transform: translateY(-1px);
-  box-shadow: 0 0 20px rgba(196, 154, 42, 0.4) !important;
-}
-.moderation-send-btn:not(:disabled):active {
-  transform: translateY(1px);
-  box-shadow: 0 0 12px rgba(196, 154, 42, 0.25) !important;
-}
-
-/* ---- Moderation Input: "wrap up the session" link hover ---- */
-.moderation-wrap-link:hover {
-  color: var(--accent-gold-light) !important;
-  text-decoration-color: var(--accent-gold) !important;
-}
-
-/* ---- Moderation Input: END SHOW button interactive states ---- */
-.moderation-end-btn:hover {
-  background: linear-gradient(180deg, rgba(196, 154, 42, 0.35) 0%, rgba(196, 154, 42, 0.15) 100%) !important;
-  transform: translateY(-2px);
-  box-shadow: 0 0 24px rgba(196, 154, 42, 0.5), 0 0 48px rgba(196, 154, 42, 0.2), 0 4px 12px rgba(0,0,0,0.3) !important;
-}
-.moderation-end-btn:active {
-  transform: translateY(1px);
-  box-shadow: 0 0 12px rgba(196, 154, 42, 0.3), inset 0 2px 4px rgba(0,0,0,0.2) !important;
-}
-
-/* ---- Moderation Input: textarea focus state ---- */
-.moderation-input-form textarea:focus:not(:disabled) {
-  border-color: rgba(196,154,42,0.3) !important;
-  background: rgba(255,255,255,0.06) !important;
-}
-
-/* ---- Moderation Input: pulsing "ready" glow when input is enabled ---- */
-@keyframes moderationReady {
-  0%, 100% {
-    box-shadow: 0 0 0 0 rgba(196, 154, 42, 0);
-  }
-  50% {
-    box-shadow: 0 0 12px 2px rgba(196, 154, 42, 0.35);
-  }
-}
-.moderation-input-ready {
-  animation: moderationReady 2s ease-in-out 3;
-  border-color: rgba(196,154,42,0.3) !important;
 }
 
 /* Dark panel scrollbar — shared by moderation input + transcript */
@@ -1907,7 +1821,6 @@ html, body {
   transition: all 0.15s ease;
   text-transform: uppercase;
   animation: startButtonPulse 3s ease-in-out infinite;
-  will-change: box-shadow;
 }
 
 .results-cta:hover {
@@ -1971,7 +1884,6 @@ html, body {
   background-clip: text;
   filter: drop-shadow(0 2px 4px rgba(164, 120, 24, 0.3));
   animation: loadingPulse 2s ease-in-out infinite;
-  will-change: opacity;
 }
 
 .fishbowl-loading-label {
@@ -1996,7 +1908,6 @@ html, body {
   border-radius: 2px;
   background: linear-gradient(90deg, var(--accent-gold), var(--accent-gold-light));
   animation: loadingSlide 1.2s ease-in-out infinite;
-  will-change: transform;
 }
 
 @keyframes loadingPulse {

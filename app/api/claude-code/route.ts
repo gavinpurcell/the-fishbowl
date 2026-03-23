@@ -203,38 +203,20 @@ async function generateResponse(prompt: string, model: string): Promise<Response
         return;
       }
 
-      // claude --output-format json emits multiple JSON lines (system init,
-      // assistant messages, result). Find the result event for the final text.
-      let text = '';
-      const lines = stdout.trim().split('\n');
-      for (const line of lines) {
-        if (!line.trim()) continue;
-        try {
-          const parsed = JSON.parse(line);
-          // The result event has the final response text
-          if (parsed.type === 'result' && parsed.result) {
-            text = parsed.result;
-          }
-          // Fallback: assistant message with text content
-          if (!text && parsed.type === 'assistant' && parsed.message?.content) {
-            for (const block of parsed.message.content) {
-              if (block.type === 'text' && block.text) {
-                text = block.text;
-              }
-            }
-          }
-        } catch {
-          // Skip non-JSON lines
-        }
+      try {
+        const parsed = JSON.parse(stdout);
+        const text = parsed.result || parsed.message?.content?.[0]?.text || stdout;
+        resolve(new Response(
+          JSON.stringify({ text, usage: { inputTokens: 0, outputTokens: Math.round(text.split(/\s+/).length * 1.3) } }),
+          { headers: { 'Content-Type': 'application/json' } },
+        ));
+      } catch {
+        // Raw text output
+        resolve(new Response(
+          JSON.stringify({ text: stdout.trim(), usage: { inputTokens: 0, outputTokens: Math.round(stdout.split(/\s+/).length * 1.3) } }),
+          { headers: { 'Content-Type': 'application/json' } },
+        ));
       }
-
-      // Last resort: if no structured data found, use raw output
-      if (!text) text = stdout.trim();
-
-      resolve(new Response(
-        JSON.stringify({ text, usage: { inputTokens: 0, outputTokens: Math.round(text.split(/\s+/).length * 1.3) } }),
-        { headers: { 'Content-Type': 'application/json' } },
-      ));
     });
 
     proc.on('error', () => {

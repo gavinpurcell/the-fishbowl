@@ -22,20 +22,12 @@ const PROVIDERS: { id: ProviderType; label: string }[] = [
 
 export default function ApiKeyConfig({ provider, apiKey, modelId, onProviderChange, onApiKeyChange, onModelChange }: Props) {
   useEffect(() => {
-    try {
-      const savedKey = localStorage.getItem(`fishbowl-apikey-${provider}`);
-      if (savedKey && !apiKey) onApiKeyChange(savedKey);
-    } catch {
-      // localStorage unavailable (private/incognito mode or storage full)
-    }
+    const savedKey = localStorage.getItem(`fishbowl-apikey-${provider}`);
+    if (savedKey && !apiKey) onApiKeyChange(savedKey);
   }, [provider]);
 
   useEffect(() => {
-    try {
-      if (apiKey) localStorage.setItem(`fishbowl-apikey-${provider}`, apiKey);
-    } catch {
-      // localStorage unavailable (private/incognito mode or storage full)
-    }
+    if (apiKey) localStorage.setItem(`fishbowl-apikey-${provider}`, apiKey);
   }, [apiKey, provider]);
 
   const models = getModelsForProvider(provider);
@@ -86,7 +78,6 @@ export default function ApiKeyConfig({ provider, apiKey, modelId, onProviderChan
               value={apiKey}
               onChange={(e) => onApiKeyChange(e.target.value)}
               placeholder={provider === 'claude' ? 'sk-ant-...' : 'sk-...'}
-              aria-label="API key"
               className="dossier-input"
             />
             <p className="text-[10px] mt-2" style={{ color: '#5a5248', opacity: 0.8 }}>
@@ -98,7 +89,6 @@ export default function ApiKeyConfig({ provider, apiKey, modelId, onProviderChan
               <select
                 value={modelId}
                 onChange={(e) => onModelChange(e.target.value)}
-                aria-label="AI model"
                 className="dossier-select"
               >
                 {models.map((m) => (
@@ -157,7 +147,6 @@ export default function ApiKeyConfig({ provider, apiKey, modelId, onProviderChan
               <select
                 value={modelId}
                 onChange={(e) => onModelChange(e.target.value)}
-                aria-label="AI model"
                 className="dossier-select"
               >
                 {models.map((m) => (

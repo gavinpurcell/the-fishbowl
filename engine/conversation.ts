@@ -109,8 +109,6 @@ export class ConversationOrchestrator {
   private transcript: TranscriptEntry[] = [];
   private aborted = false;
   private prefetchedInitialTakes: Map<string, PrefetchedResponse> = new Map();
-  private prefetchedCrossTalk: Map<string, PrefetchedResponse> = new Map();
-  private prefetchedModeration: Map<string, PrefetchedResponse> = new Map();
   private prefetching = false;
   /** Count of consecutive panelist failures — used to abort if everything is broken */
   private consecutiveFailures = 0;
@@ -132,7 +130,7 @@ export class ConversationOrchestrator {
     this.prefetching = true;
 
     const ideaContext = this.buildIdeaContext();
-    const prompt = `${ideaContext}\n\nReact naturally, like you just heard this pitch for the first time. What stands out? What concerns you? What excites you? Be specific and draw on your expertise. Keep your response to 100-200 words. Write in plain text only. No markdown, no em-dashes, no formatting.`;
+    const prompt = `${ideaContext}\n\nReact naturally, like you just heard this pitch for the first time. What stands out? What concerns you? What excites you? Be specific and draw on your expertise. Keep your response to 100-200 words. Remember: plain text only, no markdown, no em-dashes.`;
 
     for (const panelist of this.panelists) {
       const prefetched: PrefetchedResponse = {
@@ -206,76 +204,6 @@ export class ConversationOrchestrator {
     }
 
     prefetched.ready = true;
-  }
-
-  /**
-   * Pre-fetch all cross-talk responses in parallel using the current transcript
-   * (which should contain all initial takes at this point). Each panelist's
-   * response is generated independently so they won't reference each other's
-   * cross-talk, but they'll all respond to the initial takes.
-   */
-  prefetchCrossTalk(): void {
-    this.prefetchedCrossTalk.clear();
-
-    const ideaContext = this.buildIdeaContext();
-    const transcriptContext = this.buildTranscriptContext();
-    const prompt = `${ideaContext}\n\n${transcriptContext}\n\nJump in like you would in a real meeting. Agree, push back, or build on what was said. Reference specific panelists by name. Be direct and specific. Keep your response to 100-200 words. Write in plain text only. No markdown, no em-dashes, no formatting.`;
-
-    for (const panelist of this.panelists) {
-      const prefetched: PrefetchedResponse = {
-        text: '',
-        chunks: [],
-        inputTokens: 0,
-        outputTokens: 0,
-        ready: false,
-      };
-      this.prefetchedCrossTalk.set(panelist.id, prefetched);
-
-      const messages: Message[] = [
-        { role: 'system', content: panelist.systemPrompt },
-        { role: 'user', content: prompt },
-      ];
-
-      this.prefetchWithRetry(panelist, messages, prefetched).catch((err) => {
-        console.error(`[prefetch-crosstalk] Error for ${panelist.id}:`, err);
-        prefetched.error = err instanceof Error ? err.message : String(err);
-        prefetched.ready = true;
-      });
-    }
-  }
-
-  /**
-   * Pre-fetch all panelist responses to a moderation question in parallel.
-   * Uses the current transcript snapshot (includes everything said so far).
-   */
-  prefetchModerationResponses(question: string): void {
-    this.prefetchedModeration.clear();
-
-    const ideaContext = this.buildIdeaContext();
-    const transcriptContext = this.buildTranscriptContext();
-    const prompt = `${ideaContext}\n\n${transcriptContext}\n\nModerator: ${question}\n\nThe moderator has stepped in with a question or directive. Respond directly to what they asked. You can also reference what other panelists have said. Be specific and actionable. Keep your response to 100-200 words. Write in plain text only. No markdown, no em-dashes, no formatting.`;
-
-    for (const panelist of this.panelists) {
-      const prefetched: PrefetchedResponse = {
-        text: '',
-        chunks: [],
-        inputTokens: 0,
-        outputTokens: 0,
-        ready: false,
-      };
-      this.prefetchedModeration.set(panelist.id, prefetched);
-
-      const messages: Message[] = [
-        { role: 'system', content: panelist.systemPrompt },
-        { role: 'user', content: prompt },
-      ];
-
-      this.prefetchWithRetry(panelist, messages, prefetched).catch((err) => {
-        console.error(`[prefetch-moderation] Error for ${panelist.id}:`, err);
-        prefetched.error = err instanceof Error ? err.message : String(err);
-        prefetched.ready = true;
-      });
-    }
   }
 
   private buildIdeaContext(): string {
@@ -457,13 +385,7 @@ export class ConversationOrchestrator {
 
     // If prefetch failed, fall back to a fresh live request with retry
     if (prefetched.error) {
-      if (round === 'initial-takes') {
-        this.prefetchedInitialTakes.delete(panelist.id);
-      } else if (round === 'cross-talk') {
-        this.prefetchedCrossTalk.delete(panelist.id);
-      } else if (round === 'moderation') {
-        this.prefetchedModeration.delete(panelist.id);
-      }
+      this.prefetchedInitialTakes.delete(panelist.id);
       await this._runSinglePanelist(panelist, round);
       return;
     }
@@ -480,9 +402,7 @@ export class ConversationOrchestrator {
     };
     this.callbacks.onTranscriptEntry(entry);
 
-    // Stream chunks as they arrive (or replay if already done).
-    // When replaying cached chunks, use a slower delay so the text feels
-    // like it's being typed out in real time rather than dumped all at once.
+    // Stream chunks as they arrive (or replay if already done)
     let emitted = 0;
 
     while (!this.aborted) {
@@ -490,10 +410,9 @@ export class ConversationOrchestrator {
       while (emitted < prefetched.chunks.length) {
         this.callbacks.onStreamChunk(panelist.id, prefetched.chunks[emitted]);
         emitted++;
+        // Small delay for visual streaming effect when replaying cached chunks
         if (prefetched.ready) {
-          // Replay delay: 100ms per chunk gives a natural typing cadence
-          // that feels like real-time generation even though it's pre-loaded
-          await new Promise((r) => setTimeout(r, 100));
+          await new Promise((r) => setTimeout(r, 15));
         }
       }
 
@@ -514,19 +433,12 @@ export class ConversationOrchestrator {
   }
 
   /**
-   * Run a single panelist — uses prefetched data if available.
+   * Run a single panelist — uses prefetched data for initial-takes if available.
    */
   async runSinglePanelist(panelist: Panelist, round: RoundType): Promise<void> {
     // Use prefetched response if available
     if (round === 'initial-takes') {
       const prefetched = this.prefetchedInitialTakes.get(panelist.id);
-      if (prefetched) {
-        await this.replayPrefetched(panelist, prefetched, round);
-        return;
-      }
-    }
-    if (round === 'cross-talk') {
-      const prefetched = this.prefetchedCrossTalk.get(panelist.id);
       if (prefetched) {
         await this.replayPrefetched(panelist, prefetched, round);
         return;
@@ -543,13 +455,11 @@ export class ConversationOrchestrator {
 
     let prompt: string;
     if (round === 'initial-takes') {
-      prompt = `${ideaContext}\n\nReact naturally, like you just heard this pitch for the first time. What stands out? What concerns you? What excites you? Be specific and draw on your expertise. Keep your response to 100-200 words. Write in plain text only. No markdown, no em-dashes, no formatting.`;
+      prompt = `${ideaContext}\n\nReact naturally, like you just heard this pitch for the first time. What stands out? What concerns you? What excites you? Be specific and draw on your expertise. Keep your response to 100-200 words. Remember: plain text only, no markdown, no em-dashes.`;
     } else if (round === 'cross-talk') {
-      prompt = `${ideaContext}\n\n${transcriptContext}\n\nJump in like you would in a real meeting. Agree, push back, or build on what was said. Reference specific panelists by name. Be direct and specific. Keep your response to 100-200 words. Write in plain text only. No markdown, no em-dashes, no formatting.`;
-    } else if (round === 'wrap-up') {
-      prompt = `${transcriptContext}\n\nThe discussion is wrapping up. Give one honest takeaway in a single sentence. Be real. No markdown, no em-dashes, just plain talk.`;
+      prompt = `${ideaContext}\n\n${transcriptContext}\n\nJump in like you would in a real meeting. Agree, push back, or build on what was said. Reference specific panelists by name. Be direct and specific. Keep your response to 100-200 words. Remember: plain text only, no markdown, no em-dashes.`;
     } else {
-      prompt = `${ideaContext}\n\n${transcriptContext}\n\nShare your thoughts naturally. Keep your response to 100-200 words. Write in plain text only. No markdown, no em-dashes, no formatting.`;
+      prompt = `${ideaContext}\n\n${transcriptContext}\n\nShare your thoughts naturally. Keep your response to 100-200 words. Remember: plain text only, no markdown, no em-dashes.`;
     }
 
     await this.streamPanelistResponse(panelist, prompt, round);
@@ -559,16 +469,20 @@ export class ConversationOrchestrator {
     this.callbacks.onRoundChange('cross-talk');
     const ideaContext = this.buildIdeaContext();
 
-    for (const panelist of this.panelists) {
-      if (this.aborted) return;
-      const transcriptContext = this.buildTranscriptContext();
-      const prompt = `${ideaContext}\n\n${transcriptContext}\n\nJump in like you would in a real meeting. Agree, push back, or build on what was said. Reference specific panelists by name. Be direct and specific. Keep your response to 100-200 words. Write in plain text only. No markdown, no em-dashes, no formatting.`;
-      await this.streamPanelistResponse(panelist, prompt, 'cross-talk');
+    for (let round = 0; round < 2; round++) {
+      for (const panelist of this.panelists) {
+        if (this.aborted) return;
+        const transcriptContext = this.buildTranscriptContext();
+        const prompt = `${ideaContext}\n\n${transcriptContext}\n\nJump in like you would in a real meeting. Agree, push back, or build on what was said. Reference specific panelists by name. Be direct and specific. Keep your response to 100-200 words. Remember: plain text only, no markdown, no em-dashes.`;
+        await this.streamPanelistResponse(panelist, prompt, 'cross-talk');
+      }
     }
   }
 
-  /** Record the moderator question in the transcript */
-  recordModerationQuestion(question: string): void {
+  async handleModerationQuestion(question: string): Promise<void> {
+    const ideaContext = this.buildIdeaContext();
+    const transcriptContext = this.buildTranscriptContext();
+
     const userEntry: TranscriptEntry = {
       id: generateId(),
       panelistId: 'user',
@@ -579,23 +493,13 @@ export class ConversationOrchestrator {
     };
     this.transcript.push(userEntry);
     this.callbacks.onTranscriptEntry(userEntry);
-  }
 
-  /** Run a single panelist's moderation response — uses prefetched data if available */
-  async runModerationPanelist(panelist: Panelist, question: string): Promise<void> {
-    if (this.aborted) return;
-    // Use prefetched response if available
-    const prefetched = this.prefetchedModeration.get(panelist.id);
-    if (prefetched) {
-      await this.replayPrefetched(panelist, prefetched, 'moderation');
-      return;
+    for (const panelist of this.panelists) {
+      if (this.aborted) return;
+      const prompt = `${ideaContext}\n\n${transcriptContext}\n\nModerator: ${question}\n\nThe moderator has stepped in with a question or directive. Respond directly to what they asked. You can also reference what other panelists have said. Be specific and actionable. Keep your response to 100-200 words. Remember: plain text only, no markdown, no em-dashes.`;
+      await this.streamPanelistResponse(panelist, prompt, 'moderation');
     }
-    const ideaContext = this.buildIdeaContext();
-    const transcriptContext = this.buildTranscriptContext();
-    const prompt = `${ideaContext}\n\n${transcriptContext}\n\nModerator: ${question}\n\nThe moderator has stepped in with a question or directive. Respond directly to what they asked. You can also reference what other panelists have said. Be specific and actionable. Keep your response to 100-200 words. Write in plain text only. No markdown, no em-dashes, no formatting.`;
-    await this.streamPanelistResponse(panelist, prompt, 'moderation');
   }
-
 
   async runWrapUp(): Promise<void> {
     this.callbacks.onRoundChange('wrap-up');
@@ -615,7 +519,7 @@ export class ConversationOrchestrator {
     this.callbacks.onRoundChange('summary');
     const transcriptContext = this.buildTranscriptContext();
 
-    const prompt = `${transcriptContext}\n\nSynthesize this discussion into a structured summary using the following markdown formatting:\n\nUse ## headings for each section (e.g., ## Key Insights). Use **bold** to emphasize panelist names and key phrases. Use - bullet lists for individual points. Use numbered lists (1. 2. 3.) for ranked recommendations. Use > blockquote lines for notable quotes from panelists, in the format: > "Quote text" — Panelist Name.\n\nInclude these sections:\n\n## Key Insights\nThe most important points raised, as bullet points.\n\n## Points of Agreement\nWhere the panelists aligned, as bullet points.\n\n## Points of Disagreement\nWhere they diverged and why, as bullet points.\n\n## Top Recommendations\nThe 3 to 5 most actionable next steps, as a numbered list in priority order.\n\nBe specific and reference which panelists made which points. Use **bold** for panelist names. Do not use em-dashes in prose — only use them in blockquote attributions.`;
+    const prompt = `${transcriptContext}\n\nSynthesize this discussion into a structured summary with these sections:\n\nKey Insights: The most important points raised.\n\nPoints of Agreement: Where the panelists aligned.\n\nPoints of Disagreement: Where they diverged and why.\n\nTop Recommendations: The 3 to 5 most actionable next steps, in priority order.\n\nBe specific and reference which panelists made which points. Write in plain text only. Do not use markdown formatting, em-dashes, bold, italic, headers, or bullet symbols. Use short paragraphs and line breaks to organize the sections.`;
 
     for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
       try {
@@ -671,25 +575,5 @@ export class ConversationOrchestrator {
 
   loadTranscript(transcript: TranscriptEntry[]): void {
     this.transcript = [...transcript];
-  }
-
-  /** Check if a panelist's initial take has been prefetched and is ready */
-  isInitialTakeReady(panelistId: string): boolean {
-    const prefetched = this.prefetchedInitialTakes.get(panelistId);
-    return prefetched?.ready === true && !prefetched.error;
-  }
-
-  /** Check if all cross-talk responses have finished generating */
-  isAllCrossTalkReady(): boolean {
-    if (this.prefetchedCrossTalk.size === 0) return false;
-    for (const prefetched of this.prefetchedCrossTalk.values()) {
-      if (!prefetched.ready) return false;
-    }
-    return true;
-  }
-
-  /** Set the current round (for UI-driven round changes) */
-  setRound(round: RoundType): void {
-    this.callbacks.onRoundChange(round);
   }
 }

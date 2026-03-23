@@ -1,4 +1,4 @@
-import { CanvasTextMetrics, Container, Graphics, Text, TextStyle } from 'pixi.js';
+import { Container, Graphics, Text, TextStyle } from 'pixi.js';
 
 type BubbleMode = 'response' | 'question';
 
@@ -29,6 +29,7 @@ export class SpeechBubble extends Container {
   private tail: Graphics;
   private tailBorder: Graphics;
   private textDisplay: Text;
+  private textMask: Graphics;
   private overflowIndicator: Text;
   private typingDots: Graphics;
   private fullText = '';
@@ -49,7 +50,7 @@ export class SpeechBubble extends Container {
   private readonly DISAPPEAR_FRAMES = 8;
 
   // Height clamping — canvas is 800x450; keep bubble within viewport
-  private readonly MAX_BUBBLE_HEIGHT = 280;
+  private readonly MAX_BUBBLE_HEIGHT = 180;
   private readonly LINE_HEIGHT = 16;
   private readonly MIN_HEIGHT = 50;
 
@@ -79,7 +80,7 @@ export class SpeechBubble extends Container {
     },
   } as const;
 
-  private readonly MAX_WIDTH = 420;
+  private readonly MAX_WIDTH = 260;
   private readonly PADDING = 12;
   private readonly TAIL_HEIGHT = 10;
   private readonly BORDER_OUTER = 2;
@@ -127,6 +128,10 @@ export class SpeechBubble extends Container {
     this.addChild(this.textDisplay);
 
     // Clip mask for text (prevents overflow when text exceeds bubble height)
+    this.textMask = new Graphics();
+    this.addChild(this.textMask);
+    this.textDisplay.mask = this.textMask;
+
     // Overflow indicator — "..." at the top of the bubble when text is clipped
     this.overflowIndicator = new Text({
       text: '...',
@@ -180,13 +185,11 @@ export class SpeechBubble extends Container {
 
     this.dirty = true;
     this.visible = true;
-    this.scale.set(1);
-    this.animState = 'idle';
 
-    // In the live session, stream chunks can arrive before the next ticker
-    // pass. Draw immediately so the bubble never gets stuck in a stale state.
-    this.layout();
-    this.dirty = false;
+    // Start appear animation
+    this.animState = 'appearing';
+    this.animFrame = 0;
+    this.scale.set(0);
   }
 
   appendText(chunk: string): void {
@@ -201,31 +204,6 @@ export class SpeechBubble extends Container {
 
     this.textDisplay.text = this.fullText;
     this.dirty = true;
-
-    if (this.visible) {
-      this.layout();
-      this.dirty = false;
-    }
-  }
-
-  /** Replace text content without hiding/showing the bubble (avoids flicker) */
-  replaceText(text: string): void {
-    this.fullText = text;
-    this.textDisplay.text = text;
-
-    // Ensure text is visible (not dots)
-    if (this.showingDots) {
-      this.showingDots = false;
-      this.typingDots.visible = false;
-      this.textDisplay.visible = true;
-    }
-
-    this.dirty = true;
-
-    if (this.visible) {
-      this.layout();
-      this.dirty = false;
-    }
   }
 
   finishStreaming(): void {
@@ -237,21 +215,21 @@ export class SpeechBubble extends Container {
       this.textDisplay.text = this.fullText;
       this.textDisplay.visible = true;
       this.dirty = true;
-      if (this.visible) {
-        this.layout();
-        this.dirty = false;
-      }
     }
   }
 
   hide(): void {
+    if (this.animState === 'disappearing') return; // already hiding
+
     if (!this.visible) {
+      // Already hidden, just reset
       this.resetState();
       return;
     }
-    this.resetState();
-    this.visible = false;
-    this.scale.set(1);
+
+    // Start disappear animation
+    this.animState = 'disappearing';
+    this.animFrame = 0;
   }
 
   /** Immediately hide without animation (for cleanup) */
@@ -288,10 +266,6 @@ export class SpeechBubble extends Container {
     this.tailBorder.clear();
     const borderPad = this.BORDER_OUTER;
 
-    // The tail fill extends 3px UP into the bubble body to cover the
-    // outer border line where the tail meets the bubble bottom edge.
-    const overlap = 3;
-
     if (this.mode === 'question') {
       // Question tail: slightly offset left
       this.tailBorder.moveTo(-11 - borderPad, 0)
@@ -301,9 +275,9 @@ export class SpeechBubble extends Container {
         .fill({ color: s.tailBorder });
 
       this.tail.clear();
-      this.tail.moveTo(-9, -overlap)
+      this.tail.moveTo(-9, 0)
         .lineTo(-2, this.TAIL_HEIGHT + 2)
-        .lineTo(5, -overlap)
+        .lineTo(5, 0)
         .closePath()
         .fill({ color: s.tailColor });
     } else {
@@ -315,9 +289,9 @@ export class SpeechBubble extends Container {
         .fill({ color: s.tailBorder });
 
       this.tail.clear();
-      this.tail.moveTo(-7, -overlap)
+      this.tail.moveTo(-7, 0)
         .lineTo(0, this.TAIL_HEIGHT + 1)
-        .lineTo(7, -overlap)
+        .lineTo(7, 0)
         .closePath()
         .fill({ color: s.tailColor });
     }
@@ -371,9 +345,7 @@ export class SpeechBubble extends Container {
       return;
     }
 
-    const style = this.textDisplay.style as TextStyle;
-    const fullMetrics = CanvasTextMetrics.measureText(this.fullText || ' ', style);
-    const fullLines = fullMetrics.lines.length > 0 ? fullMetrics.lines : [''];
+    const textW = Math.min(this.textDisplay.width + this.PADDING * 2, this.MAX_WIDTH);
 
     // Compute the maximum text area height:
     // 1. Hard cap: MAX_BUBBLE_HEIGHT minus padding and tail
@@ -382,21 +354,28 @@ export class SpeechBubble extends Container {
     const availableAbove = this.position.y - 8 - this.PADDING * 2 - this.TAIL_HEIGHT;
     const positionMaxTextH = Math.max(this.MIN_HEIGHT - this.PADDING * 2, availableAbove);
     const maxTextH = Math.min(hardMaxTextH, positionMaxTextH);
-    const maxVisibleLines = Math.max(1, Math.floor(maxTextH / this.LINE_HEIGHT));
-    const isOverflowing = fullLines.length > maxVisibleLines;
-    const visibleLines = isOverflowing
-      ? fullLines.slice(fullLines.length - maxVisibleLines)
-      : fullLines;
-    const visibleText = visibleLines.join('\n') || ' ';
-    const visibleMetrics = CanvasTextMetrics.measureText(visibleText, style);
-    const textW = Math.min(Math.max(visibleMetrics.width + this.PADDING * 2, 60), this.MAX_WIDTH);
-    const textH = Math.max(this.MIN_HEIGHT, visibleMetrics.height + this.PADDING * 2);
 
-    this.textDisplay.text = visibleText;
+    const rawTextH = this.textDisplay.height;
+    const clampedTextH = Math.min(rawTextH, maxTextH);
+    const isOverflowing = rawTextH > clampedTextH;
+    const textH = clampedTextH + this.PADDING * 2;
+
+    // Position text inside bubble.
+    // When overflowing, shift text upward so the bottom (most recent) text is visible.
+    const textYOffset = isOverflowing ? clampedTextH - rawTextH : 0;
     this.textDisplay.position.set(
       -textW / 2 + this.PADDING,
-      -this.TAIL_HEIGHT - textH + this.PADDING
+      -this.TAIL_HEIGHT - textH + this.PADDING + textYOffset
     );
+
+    // Update clip mask — clips text to the visible bubble area
+    this.textMask.clear();
+    this.textMask.rect(
+      -textW / 2 + this.PADDING,
+      -this.TAIL_HEIGHT - textH + this.PADDING,
+      textW - this.PADDING * 2,
+      clampedTextH
+    ).fill({ color: 0xffffff });
 
     // Show "..." overflow indicator at top of bubble when text is clipped
     if (isOverflowing) {
@@ -468,7 +447,7 @@ export class SpeechBubble extends Container {
     }
   }
 
-  update(delta: number): void {
+  update(_delta: number): void {
     // Handle appear animation
     if (this.animState === 'appearing') {
       this.animFrame++;
@@ -499,7 +478,7 @@ export class SpeechBubble extends Container {
 
     // Animate typing dots
     if (this.showingDots && this.visible) {
-      this.dotTime += delta * 0.016; // scale dot motion with the ticker delta
+      this.dotTime += 0.016; // ~60fps increment
       this.drawTypingDots();
     }
 

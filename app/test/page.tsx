@@ -691,11 +691,6 @@ function TestPageContent() {
           <div style={{ display: viewMode === 'roundtable' || forceSceneVisible ? 'block' : 'none' }}>
             {/* Scene + status bar pinned at top so transcript doesn't push it off-screen */}
             <div style={{ position: 'sticky', top: 0, zIndex: 10 }}>
-              {/* Topic banner */}
-              <div className="max-w-[800px] mx-auto topic-banner">
-                <span className="topic-banner-label">Topic</span>
-                <span className="topic-banner-text">Help me design a new logo for my coffee shop</span>
-              </div>
               {/* On small screens, show a note that the scene is best on desktop */}
               <div className="sm:hidden text-center mb-2">
                 <p className="text-xs" style={{ color: 'var(--text-muted)' }}>Scene best viewed on a wider screen</p>

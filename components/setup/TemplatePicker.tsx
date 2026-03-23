@@ -22,6 +22,8 @@ export default function TemplatePicker({ onSelect }: Props) {
             onClick={() => onSelect(template)}
             className={`template-card animate-card-pop stagger-${i + 1}`}
           >
+            {/* Gold accent bar */}
+            <div className="template-card-accent" />
 
             <div className="template-card-body">
               {/* Team comp label */}

@@ -46,7 +46,6 @@ function summaryToMarkdown(summary: string): string {
 export default function ExportPanel({ transcript, summary, mode, onModeChange }: ExportPanelProps) {
   const [mdFeedback, setMdFeedback] = useState(false);
   const [pdfFeedback, setPdfFeedback] = useState(false);
-  const [pdfError, setPdfError] = useState(false);
   const [copyFeedback, setCopyFeedback] = useState(false);
 
   const getContent = useCallback(() => {
@@ -69,7 +68,7 @@ export default function ExportPanel({ transcript, summary, mode, onModeChange }:
   };
 
   const handleDownloadPdf = async () => {
-    setPdfError(false);
+    setPdfFeedback(true);
     const content = getContent();
 
     const html2pdf = (await import('html2pdf.js')).default;
@@ -80,26 +79,19 @@ export default function ExportPanel({ transcript, summary, mode, onModeChange }:
     tempDiv.innerText = content;
     document.body.appendChild(tempDiv);
 
-    try {
-      await html2pdf()
-        .set({
-          margin: 16,
-          filename: mode === 'summary' ? 'fishbowl-summary.pdf' : 'fishbowl-transcript.pdf',
-          image: { type: 'jpeg', quality: 0.98 },
-          html2canvas: { scale: 2 },
-          jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-        })
-        .from(tempDiv)
-        .save();
+    await html2pdf()
+      .set({
+        margin: 16,
+        filename: mode === 'summary' ? 'fishbowl-summary.pdf' : 'fishbowl-transcript.pdf',
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2 },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+      })
+      .from(tempDiv)
+      .save();
 
-      setPdfFeedback(true);
-      setTimeout(() => setPdfFeedback(false), 2000);
-    } catch {
-      setPdfError(true);
-      setTimeout(() => setPdfError(false), 5000);
-    } finally {
-      if (tempDiv.parentNode) document.body.removeChild(tempDiv);
-    }
+    document.body.removeChild(tempDiv);
+    setTimeout(() => setPdfFeedback(false), 2000);
   };
 
   const handleCopyToClipboard = async () => {
@@ -117,8 +109,6 @@ export default function ExportPanel({ transcript, summary, mode, onModeChange }:
       a.download = `fishbowl-${mode}-${new Date().toISOString().slice(0, 10)}.md`;
       a.click();
       URL.revokeObjectURL(url);
-      setCopyFeedback(true);
-      setTimeout(() => setCopyFeedback(false), 2000);
     }
   };
 
@@ -197,7 +187,7 @@ export default function ExportPanel({ transcript, summary, mode, onModeChange }:
         </button>
         <button
           onClick={handleDownloadPdf}
-          className={`action-badge ${pdfFeedback ? 'success' : ''} ${pdfError ? 'error' : ''}`}
+          className={`action-badge ${pdfFeedback ? 'success' : ''}`}
         >
           {pdfFeedback ? (
             <>
@@ -205,15 +195,6 @@ export default function ExportPanel({ transcript, summary, mode, onModeChange }:
                 <path d="M20 6L9 17l-5-5" />
               </svg>
               Saved
-            </>
-          ) : pdfError ? (
-            <>
-              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="12" cy="12" r="10" />
-                <line x1="15" y1="9" x2="9" y2="15" />
-                <line x1="9" y1="9" x2="15" y2="15" />
-              </svg>
-              Failed
             </>
           ) : (
             <>
