@@ -156,6 +156,7 @@ export default function PanelistBuilder({ panelists, onUpdate }: Props) {
               <div className="flex items-center gap-2 mt-3 pt-2" style={{ borderTop: `1px solid var(--border)` }}>
                 <button
                   onClick={() => editingId === p.id ? setEditingId(null) : startEditing(p)}
+                  aria-label={editingId === p.id ? `Close prompt editor for ${p.name}` : `Edit prompt for ${p.name}`}
                   className="text-[10px] font-500 px-2 py-1 rounded transition-colors"
                   style={{
                     color: 'var(--accent-gold)',
@@ -167,6 +168,7 @@ export default function PanelistBuilder({ panelists, onUpdate }: Props) {
                 <div style={{ flex: 1 }} />
                 <button
                   onClick={() => removePanelist(p.id)}
+                  aria-label={`Remove ${p.name}`}
                   className="text-[10px] px-2 py-1 rounded transition-colors"
                   style={{ color: 'var(--text-muted)' }}
                   onMouseEnter={(e) => e.currentTarget.style.color = 'var(--accent-red)'}

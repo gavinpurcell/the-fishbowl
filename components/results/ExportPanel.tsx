@@ -96,9 +96,9 @@ export default function ExportPanel({ transcript, summary, mode, onModeChange }:
       setTimeout(() => setPdfFeedback(false), 2000);
     } catch {
       setPdfError(true);
-      setTimeout(() => setPdfError(false), 3000);
+      setTimeout(() => setPdfError(false), 5000);
     } finally {
-      document.body.removeChild(tempDiv);
+      if (tempDiv.parentNode) document.body.removeChild(tempDiv);
     }
   };
 
@@ -117,6 +117,8 @@ export default function ExportPanel({ transcript, summary, mode, onModeChange }:
       a.download = `fishbowl-${mode}-${new Date().toISOString().slice(0, 10)}.md`;
       a.click();
       URL.revokeObjectURL(url);
+      setCopyFeedback(true);
+      setTimeout(() => setCopyFeedback(false), 2000);
     }
   };
 

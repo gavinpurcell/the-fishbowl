@@ -307,6 +307,7 @@ export default function ResultsPage() {
         <div className="flex flex-col items-center report-enter report-enter-6">
           <button
             onClick={handleNewSession}
+            aria-label="Start new session - current data will be cleared"
             className="results-cta flex items-center gap-3"
           >
             <svg

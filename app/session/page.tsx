@@ -38,11 +38,28 @@ export default function SessionPage() {
   const localTranscriptRef = useRef<TranscriptEntry[]>([]);
   const firstChunkReceivedRef = useRef(false);
   const isMountedRef = useRef(true);
+  // Track all active polling intervals so they can be cleared on unmount
+  const activeIntervalsRef = useRef<Set<ReturnType<typeof setInterval>>>(new Set());
 
-  // Clean up isMountedRef on unmount to prevent stale closures from calling setState
+  // Comprehensive cleanup on unmount — clear all timers, intervals, and isMountedRef
   useEffect(() => {
     isMountedRef.current = true;
-    return () => { isMountedRef.current = false; };
+    return () => {
+      isMountedRef.current = false;
+      // Clear error auto-dismiss timer
+      if (errorTimerRef.current) {
+        clearTimeout(errorTimerRef.current);
+        errorTimerRef.current = null;
+      }
+      // Clear text update throttle timer
+      if (textUpdateTimerRef.current) {
+        clearTimeout(textUpdateTimerRef.current);
+        textUpdateTimerRef.current = null;
+      }
+      // Clear all active polling intervals (firstTakePoll, readyPoll, crossTalkPoll)
+      activeIntervalsRef.current.forEach((id) => clearInterval(id));
+      activeIntervalsRef.current.clear();
+    };
   }, []);
 
   // UI state
@@ -102,6 +119,7 @@ export default function SessionPage() {
     setError(msg);
     if (msg) {
       errorTimerRef.current = setTimeout(() => {
+        if (!isMountedRef.current) return;
         setError(null);
         errorTimerRef.current = null;
       }, 10000);
@@ -322,6 +340,7 @@ export default function SessionPage() {
           if (!textUpdateTimerRef.current) {
             textUpdateTimerRef.current = setTimeout(() => {
               textUpdateTimerRef.current = null;
+              if (!isMountedRef.current) return;
               setBriefingText(speakerTextRef.current);
             }, 150);
           }
@@ -342,11 +361,14 @@ export default function SessionPage() {
 
     // Poll for first take readiness (drives intro overlay)
     const firstTakePoll = setInterval(() => {
+      if (!isMountedRef.current) { clearInterval(firstTakePoll); activeIntervalsRef.current.delete(firstTakePoll); return; }
       if (s.panelists.length > 0 && orchestrator.isInitialTakeReady(s.panelists[0].id)) {
         setFirstTakeReady(true);
         clearInterval(firstTakePoll);
+        activeIntervalsRef.current.delete(firstTakePoll);
       }
     }, 200);
+    activeIntervalsRef.current.add(firstTakePoll);
 
     // Run the session flow
     (async () => {
@@ -356,6 +378,7 @@ export default function SessionPage() {
         setCurrentRound('initial-takes');
         await new Promise<void>((r) => { introResolverRef.current = r; });
         clearInterval(firstTakePoll);
+        activeIntervalsRef.current.delete(firstTakePoll);
 
         // === PHASE 1: INDIVIDUAL BRIEFINGS (uses prefetched responses) ===
         setViewMode('briefing');
@@ -381,14 +404,18 @@ export default function SessionPage() {
             setPrefetchReady(false);
             setHint(`Preparing ${nextPanelist.name}'s take...`);
             const readyPoll = setInterval(() => {
+              if (!isMountedRef.current) { clearInterval(readyPoll); activeIntervalsRef.current.delete(readyPoll); return; }
               if (orchestrator.isInitialTakeReady(nextPanelist.id)) {
                 setHint(`${nextPanelist.name}'s response is ready — press SPACE`);
                 setPrefetchReady(true);
                 clearInterval(readyPoll);
+                activeIntervalsRef.current.delete(readyPoll);
               }
             }, 200);
+            activeIntervalsRef.current.add(readyPoll);
             await waitForSpace();
             clearInterval(readyPoll);
+            activeIntervalsRef.current.delete(readyPoll);
             setPrefetchReady(false);
             setBriefingIndex(i + 1);
             setBriefingText('');
@@ -404,11 +431,14 @@ export default function SessionPage() {
         // Poll cross-talk readiness so the transition overlay knows when to finish
         setCrossTalkReady(false);
         const crossTalkPoll = setInterval(() => {
+          if (!isMountedRef.current) { clearInterval(crossTalkPoll); activeIntervalsRef.current.delete(crossTalkPoll); return; }
           if (orchestrator.isAllCrossTalkReady()) {
             setCrossTalkReady(true);
             clearInterval(crossTalkPoll);
+            activeIntervalsRef.current.delete(crossTalkPoll);
           }
         }, 200);
+        activeIntervalsRef.current.add(crossTalkPoll);
 
         // === TRANSITION ===
         await waitForSpace();
@@ -417,6 +447,7 @@ export default function SessionPage() {
         // Transition overlay waits for crossTalkReady before calling onComplete
         await new Promise<void>((r) => { transitionResolverRef.current = r; });
         clearInterval(crossTalkPoll);
+        activeIntervalsRef.current.delete(crossTalkPoll);
 
         // === PHASE 2: ROUNDTABLE CROSS-TALK ===
         setViewMode('roundtable');
