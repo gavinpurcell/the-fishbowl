@@ -22,12 +22,20 @@ const PROVIDERS: { id: ProviderType; label: string }[] = [
 
 export default function ApiKeyConfig({ provider, apiKey, modelId, onProviderChange, onApiKeyChange, onModelChange }: Props) {
   useEffect(() => {
-    const savedKey = localStorage.getItem(`fishbowl-apikey-${provider}`);
-    if (savedKey && !apiKey) onApiKeyChange(savedKey);
+    try {
+      const savedKey = localStorage.getItem(`fishbowl-apikey-${provider}`);
+      if (savedKey && !apiKey) onApiKeyChange(savedKey);
+    } catch {
+      // localStorage unavailable (private/incognito mode or storage full)
+    }
   }, [provider]);
 
   useEffect(() => {
-    if (apiKey) localStorage.setItem(`fishbowl-apikey-${provider}`, apiKey);
+    try {
+      if (apiKey) localStorage.setItem(`fishbowl-apikey-${provider}`, apiKey);
+    } catch {
+      // localStorage unavailable (private/incognito mode or storage full)
+    }
   }, [apiKey, provider]);
 
   const models = getModelsForProvider(provider);

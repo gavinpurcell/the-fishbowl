@@ -55,13 +55,21 @@ export default function TransitionOverlay({ panelists, onComplete, ready = true 
     return () => { clearTimeout(t1); clearTimeout(t2); };
   }, []);
 
-  // Cycle thinking lines every 1.6s with zoom animation
+  // Cycle thinking lines every 1.6s with zoom animation.
+  // Store interval in a ref so cleanup always clears it on unmount or phase change.
+  const thinkingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   useEffect(() => {
-    if (phase !== 'thinking') return;
-    const interval = setInterval(() => {
-      setThinkingIndex((i) => (i + 1) % shuffledLines.current.length);
-    }, 1600);
-    return () => clearInterval(interval);
+    if (phase === 'thinking') {
+      thinkingIntervalRef.current = setInterval(() => {
+        setThinkingIndex((i) => (i + 1) % shuffledLines.current.length);
+      }, 1600);
+    }
+    return () => {
+      if (thinkingIntervalRef.current !== null) {
+        clearInterval(thinkingIntervalRef.current);
+        thinkingIntervalRef.current = null;
+      }
+    };
   }, [phase]);
 
   // When ready + min time passed, transition to LIVE then finish.

@@ -30,7 +30,8 @@ export default function IntroOverlay({ topic, panelists, onComplete, ready = fal
     if (phase === 'ready' && ready && !hasCompletedRef.current) {
       hasCompletedRef.current = true;
       // Small delay for the "ready" state to render
-      setTimeout(onComplete, 800);
+      const timer = setTimeout(onComplete, 800);
+      return () => clearTimeout(timer);
     }
   }, [phase, ready, onComplete]);
 
@@ -39,7 +40,8 @@ export default function IntroOverlay({ topic, panelists, onComplete, ready = fal
     if (!ready || hasCompletedRef.current) return;
     if (minTimeRef.current) {
       hasCompletedRef.current = true;
-      setTimeout(onComplete, 800);
+      const timer = setTimeout(onComplete, 800);
+      return () => clearTimeout(timer);
     }
   }, [ready, onComplete]);
 

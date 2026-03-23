@@ -8,16 +8,24 @@ export class OllamaProvider implements LLMProvider {
   }
 
   async *stream(messages: Message[], options?: { signal?: AbortSignal }): AsyncIterable<StreamEvent> {
-    const response = await fetch(`${this.baseUrl}/api/chat`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: this.modelId || 'llama3',
-        messages,
-        stream: true,
-      }),
-      signal: options?.signal,
-    });
+    let response: Response;
+    try {
+      response = await fetch(`${this.baseUrl}/api/chat`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: this.modelId || 'llama3',
+          messages,
+          stream: true,
+        }),
+        signal: options?.signal,
+      });
+    } catch (err: unknown) {
+      if (err instanceof TypeError || (err instanceof Error && /ECONNREFUSED|fetch failed|Failed to fetch|NetworkError|network/i.test(err.message))) {
+        throw new Error('Cannot connect to Ollama. Make sure Ollama is running (ollama serve).');
+      }
+      throw err;
+    }
 
     if (!response.ok) {
       throw new Error(`Ollama error (${response.status}): ${await response.text()}`);
@@ -57,15 +65,23 @@ export class OllamaProvider implements LLMProvider {
   }
 
   async generate(messages: Message[]): Promise<GenerateResult> {
-    const response = await fetch(`${this.baseUrl}/api/chat`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: this.modelId || 'llama3',
-        messages,
-        stream: false,
-      }),
-    });
+    let response: Response;
+    try {
+      response = await fetch(`${this.baseUrl}/api/chat`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: this.modelId || 'llama3',
+          messages,
+          stream: false,
+        }),
+      });
+    } catch (err: unknown) {
+      if (err instanceof TypeError || (err instanceof Error && /ECONNREFUSED|fetch failed|Failed to fetch|NetworkError|network/i.test(err.message))) {
+        throw new Error('Cannot connect to Ollama. Make sure Ollama is running (ollama serve).');
+      }
+      throw err;
+    }
 
     if (!response.ok) {
       throw new Error(`Ollama error (${response.status}): ${await response.text()}`);
