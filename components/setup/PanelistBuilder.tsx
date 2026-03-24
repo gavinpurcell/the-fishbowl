@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Image from 'next/image';
 import type { Panelist } from '@/engine/types';
-import { createCustomPanelist, createCustomPanelistLocal, createPanelistFromTemplate, pickUnusedSpriteIndex } from '@/engine/panelist';
+import { createCustomPanelist, createCustomPanelistLocal, createPanelistFromTemplate } from '@/engine/panelist';
 import { createProvider } from '@/providers';
 import { useFishbowlStore } from '@/lib/store';
 import { PANEL_TEMPLATES } from '@/lib/templates';
@@ -34,7 +34,7 @@ export default function PanelistBuilder({ panelists, onUpdate }: Props) {
 
     let panelist: Panelist;
 
-    if (apiKey && providerType !== 'ollama') {
+    if (apiKey) {
       setIsExpanding(true);
       try {
         const provider = createProvider(providerType, apiKey);
@@ -64,10 +64,9 @@ export default function PanelistBuilder({ panelists, onUpdate }: Props) {
 
   const addFromRoster = (rosterPanelist: typeof ROSTER[number]) => {
     if (panelists.length >= 4) return;
-    const spriteIndex = pickUnusedSpriteIndex(panelists);
     const newP = createPanelistFromTemplate(
       { name: rosterPanelist.name, role: rosterPanelist.role, description: rosterPanelist.description, color: rosterPanelist.color },
-      spriteIndex
+      panelists
     );
     onUpdate([...panelists, newP]);
     setShowCustomForm(false);

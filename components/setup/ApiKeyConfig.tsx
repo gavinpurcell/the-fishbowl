@@ -15,9 +15,7 @@ interface Props {
 
 const PROVIDERS: { id: ProviderType; label: string }[] = [
   { id: 'claude', label: 'Claude' },
-  { id: 'openai', label: 'OpenAI' },
   { id: 'claude-code', label: 'Claude Local' },
-  { id: 'ollama', label: 'Ollama' },
 ];
 
 export default function ApiKeyConfig({ provider, apiKey, modelId, onProviderChange, onApiKeyChange, onModelChange }: Props) {
@@ -31,7 +29,7 @@ export default function ApiKeyConfig({ provider, apiKey, modelId, onProviderChan
   }, [apiKey, provider]);
 
   const models = getModelsForProvider(provider);
-  const hasKey = provider === 'ollama' || provider === 'claude-code' || !!apiKey.trim();
+  const hasKey = provider === 'claude-code' || !!apiKey.trim();
 
   return (
     <div>
@@ -70,18 +68,19 @@ export default function ApiKeyConfig({ provider, apiKey, modelId, onProviderChan
 
       {/* Provider-specific config */}
       <div className="dossier-panel">
-        {provider !== 'ollama' && provider !== 'claude-code' ? (
+        {provider === 'claude' ? (
           <>
             <div className="dossier-label">API Key</div>
             <input
               type="password"
               value={apiKey}
               onChange={(e) => onApiKeyChange(e.target.value)}
-              placeholder={provider === 'claude' ? 'sk-ant-...' : 'sk-...'}
+              placeholder="sk-ant-..."
+              aria-label="API key"
               className="dossier-input"
             />
             <p className="text-[10px] mt-2" style={{ color: '#5a5248', opacity: 0.8 }}>
-              Stored in your browser only. Sent directly to {provider === 'claude' ? 'Anthropic' : 'OpenAI'}.
+              Stored in your browser only. Sent directly to Anthropic.
             </p>
 
             <div className="mt-4">
@@ -89,6 +88,7 @@ export default function ApiKeyConfig({ provider, apiKey, modelId, onProviderChan
               <select
                 value={modelId}
                 onChange={(e) => onModelChange(e.target.value)}
+                aria-label="AI model"
                 className="dossier-select"
               >
                 {models.map((m) => (
@@ -99,7 +99,7 @@ export default function ApiKeyConfig({ provider, apiKey, modelId, onProviderChan
               </select>
             </div>
           </>
-        ) : provider === 'claude-code' ? (
+        ) : (
           <>
             {/* Claude Local info box */}
             <div
@@ -147,6 +147,7 @@ export default function ApiKeyConfig({ provider, apiKey, modelId, onProviderChan
               <select
                 value={modelId}
                 onChange={(e) => onModelChange(e.target.value)}
+                aria-label="AI model"
                 className="dossier-select"
               >
                 {models.map((m) => (
@@ -157,10 +158,6 @@ export default function ApiKeyConfig({ provider, apiKey, modelId, onProviderChan
               </select>
             </div>
           </>
-        ) : (
-          <p className="text-xs" style={{ color: '#8a8078' }}>
-            Make sure Ollama is running on port 11434. No key needed.
-          </p>
         )}
       </div>
     </div>

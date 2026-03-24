@@ -15,7 +15,7 @@ export default function CostTally() {
     : 0;
   const totalCost = inputCost + outputCost;
 
-  const isOllama = provider === 'ollama';
+  const isLocal = provider === 'claude-code';
 
   return (
     <div className="cost-strip flex-wrap">
@@ -30,7 +30,7 @@ export default function CostTally() {
 
       {/* Total */}
       <span className="cost-strip-value">
-        {isOllama ? 'Free' : `$${totalCost.toFixed(4)}`}
+        {isLocal ? 'Free' : `$${totalCost.toFixed(4)}`}
       </span>
 
       <span className="cost-strip-divider" />

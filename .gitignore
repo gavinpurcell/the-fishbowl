@@ -51,3 +51,7 @@ scripts/generate-sprites.sh
 
 # superpowers internal
 .superpowers/
+
+# Local environment variables
+.env.local
+.env*.local

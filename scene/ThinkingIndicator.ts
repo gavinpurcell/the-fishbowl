@@ -69,7 +69,11 @@ export class ThinkingIndicator extends Container {
 
   /** Redraw the 3 dots at their current animated positions */
   private drawDots(): void {
-    this.dotsGraphics.clear();
+    // Remove old dots and create fresh Graphics to force PixiJS v8 re-render
+    this.removeChild(this.dotsGraphics);
+    this.dotsGraphics.destroy();
+    this.dotsGraphics = new Graphics();
+    this.addChild(this.dotsGraphics);
 
     const totalDotsWidth = (this.NUM_DOTS - 1) * this.DOT_SPACING;
     const startX = -totalDotsWidth / 2;

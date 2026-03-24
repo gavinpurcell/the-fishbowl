@@ -92,6 +92,7 @@ export class TitleScene {
         role: cfg.role,
         color: cfg.color,
         spriteIndex: cfg.spriteIndex,
+        showLabels: false,
       });
       character.position.set(seat.x, seat.y);
       character.scale.set(seat.scale);

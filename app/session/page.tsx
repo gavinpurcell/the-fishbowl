@@ -38,6 +38,7 @@ export default function SessionPage() {
   const localTranscriptRef = useRef<TranscriptEntry[]>([]);
   const firstChunkReceivedRef = useRef(false);
   const isMountedRef = useRef(true);
+  const handleWrapUpRef = useRef<() => void>(() => {});
 
   // Clean up isMountedRef on unmount to prevent stale closures from calling setState
   useEffect(() => {
@@ -66,6 +67,9 @@ export default function SessionPage() {
 
   // Moderation state
   const [inModeration, setInModeration] = useState(false);
+  // Moderation choice popup — "Ask a Question" / "Keep Talking" / "Wrap Up"
+  const [showModerationChoice, setShowModerationChoice] = useState(false);
+  const moderationChoiceRef = useRef<((choice: 'ask' | 'keep' | 'end') => void) | null>(null);
 
   // Wrap-up overlay state
   const [showWrapOverlay, setShowWrapOverlay] = useState(false);
@@ -472,10 +476,82 @@ export default function SessionPage() {
 
         // === PHASE 3: MODERATION ===
         setCurrentRound('moderation');
-        setInModeration(true);
-        const scene = sceneRef.current;
-        if (scene) await scene.addObserver();
-        setHint('You\'re in the fishbowl. Ask the panel a question below.');
+        setHint('');
+
+        // Show choice popup — loop so "Keep Talking" can repeat
+        let enterModeration = false;
+        while (!enterModeration) {
+          const choice = await new Promise<'ask' | 'keep' | 'end'>((resolve) => {
+            moderationChoiceRef.current = resolve;
+            setShowModerationChoice(true);
+          });
+          setShowModerationChoice(false);
+
+          if (choice === 'ask') {
+            enterModeration = true;
+            setInModeration(true);
+            setHint('You\'re in the fishbowl. Ask the panel a question below.');
+          } else if (choice === 'end') {
+            handleWrapUpRef.current();
+            return;
+          } else {
+            // "Keep Talking" — run another round of cross-talk
+            orchestrator.prefetchCrossTalk();
+
+            // Wait for prefetch to complete
+            await new Promise<void>((resolve) => {
+              const poll = setInterval(() => {
+                if (orchestrator.isAllCrossTalkReady()) {
+                  clearInterval(poll);
+                  resolve();
+                }
+              }, 200);
+            });
+
+            // Play the responses
+            for (let ci = 0; ci < s.panelists.length; ci++) {
+              const panelist = s.panelists[ci];
+              if (orchestrator.isAborted) return;
+
+              if (ci > 0) {
+                setHint(`Press SPACE to hear ${panelist.name}`);
+                await waitForSpace();
+              }
+
+              const scn = sceneRef.current;
+              if (scn) {
+                scn.hideAllSpeechBubbles();
+                scn.hideAllThinkingIndicators();
+                scn.setCharacterState(panelist.id, 'talking');
+                s.panelists.forEach((p) => {
+                  if (p.id !== panelist.id) {
+                    scn.setCharacterState(p.id, Math.random() > 0.7 ? 'reacting' : 'idle');
+                  }
+                });
+              }
+
+              setHint(`${panelist.name} is speaking...`);
+              await orchestrator.runSinglePanelist(panelist, 'cross-talk');
+
+              const lastEntry = localTranscript[localTranscript.length - 1];
+              if (lastEntry && sceneRef.current) {
+                const paragraphs = lastEntry.content.split('\n\n').filter((p: string) => p.trim());
+                for (let p = 0; p < paragraphs.length; p++) {
+                  const isLast = p === paragraphs.length - 1;
+                  const suffix = isLast ? '' : '\n\n▸ continue';
+                  await typeIntoBubble(panelist.id, paragraphs[p], suffix);
+                  if (!isLast) {
+                    setHint('Press SPACE to continue reading...');
+                    await waitForSpace();
+                  }
+                }
+              }
+
+              if (sceneRef.current) sceneRef.current.setCharacterState(panelist.id, 'idle');
+            }
+            // Loop back to show choice popup again
+          }
+        }
 
       } catch (err) {
         showError(err instanceof Error ? err.message : 'An error occurred.');
@@ -493,34 +569,43 @@ export default function SessionPage() {
     showError(null);
 
     orchestrator.recordModerationQuestion(question);
-    // Prefetch all panelist responses to this question in parallel
-    orchestrator.prefetchModerationResponses(question);
+    // No prefetch — responses are generated sequentially so each panelist
+    // can react to what previous panelists said (real discussion dynamics)
     const panelists = storeRef.current.panelists;
 
     try {
-      for (const panelist of panelists) {
+      for (let ci = 0; ci < panelists.length; ci++) {
+        const panelist = panelists[ci];
         if (orchestrator.isAborted) break;
 
-        setHint(`Press SPACE to hear ${panelist.name}'s response`);
-        setIsSpeaking(false);
-        isSpeakingRef.current = false;
-        await waitForSpace();
-
         const scene = sceneRef.current;
+
+        // Show thinking state immediately — no SPACE wait before generating
         if (scene) {
           scene.hideAllSpeechBubbles();
+          scene.hideAllThinkingIndicators();
+          scene.setCharacterState(panelist.id, 'thinking');
+          scene.showThinkingIndicator(panelist.id);
+          panelists.forEach((p) => {
+            if (p.id !== panelist.id) scene.setCharacterState(p.id, 'idle');
+          });
+        }
+
+        setIsSpeaking(true);
+        isSpeakingRef.current = true;
+        setHint(`${panelist.name} is thinking...`);
+
+        // Generate response (sequential — sees previous panelists' answers)
+        await orchestrator.runModerationPanelist(panelist, question);
+
+        // Switch from thinking to talking
+        if (scene) {
           scene.hideAllThinkingIndicators();
           scene.setCharacterState(panelist.id, 'talking');
           panelists.forEach((p) => {
             if (p.id !== panelist.id) scene.setCharacterState(p.id, Math.random() > 0.7 ? 'reacting' : 'idle');
           });
         }
-
-        setIsSpeaking(true);
-        isSpeakingRef.current = true;
-        setHint(`${panelist.name} is responding...`);
-
-        await orchestrator.runModerationPanelist(panelist, question);
 
         // Show response in bubble with typing effect + paragraph pagination
         const localTranscript = localTranscriptRef.current;
@@ -540,11 +625,99 @@ export default function SessionPage() {
           }
         }
 
-        // Now that pagination is done, update visible transcript
-        setHint(`${panelist.name} finished.`);
+        setIsSpeaking(false);
+        isSpeakingRef.current = false;
+
+        if (ci < panelists.length - 1) {
+          // More panelists to go
+          setHint(`Press SPACE to hear ${panelists[ci + 1].name}`);
+          await waitForSpace();
+        } else {
+          // Last panelist — let user read before returning to input
+          setHint('Press SPACE when you\'re ready to continue');
+          await waitForSpace();
+        }
       }
 
-      setHint('Ask another question, or end the show below.');
+      // Show choice popup again after all panelists respond
+      setHint('');
+      setInModeration(false);
+
+      let askAgain = false;
+      while (!askAgain) {
+        const nextChoice = await new Promise<'ask' | 'keep' | 'end'>((resolve) => {
+          moderationChoiceRef.current = resolve;
+          setShowModerationChoice(true);
+        });
+        setShowModerationChoice(false);
+
+        if (nextChoice === 'ask') {
+          askAgain = true;
+          setInModeration(true);
+          setHint('Ask another question below.');
+        } else if (nextChoice === 'end') {
+          handleWrapUpRef.current();
+          return;
+        } else {
+          // "Keep Talking" — run another cross-talk round
+          const orchestrator = orchestratorRef.current;
+          if (!orchestrator) return;
+          orchestrator.prefetchCrossTalk();
+
+          await new Promise<void>((resolve) => {
+            const poll = setInterval(() => {
+              if (orchestrator.isAllCrossTalkReady()) {
+                clearInterval(poll);
+                resolve();
+              }
+            }, 200);
+          });
+
+          const panelists = storeRef.current.panelists;
+          for (let ci = 0; ci < panelists.length; ci++) {
+            const panelist = panelists[ci];
+            if (orchestrator.isAborted) return;
+
+            if (ci > 0) {
+              setHint(`Press SPACE to hear ${panelist.name}`);
+              await waitForSpace();
+            }
+
+            const scn = sceneRef.current;
+            if (scn) {
+              scn.hideAllSpeechBubbles();
+              scn.hideAllThinkingIndicators();
+              scn.setCharacterState(panelist.id, 'talking');
+              panelists.forEach((p) => {
+                if (p.id !== panelist.id) {
+                  scn.setCharacterState(p.id, Math.random() > 0.7 ? 'reacting' : 'idle');
+                }
+              });
+            }
+
+            setHint(`${panelist.name} is speaking...`);
+            await orchestrator.runSinglePanelist(panelist, 'cross-talk');
+
+            const transcript = localTranscriptRef.current;
+            const lastEntry = transcript[transcript.length - 1];
+            if (lastEntry && sceneRef.current) {
+              const paragraphs = lastEntry.content.split('\n\n').filter((p: string) => p.trim());
+              for (let p = 0; p < paragraphs.length; p++) {
+                const isLast = p === paragraphs.length - 1;
+                const suffix = isLast ? '' : '\n\n▸ continue';
+                await typeIntoBubble(panelist.id, paragraphs[p], suffix);
+                if (!isLast) {
+                  setHint('Press SPACE to continue reading...');
+                  await waitForSpace();
+                }
+              }
+            }
+
+            if (sceneRef.current) sceneRef.current.setCharacterState(panelist.id, 'idle');
+          }
+          // Loop back to show choice popup again
+        }
+      }
     } catch (err) {
       showError(err instanceof Error ? err.message : 'Error processing question.');
     }
@@ -590,9 +763,12 @@ export default function SessionPage() {
 
         if (sceneRef.current) sceneRef.current.setCharacterState(panelist.id, 'idle');
 
-        // Wait for SPACE between panelists (except after last)
         if (i < panelists.length - 1) {
           setHint(`Press SPACE to hear ${panelists[i + 1].name}'s final thought`);
+          await waitForSpace();
+        } else {
+          // Last panelist — let user read before wrap-up overlay
+          setHint('Press SPACE to wrap up the session');
           await waitForSpace();
         }
       }
@@ -605,6 +781,7 @@ export default function SessionPage() {
       setInModeration(true);
     }
   }, [waitForSpace, typeIntoBubble]);
+  handleWrapUpRef.current = handleWrapUp;
 
   // Called by WrapUpOverlay when its animation is ready for summary generation
   const handleWrapStartSummary = useCallback(async () => {
@@ -711,7 +888,8 @@ export default function SessionPage() {
                   </div>
                 </div>
               ) : currentPanelist && (
-                /* Character Dossier Card — classified document / RPG briefing */
+                <>
+                {/* Character Dossier Card — classified document / RPG briefing */}
                 <div
                   className="dossier-slide-in overflow-hidden"
                   key={currentPanelist.id}
@@ -866,6 +1044,38 @@ export default function SessionPage() {
                     </div>
                   </div>
                 </div>
+
+                {/* Advance button — below briefing card */}
+                {hint && waitingForSpace && !isSpeaking && (
+                  <div className="flex justify-center mt-5">
+                    <button
+                      onClick={() => {
+                        if (advanceResolverRef.current) {
+                          const resolver = advanceResolverRef.current;
+                          advanceResolverRef.current = null;
+                          setWaitingForSpace(false);
+                          resolver();
+                        }
+                      }}
+                      className="font-pixel cursor-pointer transition-all animate-pulse"
+                      style={{
+                        background: 'var(--dark-deep)',
+                        color: 'var(--accent-gold)',
+                        border: '2px solid var(--accent-gold)',
+                        boxShadow: '4px 4px 0 rgba(0,0,0,0.5)',
+                        borderRadius: '2px',
+                        padding: '10px 24px',
+                        fontSize: '10px',
+                        letterSpacing: '0.08em',
+                      }}
+                    >
+                      {briefingIndex < store.panelists.length - 1
+                        ? `NEXT PANELIST ▸`
+                        : `START DISCUSSION ▸`}
+                    </button>
+                  </div>
+                )}
+                </>
               )}
             </div>
           )}
@@ -881,24 +1091,238 @@ export default function SessionPage() {
 
           {/* === ROUNDTABLE (PixiJS canvas always in DOM, hidden until needed) === */}
           <div style={{ display: viewMode === 'roundtable' ? 'block' : 'none' }}>
-            {/* Scene + status bar */}
-            <div>
-              {/* Topic banner so users remember what this panel is discussing */}
+            {/* Scene + all overlays in one container — nothing below the fold */}
+            <div className="max-w-[1000px] mx-auto" style={{ position: 'relative' }}>
+              {/* Topic banner */}
               {store.ideaText && (
-                <div className="max-w-[1000px] mx-auto topic-banner">
+                <div className="topic-banner">
                   <span className="topic-banner-label">Topic</span>
                   <span className="topic-banner-text">{store.ideaText}</span>
                 </div>
               )}
-              {/* On small screens, show a note that the scene is best on desktop */}
-              <div className="sm:hidden text-center mb-2">
-                <p className="text-xs" style={{ color: 'var(--text-muted)' }}>Scene best viewed on a wider screen</p>
-              </div>
+              {/* PixiJS canvas */}
               <div
                 ref={sceneContainerRef}
-                className="w-full max-w-[1000px] mx-auto scene-viewport overflow-hidden"
-                style={{ aspectRatio: '16/9', borderRadius: '10px 10px 0 0', borderBottom: 'none' }}
+                className="w-full scene-viewport overflow-hidden"
+                style={{ aspectRatio: '16/9', borderRadius: store.ideaText ? '0' : '10px 10px 0 0', borderBottom: 'none' }}
               />
+
+              {/* === OVERLAYS — all positioned inside the scene viewport === */}
+
+              {/* Hint bar — single compact pixel-themed element */}
+              {hint && viewMode === 'roundtable' && !inModeration && !showModerationChoice && (
+                <div
+                  style={{
+                    position: 'absolute',
+                    bottom: '12px',
+                    left: 0,
+                    right: 0,
+                    display: 'flex',
+                    justifyContent: 'center',
+                    pointerEvents: 'none',
+                    zIndex: 10,
+                  }}
+                >
+                  {!isSpeaking && waitingForSpace ? (
+                    <button
+                      onClick={() => {
+                        if (advanceResolverRef.current) {
+                          const resolver = advanceResolverRef.current;
+                          advanceResolverRef.current = null;
+                          setWaitingForSpace(false);
+                          resolver();
+                        }
+                      }}
+                      className="font-pixel transition-all cursor-pointer animate-pulse"
+                      style={{
+                        pointerEvents: 'auto',
+                        background: 'var(--dark-deep)',
+                        color: 'var(--accent-gold)',
+                        border: '2px solid var(--accent-gold)',
+                        boxShadow: '4px 4px 0 rgba(0,0,0,0.5), inset 0 0 12px rgba(196,154,42,0.06)',
+                        borderRadius: '2px',
+                        padding: '8px 20px',
+                        fontSize: '10px',
+                        letterSpacing: '0.08em',
+                      }}
+                    >
+                      {hint.replace('Press SPACE to ', '').replace('press SPACE', '').replace(' — ', ' ').toUpperCase().replace(/^TO /, '')} ▸
+                    </button>
+                  ) : (
+                    <div
+                      className="font-pixel"
+                      style={{
+                        background: 'rgba(0,0,0,0.75)',
+                        color: 'rgba(255,255,255,0.6)',
+                        border: '1px solid rgba(255,255,255,0.1)',
+                        borderRadius: '2px',
+                        padding: '6px 16px',
+                        fontSize: '9px',
+                        letterSpacing: '0.08em',
+                      }}
+                    >
+                      {hint.toUpperCase()}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Moderation input — floating at bottom of scene, hidden while panelists respond */}
+              {inModeration && !isSpeaking && !waitingForSpace && (
+                <div
+                  style={{
+                    position: 'absolute',
+                    bottom: 0,
+                    left: 0,
+                    right: 0,
+                    zIndex: 10,
+                    background: 'linear-gradient(transparent, rgba(0,0,0,0.8) 20%)',
+                    padding: '16px 12px 6px',
+                    borderRadius: '0 0 10px 10px',
+                  }}
+                >
+                  <ModerationInput onSubmit={handleModeration} disabled={isSpeaking} onWrapUp={handleWrapUp} />
+                </div>
+              )}
+
+              {/* Moderation choice — compact bottom bar, same spot as the input */}
+              {showModerationChoice && viewMode === 'roundtable' && (
+                <div
+                  style={{
+                    position: 'absolute',
+                    bottom: 0,
+                    left: 0,
+                    right: 0,
+                    zIndex: 15,
+                    background: 'linear-gradient(transparent, rgba(0,0,0,0.85) 30%)',
+                    padding: '24px 12px 8px',
+                    borderRadius: '0 0 10px 10px',
+                  }}
+                >
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      background: 'rgba(26, 23, 20, 0.9)',
+                      border: '1px solid rgba(196,154,42,0.25)',
+                      borderRadius: '8px',
+                      padding: '8px 10px',
+                    }}
+                  >
+                    {/* YOUR TURN label */}
+                    <span
+                      className="font-pixel flex-shrink-0"
+                      style={{
+                        fontSize: '8px',
+                        letterSpacing: '0.1em',
+                        color: 'var(--accent-gold)',
+                        opacity: 0.7,
+                      }}
+                    >
+                      YOUR TURN
+                    </span>
+
+                    {/* Spacer */}
+                    <div style={{ flex: 1 }} />
+
+                    {/* Three inline buttons */}
+                    <button
+                      onClick={() => {
+                        if (moderationChoiceRef.current) {
+                          moderationChoiceRef.current('ask');
+                          moderationChoiceRef.current = null;
+                        }
+                      }}
+                      className="font-pixel cursor-pointer transition-all flex-shrink-0"
+                      style={{
+                        background: 'var(--accent-gold)',
+                        color: 'var(--dark-deep)',
+                        border: 'none',
+                        borderRadius: '4px',
+                        padding: '7px 14px',
+                        fontSize: '8px',
+                        letterSpacing: '0.06em',
+                      }}
+                    >
+                      ASK A QUESTION
+                    </button>
+                    <button
+                      onClick={() => {
+                        if (moderationChoiceRef.current) {
+                          moderationChoiceRef.current('keep');
+                          moderationChoiceRef.current = null;
+                        }
+                      }}
+                      className="font-pixel cursor-pointer transition-all flex-shrink-0"
+                      style={{
+                        background: 'transparent',
+                        color: 'var(--accent-gold)',
+                        border: '1px solid rgba(196,154,42,0.35)',
+                        borderRadius: '4px',
+                        padding: '6px 12px',
+                        fontSize: '8px',
+                        letterSpacing: '0.06em',
+                      }}
+                    >
+                      KEEP TALKING
+                    </button>
+                    <button
+                      onClick={() => {
+                        if (moderationChoiceRef.current) {
+                          moderationChoiceRef.current('end');
+                          moderationChoiceRef.current = null;
+                        }
+                      }}
+                      className="font-pixel cursor-pointer transition-all flex-shrink-0"
+                      style={{
+                        background: 'none',
+                        color: 'rgba(255,255,255,0.35)',
+                        border: '1px solid rgba(255,255,255,0.1)',
+                        borderRadius: '4px',
+                        padding: '6px 12px',
+                        fontSize: '8px',
+                        letterSpacing: '0.06em',
+                      }}
+                    >
+                      END
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Error overlay — floating in scene */}
+              {error && (
+                <div
+                  style={{
+                    position: 'absolute',
+                    top: '8px',
+                    left: '8px',
+                    right: '8px',
+                    zIndex: 20,
+                    background: 'rgba(26, 23, 20, 0.95)',
+                    border: '1px solid var(--dark-border)',
+                    borderRadius: '8px',
+                    overflow: 'hidden',
+                    boxShadow: '0 4px 20px rgba(0,0,0,0.4)',
+                  }}
+                >
+                  <div style={{ height: '2px', background: 'linear-gradient(90deg, transparent 5%, var(--accent-red) 30%, #d4843a 50%, var(--accent-red) 70%, transparent 95%)' }} />
+                  <div className="flex items-center gap-3 px-3 py-2">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--accent-red)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0">
+                      <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                      <line x1="12" y1="9" x2="12" y2="13" />
+                      <line x1="12" y1="17" x2="12.01" y2="17" />
+                    </svg>
+                    <p style={{ fontFamily: "'DM Mono', monospace", fontSize: '11px', color: 'rgba(255,255,255,0.65)', flex: 1 }}>{error}</p>
+                    <button onClick={() => showError(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.4)', padding: '4px' }} aria-label="Dismiss error">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Status bar — below canvas */}
               {(() => {
                 const model = getModelById(store.modelId);
                 const cost = model
@@ -916,131 +1340,12 @@ export default function SessionPage() {
                     modelLabel={model?.label}
                     costDollars={cost}
                     totalTokens={totalTokens}
-                    isOllama={store.provider === 'ollama'}
+                    isOllama={store.provider === 'claude-code'}
                   />
                 );
               })()}
             </div>
           </div>
-
-          {/* Hint bar */}
-          <div className="max-w-[1000px] mx-auto mt-4 text-center">
-            <p className={`text-sm ${!isSpeaking && waitingForSpace ? 'animate-pulse' : ''}`}
-              style={{ color: !isSpeaking && waitingForSpace ? 'var(--accent-gold)' : 'var(--text-muted)' }}>
-              {hint}
-            </p>
-            {!isSpeaking && waitingForSpace && viewMode === 'roundtable' && (
-              <button
-                onClick={() => {
-                  if (advanceResolverRef.current) {
-                    const resolver = advanceResolverRef.current;
-                    advanceResolverRef.current = null;
-                    setWaitingForSpace(false);
-                    resolver();
-                  }
-                }}
-                className="mt-3 px-5 py-2 rounded-lg text-sm font-500 glow-gold transition-all cursor-pointer"
-                style={{ background: 'var(--accent-gold)', color: 'var(--bg-deep)' }}
-              >
-                Continue (or press Space)
-              </button>
-            )}
-          </div>
-
-          {/* Error — Broadcast Technical Difficulty */}
-          {error && (
-            <div
-              className="max-w-[1000px] mx-auto mt-3 text-sm error-slide-in"
-              style={{
-                background: 'var(--dark-surface)',
-                border: '1px solid var(--dark-border)',
-                borderRadius: '10px',
-                overflow: 'hidden',
-                boxShadow: '0 4px 20px rgba(0,0,0,0.3), 0 0 40px rgba(232,90,74,0.06)',
-              }}
-            >
-              {/* Top accent — red/amber warning stripe */}
-              <div style={{ height: '2px', background: 'linear-gradient(90deg, transparent 5%, var(--accent-red) 30%, #d4843a 50%, var(--accent-red) 70%, transparent 95%)' }} />
-
-              <div className="flex items-start gap-3 px-4 py-3">
-                {/* Warning triangle icon */}
-                <svg
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="var(--accent-red)"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className="flex-shrink-0 mt-0.5"
-                >
-                  <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
-                  <line x1="12" y1="9" x2="12" y2="13" />
-                  <line x1="12" y1="17" x2="12.01" y2="17" />
-                </svg>
-                <div className="flex-1 min-w-0">
-                  <p
-                    className="font-pixel"
-                    style={{
-                      fontSize: '10px',
-                      letterSpacing: '0.1em',
-                      color: 'var(--accent-red)',
-                    }}
-                  >
-                    TECHNICAL DIFFICULTY
-                  </p>
-                  <p
-                    className="mt-1.5"
-                    style={{
-                      fontFamily: "'DM Mono', monospace",
-                      fontSize: '12px',
-                      lineHeight: '1.6',
-                      color: 'rgba(255,255,255,0.65)',
-                    }}
-                  >
-                    {error}
-                  </p>
-                </div>
-                <button
-                  onClick={() => showError(null)}
-                  className="flex-shrink-0 p-1.5 rounded-md transition-all"
-                  style={{
-                    background: 'transparent',
-                    border: 'none',
-                    cursor: 'pointer',
-                    color: 'rgba(255,255,255,0.3)',
-                    lineHeight: 1,
-                  }}
-                  onMouseEnter={(e) => {
-                    (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.06)';
-                    (e.currentTarget as HTMLElement).style.color = 'rgba(255,255,255,0.6)';
-                  }}
-                  onMouseLeave={(e) => {
-                    (e.currentTarget as HTMLElement).style.background = 'transparent';
-                    (e.currentTarget as HTMLElement).style.color = 'rgba(255,255,255,0.3)';
-                  }}
-                  aria-label="Dismiss error"
-                >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <line x1="18" y1="6" x2="6" y2="18" />
-                    <line x1="6" y1="6" x2="18" y2="18" />
-                  </svg>
-                </button>
-              </div>
-              {/* Auto-dismiss progress bar — red line that shrinks over 10s */}
-              <div style={{ height: '2px', background: 'rgba(255,255,255,0.05)' }}>
-                <div className="error-dismiss-bar" style={{ height: '100%', background: 'var(--accent-red)' }} />
-              </div>
-            </div>
-          )}
-
-          {/* Moderation Input */}
-          {inModeration && (
-            <div className="max-w-[1000px] mx-auto mt-4">
-              <ModerationInput onSubmit={handleModeration} disabled={isSpeaking} onWrapUp={handleWrapUp} />
-            </div>
-          )}
 
           {/* Transcript is shown on the results page after the session */}
         </div>

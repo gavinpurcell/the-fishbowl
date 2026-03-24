@@ -19,7 +19,7 @@ export interface LLMProvider {
 
 export interface LLMRequestBody {
   messages: Message[];
-  provider: 'claude' | 'openai';
+  provider: 'claude';
   apiKey: string;
   modelId?: string;
   stream?: boolean;

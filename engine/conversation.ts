@@ -298,6 +298,18 @@ export class ConversationOrchestrator {
     return text;
   }
 
+  /** Log the prompt being sent to a panelist (for debugging) */
+  private logPrompt(panelist: Panelist, round: string, prompt: string): void {
+    console.log(`\n========== [${round}] ${panelist.name} ==========`);
+    console.log(`System: ${panelist.systemPrompt.slice(0, 100)}...`);
+    console.log(`Transcript entries in context: ${this.transcript.length}`);
+    this.transcript.forEach((e, i) => {
+      console.log(`  [${i}] ${e.panelistName} (${e.round}): ${e.content.slice(0, 60)}...`);
+    });
+    console.log(`Prompt length: ${prompt.length} chars`);
+    console.log('='.repeat(50));
+  }
+
   /**
    * Stream a single panelist response with retry logic and timeout.
    * On failure after retries, records a skip message instead of aborting the session.
@@ -315,6 +327,8 @@ export class ConversationOrchestrator {
       { role: 'system', content: panelist.systemPrompt },
       { role: 'user', content: userPrompt },
     ];
+
+    this.logPrompt(panelist, round, userPrompt);
 
     const entry: TranscriptEntry = {
       id: generateId(),
@@ -575,18 +589,16 @@ export class ConversationOrchestrator {
     this.callbacks.onTranscriptEntry(userEntry);
   }
 
-  /** Run a single panelist's moderation response — uses prefetched data if available */
+  /** Run a single panelist's moderation response.
+   *  Always generates live (not prefetched) using the CURRENT transcript,
+   *  so each panelist sees what previous panelists said in response to
+   *  the same question — creating a real back-and-forth discussion. */
   async runModerationPanelist(panelist: Panelist, question: string): Promise<void> {
     if (this.aborted) return;
-    // Use prefetched response if available
-    const prefetched = this.prefetchedModeration.get(panelist.id);
-    if (prefetched) {
-      await this.replayPrefetched(panelist, prefetched, 'moderation');
-      return;
-    }
     const ideaContext = this.buildIdeaContext();
+    // Build transcript fresh each time — includes previous panelists' responses
     const transcriptContext = this.buildTranscriptContext();
-    const prompt = `${ideaContext}\n\n${transcriptContext}\n\nModerator: ${question}\n\nThe moderator has stepped in with a question or directive. Respond directly to what they asked. You can also reference what other panelists have said. Be specific and actionable. Keep your response to 100-200 words. Write in plain text only. No markdown, no em-dashes, no formatting.`;
+    const prompt = `${ideaContext}\n\n${transcriptContext}\n\nModerator: ${question}\n\nThe moderator has stepped in with a question or directive. Respond directly to what they asked. You should also react to what other panelists have said — agree, disagree, or build on their points. Be specific and actionable. Keep your response to 100-200 words. Write in plain text only. No markdown, no em-dashes, no formatting.`;
     await this.streamPanelistResponse(panelist, prompt, 'moderation');
   }
 
@@ -609,7 +621,7 @@ export class ConversationOrchestrator {
     this.callbacks.onRoundChange('summary');
     const transcriptContext = this.buildTranscriptContext();
 
-    const prompt = `${transcriptContext}\n\nSynthesize this discussion into a structured summary with these sections:\n\nKey Insights: The most important points raised.\n\nPoints of Agreement: Where the panelists aligned.\n\nPoints of Disagreement: Where they diverged and why.\n\nTop Recommendations: The 3 to 5 most actionable next steps, in priority order.\n\nBe specific and reference which panelists made which points. Write in plain text only. Do not use markdown formatting, em-dashes, bold, italic, headers, or bullet symbols. Use short paragraphs and line breaks to organize the sections.`;
+    const prompt = `${transcriptContext}\n\nSynthesize this discussion into a structured summary using the following markdown format:\n\nUse ## headings for each section: ## Key Insights, ## Points of Agreement, ## Points of Disagreement, ## Top Recommendations.\n\nUse **bold** for panelist names when referencing who said what.\n\nUse - bullet lists for multiple points within a section.\n\nUse 1. numbered lists for the Top Recommendations (in priority order, 3 to 5 items).\n\nUse > blockquotes for one or two notable direct quotes from panelists.\n\nBe specific and reference which panelists made which points.`;
 
     for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
       try {

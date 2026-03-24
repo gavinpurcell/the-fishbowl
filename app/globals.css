@@ -153,30 +153,51 @@ html, body {
 .topic-banner {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 8px 14px;
-  background: var(--dark-surface, #1a1a1a);
+  gap: 12px;
+  padding: 10px 16px;
+  background: linear-gradient(135deg, var(--dark-deep, #111) 0%, var(--dark-surface, #1a1a1a) 100%);
   border: 1px solid var(--dark-border, #333);
   border-bottom: none;
   border-radius: 10px 10px 0 0;
   font-family: 'DM Mono', monospace;
   font-size: 12px;
   line-height: 1.4;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Subtle gold accent line at top */
+.topic-banner::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--accent-gold, #c49a2a) 30%, var(--accent-gold, #c49a2a) 70%, transparent);
+  opacity: 0.4;
 }
 
 .topic-banner-label {
-  font-size: 9px;
-  letter-spacing: 0.14em;
+  font-family: 'Silkscreen', 'Courier New', monospace;
+  font-size: 8px;
+  letter-spacing: 0.16em;
   text-transform: uppercase;
-  color: var(--accent-gold);
+  color: var(--dark-deep, #111);
+  background: var(--accent-gold, #c49a2a);
+  padding: 2px 8px;
+  border-radius: 3px;
   flex-shrink: 0;
+  font-weight: 400;
 }
 
 .topic-banner-text {
-  color: var(--text-muted, #999);
+  color: rgba(255, 255, 255, 0.55);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  font-size: 11px;
+  letter-spacing: 0.02em;
 }
 
 /* Scene viewport — retro CRT-style frame */

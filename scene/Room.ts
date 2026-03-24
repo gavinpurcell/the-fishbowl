@@ -66,18 +66,19 @@ export class Room extends Container {
           const tShadow = new Sprite(tableShadowTex);
           tShadow.texture.source.scaleMode = 'nearest';
           tShadow.anchor.set(0.5, 0.5);
-          tShadow.position.set(400, 394);
-          tShadow.scale.set(0.20);
-          tShadow.alpha = 0.40;
+          tShadow.position.set(400, 410);
+          tShadow.scale.set(0.32);
+          tShadow.alpha = 0.55;
           tShadow.zIndex = 2790;
           this.tableShadow = tShadow;
           this.addChild(tShadow);
         } else {
-          // Fallback: procedural
+          // Fallback: procedural — layered ellipses matching character shadow style
           const shadow = new Graphics();
+          shadow.ellipse(0, 0, 62, 20).fill({ color: 0x000000, alpha: 0.18 });
           shadow.ellipse(0, 0, 48, 16).fill({ color: 0x000000, alpha: 0.25 });
           shadow.ellipse(0, 0, 32, 11).fill({ color: 0x000000, alpha: 0.30 });
-          shadow.position.set(400, 394);
+          shadow.position.set(400, 410);
           shadow.zIndex = 2790;
           this.tableShadow = shadow;
           this.addChild(shadow);

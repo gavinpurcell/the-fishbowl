@@ -19,12 +19,14 @@ export function generateId(): string {
 
 export function createPanelistFromTemplate(
   data: Omit<Panelist, 'id' | 'systemPrompt' | 'spriteIndex'>,
-  index: number
+  existingPanelists: Panelist[]
 ): Panelist {
+  const spriteIndex = pickUnusedSpriteIndex(existingPanelists);
   return {
     ...data,
     id: generateId(),
-    spriteIndex: index % 8,
+    spriteIndex,
+    color: PANELIST_COLORS[spriteIndex % PANELIST_COLORS.length],
     systemPrompt: buildExpertPrompt(data.name, data.role, data.description),
   };
 }

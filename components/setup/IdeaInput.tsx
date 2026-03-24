@@ -149,6 +149,7 @@ export default function IdeaInput({ ideaText, ideaFiles, onTextChange, onFilesCh
             onChange={(e) => onTextChange(e.target.value)}
             placeholder="What do you want the panel to evaluate? Describe your startup idea, product feature, marketing campaign, creative concept... The more detail you give, the sharper the feedback."
             className="w-full h-36 resize-none text-sm leading-relaxed mission-briefing-textarea"
+            aria-label="Your topic or pitch"
             maxLength={MAX_DISPLAY}
             style={{
               background: 'transparent',

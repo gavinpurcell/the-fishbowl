@@ -189,6 +189,17 @@ export class SpeechBubble extends Container {
     this.dirty = false;
   }
 
+  /** Replace the bubble text in-place without hiding/showing. */
+  replaceText(text: string): void {
+    this.fullText = text;
+    this.textDisplay.text = text;
+    this.dirty = true;
+    if (this.visible) {
+      this.layout();
+      this.dirty = false;
+    }
+  }
+
   appendText(chunk: string): void {
     this.fullText += chunk;
 

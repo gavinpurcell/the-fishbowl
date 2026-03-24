@@ -129,6 +129,8 @@ export const useFishbowlStore = create<FishbowlState>()(
       panelists: [],
       ideaText: '',
       ideaFiles: [],
+      provider: 'claude',
+      modelId: getDefaultModel('claude').id,
       sessionCost: { inputTokens: 0, outputTokens: 0 },
       sessionStartTime: null,
       sessionEndTime: null,

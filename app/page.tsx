@@ -27,90 +27,157 @@ export default function TitlePage() {
   }, []);
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center px-4 py-8">
-      {/* Ambient glow — warmer and more visible */}
+    <div
+      className="min-h-screen flex flex-col items-center justify-center px-4"
+      style={{
+        background: 'var(--dark-deep)',
+        overflow: 'hidden',
+      }}
+    >
+      {/* Film grain overlay */}
       <div
-        className="fixed top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[500px] opacity-[0.10] rounded-full blur-[140px] pointer-events-none"
-        style={{ background: 'radial-gradient(ellipse, #e8c44a 0%, #c49a2a 60%, transparent 100%)' }}
+        className="fixed inset-0 pointer-events-none"
+        style={{
+          background: 'url("data:image/svg+xml,%3Csvg viewBox=\'0 0 256 256\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'n\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.9\' numOctaves=\'4\' stitchTiles=\'stitch\'/%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23n)\' opacity=\'0.03\'/%3E%3C/svg%3E")',
+          opacity: 0.4,
+          zIndex: 1,
+        }}
       />
 
-      {/* PixiJS Scene — wrapped in the retro viewport frame */}
-      <div className="relative animate-fade-in w-full max-w-[480px]">
-        <div
-          ref={canvasRef}
-          className="scene-viewport w-full"
-          style={{
-            aspectRatio: '420 / 280',
-            background: 'var(--bg-surface)',
-          }}
-        />
+      {/* Ambient gold glow behind scene */}
+      <div
+        className="fixed top-[30%] left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none"
+        style={{
+          width: '600px',
+          height: '400px',
+          background: 'radial-gradient(ellipse, rgba(196,154,42,0.08) 0%, transparent 70%)',
+          filter: 'blur(60px)',
+        }}
+      />
 
-        {/* LIVE badge */}
-        <div className="scene-badge">
-          <div className="scene-badge-dot" />
-          <span
-            className="font-pixel"
-            style={{
-              fontSize: '8px',
-              color: 'rgba(250, 246, 240, 0.8)',
-              letterSpacing: '0.1em',
-            }}
-          >
-            LIVE
-          </span>
-        </div>
-      </div>
+      {/* Everything packed tight in one column */}
+      <div className="flex flex-col items-center w-full relative" style={{ zIndex: 2 }}>
 
-      {/* Character roster dots — quick visual of who's in the room */}
-      <div className="roster-dots animate-fade-in" style={{ marginTop: '6px' }}>
-        {ROSTER_COLORS.map((color, i) => (
+        {/* PixiJS Scene — hero, as large as possible */}
+        <div className="relative animate-fade-in w-full max-w-[700px]">
           <div
-            key={color}
-            className="roster-dot"
+            ref={canvasRef}
+            className="scene-viewport w-full"
             style={{
-              background: color,
-              animationDelay: `${0.6 + i * 0.08}s`,
+              aspectRatio: '420 / 280',
+              background: 'var(--dark-surface)',
             }}
           />
-        ))}
-      </div>
+          <div className="scene-badge">
+            <div className="scene-badge-dot" />
+            <span
+              className="font-pixel"
+              style={{ fontSize: '8px', color: 'rgba(250,246,240,0.8)', letterSpacing: '0.1em' }}
+            >
+              LIVE
+            </span>
+          </div>
+          {/* Scanlines */}
+          <div
+            className="absolute inset-0 pointer-events-none"
+            style={{
+              background: 'repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.03) 2px, rgba(0,0,0,0.03) 4px)',
+              borderRadius: 'inherit',
+            }}
+          />
+        </div>
 
-      {/* Title lockup */}
-      <div className="flex flex-col items-center mt-5">
+        {/* Roster dots */}
+        <div className="roster-dots animate-fade-in" style={{ marginTop: '4px' }}>
+          {ROSTER_COLORS.map((color, i) => (
+            <div
+              key={color}
+              className="roster-dot"
+              style={{ background: color, animationDelay: `${0.6 + i * 0.08}s` }}
+            />
+          ))}
+        </div>
+
+        {/* Title */}
         <h1
-          className="title-text animate-title-reveal text-center"
-          style={{ fontSize: 'clamp(2rem, 7vw, 3.5rem)' }}
+          className="title-text animate-title-reveal text-center mt-2"
+          style={{ fontSize: 'clamp(1.8rem, 6vw, 3rem)' }}
         >
           THE FISHBOWL
         </h1>
 
-        {/* Gold decorative rule */}
-        <div className="title-rule mx-auto mt-3" />
-
-        {/* Subtitle */}
+        {/* Tagline */}
         <p
-          className="title-subtitle animate-subtitle-reveal mt-3 text-center"
-          style={{ fontSize: 'clamp(0.55rem, 1.5vw, 0.7rem)' }}
+          className="animate-subtitle-reveal mt-1 text-center"
+          style={{
+            fontFamily: "'DM Mono', monospace",
+            fontSize: 'clamp(0.6rem, 1.4vw, 0.75rem)',
+            letterSpacing: '0.14em',
+            color: 'rgba(255,255,255,0.4)',
+            textTransform: 'uppercase',
+          }}
         >
-          AI Focus Groups For Your Ideas
+          Your idea. Four AI experts. One honest conversation.
         </p>
+
+        {/* CTA */}
+        <button
+          onClick={() => router.push('/setup')}
+          className="cta-game-button animate-fade-in animate-fade-in-delay-3 mt-4"
+        >
+          Start a Session
+        </button>
+
+        {/* Footer */}
+        <div className="animate-fade-in animate-fade-in-delay-4 mt-5 flex flex-col items-center gap-1.5">
+          <p
+            style={{
+              fontFamily: "'DM Mono', monospace",
+              fontSize: '13px',
+              color: 'rgba(255,255,255,0.35)',
+            }}
+          >
+            Built by{' '}
+            <a
+              href="https://gavinpurcell.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ color: 'var(--accent-gold)', textDecoration: 'none' }}
+            >
+              Gavin Purcell
+            </a>
+            , a human
+          </p>
+          <div className="flex items-center gap-4" style={{ color: 'rgba(255,255,255,0.3)' }}>
+            <a
+              href="https://x.com/gavinpurcell"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1.5"
+              style={{ textDecoration: 'none', color: 'inherit', fontSize: '11px', fontFamily: "'DM Mono', monospace" }}
+            >
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+              </svg>
+              @gavinpurcell
+            </a>
+            <span style={{ opacity: 0.3 }}>&middot;</span>
+            <a
+              href="https://aiforhumans.show"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                fontFamily: "'DM Mono', monospace",
+                fontSize: '11px',
+                color: 'inherit',
+                textDecoration: 'none',
+              }}
+            >
+              AI For Humans
+            </a>
+          </div>
+        </div>
       </div>
-
-      {/* CTA */}
-      <button
-        onClick={() => router.push('/setup')}
-        className="cta-game-button animate-fade-in animate-fade-in-delay-3 mt-8"
-      >
-        Start a Session
-      </button>
-
-      {/* Footer note */}
-      <p
-        className="label-mono mt-5 text-[10px] tracking-widest animate-fade-in animate-fade-in-delay-4 text-center"
-        style={{ color: 'var(--text-muted)' }}
-      >
-        No account needed &middot; Bring your own API key
-      </p>
     </div>
   );
 }

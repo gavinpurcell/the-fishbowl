@@ -1,5 +1,15 @@
 'use client';
 
+/** Escape HTML special characters to prevent injection. */
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 interface Props {
   summary: string | null;
 }
@@ -23,8 +33,11 @@ export default function Summary({ summary }: Props) {
     );
   }
 
+  // Escape HTML before parsing markdown
+  const escaped = escapeHtml(summary);
+
   // Parse the summary into rendered elements
-  const lines = summary.split('\n');
+  const lines = escaped.split('\n');
   const elements: React.ReactNode[] = [];
 
   for (let i = 0; i < lines.length; i++) {

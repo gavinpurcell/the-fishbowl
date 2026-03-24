@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useFishbowlStore } from '@/lib/store';
 import { createPanelistFromTemplate } from '@/engine/panelist';
-import type { PanelTemplate } from '@/engine/types';
+import type { PanelTemplate, Panelist } from '@/engine/types';
 import TemplatePicker from '@/components/setup/TemplatePicker';
 import PanelistBuilder from '@/components/setup/PanelistBuilder';
 import IdeaInput from '@/components/setup/IdeaInput';
@@ -26,7 +26,10 @@ export default function SetupPage() {
   const [templateName, setTemplateName] = useState<string | null>(null);
 
   const handleTemplateSelect = (template: PanelTemplate) => {
-    const panelists = template.panelists.map((p, i) => createPanelistFromTemplate(p, i));
+    const panelists: Panelist[] = [];
+    for (const p of template.panelists) {
+      panelists.push(createPanelistFromTemplate(p, panelists));
+    }
     store.setPanelists(panelists);
     setTemplateName(template.name);
     setStep('configure');
@@ -40,11 +43,12 @@ export default function SetupPage() {
 
   const hasPanelists = store.panelists.length >= 3;
   const hasIdea = !!(store.ideaText.trim() || store.ideaFiles.length > 0);
-  const hasProvider = store.provider === 'ollama' || store.provider === 'claude-code' || !!store.apiKey.trim();
-  const canStart = hasPanelists && hasIdea && hasProvider;
+  // Provider is always ready — server has ANTHROPIC_API_KEY
+  const hasProvider = true;
+  const canStart = hasPanelists && hasIdea;
 
-  // Progress calculation for readiness bar
-  const readinessSteps = [hasPanelists, hasIdea, hasProvider];
+  // Progress calculation for readiness bar (2 steps now: panel + idea)
+  const readinessSteps = [hasPanelists, hasIdea];
   const completedSteps = readinessSteps.filter(Boolean).length;
   const readinessPercent = (completedSteps / readinessSteps.length) * 100;
 
@@ -106,7 +110,6 @@ export default function SetupPage() {
                   {[
                     { done: hasPanelists, label: store.panelists.length === 0 ? 'Panel' : `${store.panelists.length}/3-4` },
                     { done: hasIdea, label: 'Idea' },
-                    { done: hasProvider, label: 'API' },
                   ].map((item) => (
                     <span
                       key={item.label}
@@ -174,7 +177,7 @@ export default function SetupPage() {
                     </div>
                     <div className="flex flex-col gap-1">
                       <span className="cost-badge-label">Estimated Cost</span>
-                      {store.provider === 'ollama' || store.provider === 'claude-code' ? (
+                      {store.provider === 'claude-code' ? (
                         <span className="cost-badge-free">Free</span>
                       ) : (
                         <span className="cost-badge-value">
@@ -188,16 +191,7 @@ export default function SetupPage() {
                   </div>
                 )}
 
-                <div id="section-api">
-                  <ApiKeyConfig
-                    provider={store.provider}
-                    apiKey={store.apiKey}
-                    modelId={store.modelId}
-                    onProviderChange={store.setProvider}
-                    onApiKeyChange={store.setApiKey}
-                    onModelChange={store.setModelId}
-                  />
-                </div>
+                {/* API config hidden — server uses ANTHROPIC_API_KEY */}
               </div>
             </div>
 

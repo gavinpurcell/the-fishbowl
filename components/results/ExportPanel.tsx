@@ -68,30 +68,84 @@ export default function ExportPanel({ transcript, summary, mode, onModeChange }:
   };
 
   const handleDownloadPdf = async () => {
-    setPdfFeedback(true);
     const content = getContent();
 
-    const html2pdf = (await import('html2pdf.js')).default;
+    try {
+      const { jsPDF } = await import('jspdf');
+      const doc = new jsPDF({ unit: 'mm', format: 'a4' });
 
-    const tempDiv = document.createElement('div');
-    tempDiv.style.cssText =
-      'position:absolute;left:-9999px;top:0;font-family:sans-serif;padding:32px;max-width:720px;line-height:1.6;color:#111;';
-    tempDiv.innerText = content;
-    document.body.appendChild(tempDiv);
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const pageHeight = doc.internal.pageSize.getHeight();
+      const margin = 20;
+      const maxWidth = pageWidth - margin * 2;
+      let y = margin;
 
-    await html2pdf()
-      .set({
-        margin: 16,
-        filename: mode === 'summary' ? 'fishbowl-summary.pdf' : 'fishbowl-transcript.pdf',
-        image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2 },
-        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-      })
-      .from(tempDiv)
-      .save();
+      const lines = content.split('\n');
 
-    document.body.removeChild(tempDiv);
-    setTimeout(() => setPdfFeedback(false), 2000);
+      for (const line of lines) {
+        // Check if we need a new page
+        if (y > pageHeight - margin) {
+          doc.addPage();
+          y = margin;
+        }
+
+        if (line.startsWith('# ')) {
+          // Main heading
+          doc.setFontSize(20);
+          doc.setFont('helvetica', 'bold');
+          doc.text(line.replace(/^# /, ''), margin, y);
+          y += 10;
+        } else if (line.startsWith('## ')) {
+          // Section heading
+          y += 4;
+          doc.setFontSize(14);
+          doc.setFont('helvetica', 'bold');
+          doc.text(line.replace(/^## /, ''), margin, y);
+          y += 2;
+          // Underline
+          doc.setDrawColor(200, 200, 200);
+          doc.line(margin, y, pageWidth - margin, y);
+          y += 6;
+        } else if (line.trim() === '') {
+          y += 3;
+        } else {
+          doc.setFontSize(11);
+          doc.setFont('helvetica', 'normal');
+
+          // Handle **bold** speaker names
+          const cleaned = line.replace(/\*\*(.+?)\*\*/g, '$1');
+
+          // Word-wrap long lines
+          const wrapped = doc.splitTextToSize(cleaned, maxWidth);
+          for (const wLine of wrapped) {
+            if (y > pageHeight - margin) {
+              doc.addPage();
+              y = margin;
+            }
+            doc.text(wLine, margin, y);
+            y += 5.5;
+          }
+        }
+      }
+
+      // Add footer on each page
+      const totalPages = doc.getNumberOfPages();
+      for (let i = 1; i <= totalPages; i++) {
+        doc.setPage(i);
+        doc.setFontSize(8);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(150, 150, 150);
+        doc.text('The Fishbowl', margin, pageHeight - 10);
+        doc.text(`Page ${i} of ${totalPages}`, pageWidth - margin - 20, pageHeight - 10);
+      }
+
+      doc.save(mode === 'summary' ? 'fishbowl-summary.pdf' : 'fishbowl-transcript.pdf');
+
+      setPdfFeedback(true);
+      setTimeout(() => setPdfFeedback(false), 2000);
+    } catch (err) {
+      console.error('PDF generation failed:', err);
+    }
   };
 
   const handleCopyToClipboard = async () => {
