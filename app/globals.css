@@ -2,6 +2,31 @@
 @import "tailwindcss";
 
 :root {
+  /* Base theme — warm dark studio / late-night broadcast */
+  --bg-deep: #111010;
+  --bg-surface: #1c1918;
+  --bg-elevated: #282422;
+  --bg-card: #302b28;
+  --text-primary: rgba(250, 246, 240, 0.9);
+  --text-secondary: rgba(250, 246, 240, 0.55);
+  --text-muted: rgba(250, 246, 240, 0.3);
+  --accent-gold: #c49a2a;
+  --accent-gold-dim: #a88020;
+  --accent-gold-light: #f0c866;
+  --accent-amber: #d4a840;
+  --accent-warm: #c47a4a;
+  --accent-red: #e85a4a;
+  --border: #3d3632;
+  --border-light: #524a44;
+  /* Dark surfaces — used by session/scene elements */
+  --dark-surface: #1c1918;
+  --dark-deep: #111010;
+  --dark-border: #3d3632;
+  --dark-divider: #3d3632;
+}
+
+/* Light theme — original warm cream palette */
+[data-theme="light"] {
   --bg-deep: #f5f0e8;
   --bg-surface: #ebe5da;
   --bg-elevated: #e2dbd0;
@@ -9,15 +34,8 @@
   --text-primary: #1a1714;
   --text-secondary: #5a5248;
   --text-muted: #8a8078;
-  --accent-gold: #c49a2a;
-  --accent-gold-dim: #a88020;
-  --accent-gold-light: #f0c866;
-  --accent-amber: #d4a840;
-  --accent-warm: #c47a4a;
-  --accent-red: #e85a4a;
   --border: #d4cdc2;
   --border-light: #c8c0b4;
-  /* Dark surfaces — control room / broadcast panels */
   --dark-surface: #1a1714;
   --dark-deep: #0d0b09;
   --dark-border: #2a2520;
@@ -408,17 +426,23 @@ html, body {
   border-radius: 12px;
   overflow: hidden;
   background: var(--bg-card);
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-  box-shadow:
-    0 1px 3px rgba(0, 0, 0, 0.06),
-    0 4px 12px rgba(0, 0, 0, 0.04);
+  border: 1px solid var(--border);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
+}
+
+[data-theme="light"] .character-card {
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
 }
 
 .character-card:hover {
   transform: translateY(-2px);
-  box-shadow:
-    0 4px 12px rgba(0, 0, 0, 0.08),
-    0 8px 24px rgba(0, 0, 0, 0.06);
+  border-color: var(--border-light);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2), 0 0 30px rgba(196, 154, 42, 0.04);
+}
+
+[data-theme="light"] .character-card:hover {
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1), 0 0 30px rgba(196, 154, 42, 0.06);
 }
 
 /* Colored top border on character cards — like card rarity */
@@ -494,9 +518,14 @@ html, body {
 .mission-briefing {
   position: relative;
   background: var(--bg-card);
-  border: 2px solid var(--border);
+  border: 1px solid var(--border);
   border-radius: 12px;
   overflow: hidden;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
+}
+
+[data-theme="light"] .mission-briefing {
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
 }
 
 .mission-briefing::before {
@@ -686,9 +715,14 @@ html, body {
   border-radius: 12px;
   transition: all 0.25s cubic-bezier(0.22, 1, 0.36, 1);
   background: var(--bg-card);
-  border: 2px solid var(--border);
+  border: 1px solid var(--border);
   cursor: pointer;
   overflow: hidden;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
+}
+
+[data-theme="light"] .template-card {
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
 }
 
 .template-card:hover {
@@ -1618,7 +1652,7 @@ html, body {
   border-color: var(--accent-gold);
   color: var(--text-primary);
   transform: translateY(-1px);
-  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
 }
 
 .action-badge:active {
@@ -1639,6 +1673,7 @@ html, body {
   border: 1px solid var(--border);
   border-radius: 12px;
   overflow: hidden;
+  box-shadow: 0 2px 16px rgba(0, 0, 0, 0.4);
 }
 
 /* Corner fold decoration on document */
@@ -1814,7 +1849,7 @@ html, body {
   gap: 12px;
   padding: 10px 16px;
   border-radius: 8px;
-  background: rgba(26, 23, 20, 0.5);
+  background: var(--bg-surface);
   border: 1px solid var(--border);
   font-family: 'DM Mono', monospace;
   font-variant-numeric: tabular-nums;

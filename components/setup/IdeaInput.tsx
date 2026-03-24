@@ -103,18 +103,21 @@ export default function IdeaInput({ ideaText, ideaFiles, onTextChange, onFilesCh
           </div>
         )}
 
-        {/* Gold header bar with label */}
+        {/* Header bar with gold accent line */}
         <div
           className="px-4 py-2 flex items-center gap-2 relative z-[2]"
           style={{
-            background: 'linear-gradient(180deg, var(--accent-gold) 0%, var(--accent-gold-dim) 100%)',
+            background: 'var(--bg-elevated)',
+            borderBottom: '1px solid var(--border)',
           }}
         >
+          {/* Gold accent line at top */}
+          <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '2px', background: 'linear-gradient(90deg, var(--accent-gold), var(--accent-gold-dim) 80%, transparent)' }} />
           <svg width="14" height="14" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0 }}>
-            <rect x="2" y="1" width="12" height="14" rx="1" stroke="#1a1714" strokeWidth="1.5" fill="none" />
-            <line x1="5" y1="5" x2="11" y2="5" stroke="#1a1714" strokeWidth="1" />
-            <line x1="5" y1="7.5" x2="11" y2="7.5" stroke="#1a1714" strokeWidth="1" />
-            <line x1="5" y1="10" x2="9" y2="10" stroke="#1a1714" strokeWidth="1" />
+            <rect x="2" y="1" width="12" height="14" rx="1" stroke="var(--accent-gold)" strokeWidth="1.5" fill="none" opacity="0.5" />
+            <line x1="5" y1="5" x2="11" y2="5" stroke="var(--accent-gold)" strokeWidth="1" opacity="0.4" />
+            <line x1="5" y1="7.5" x2="11" y2="7.5" stroke="var(--accent-gold)" strokeWidth="1" opacity="0.4" />
+            <line x1="5" y1="10" x2="9" y2="10" stroke="var(--accent-gold)" strokeWidth="1" opacity="0.4" />
           </svg>
           <span
             style={{
@@ -123,7 +126,7 @@ export default function IdeaInput({ ideaText, ideaFiles, onTextChange, onFilesCh
               fontWeight: 500,
               letterSpacing: '0.1em',
               textTransform: 'uppercase',
-              color: 'var(--dark-surface)',
+              color: 'var(--accent-gold)',
             }}
           >
             Your Idea
@@ -134,7 +137,7 @@ export default function IdeaInput({ ideaText, ideaFiles, onTextChange, onFilesCh
             <span
               className="mission-briefing-charcount"
               style={{
-                color: isNearLimit ? 'var(--accent-warm)' : 'rgba(26, 23, 20, 0.45)',
+                color: isNearLimit ? 'var(--accent-warm)' : 'var(--text-muted)',
               }}
             >
               {charCount.toLocaleString()}/{MAX_DISPLAY.toLocaleString()}

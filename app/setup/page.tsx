@@ -61,9 +61,6 @@ export default function SetupPage() {
     <div className="min-h-screen">
       <OnboardingTour setStep={setStep} />
 
-      {/* Ambient glow */}
-      <div className="fixed top-0 left-1/2 -translate-x-1/2 w-[600px] h-[400px] bg-[var(--accent-gold)] opacity-[0.08] rounded-full blur-[120px] pointer-events-none" />
-
       <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8 sm:py-12 relative">
         {/* Header */}
         <div className="text-center mb-8 sm:mb-12 animate-fade-in">

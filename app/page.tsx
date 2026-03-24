@@ -30,20 +30,9 @@ export default function TitlePage() {
     <div
       className="min-h-screen flex flex-col items-center justify-center px-4"
       style={{
-        background: 'var(--dark-deep)',
         overflow: 'hidden',
       }}
     >
-      {/* Film grain overlay */}
-      <div
-        className="fixed inset-0 pointer-events-none"
-        style={{
-          background: 'url("data:image/svg+xml,%3Csvg viewBox=\'0 0 256 256\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'n\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.9\' numOctaves=\'4\' stitchTiles=\'stitch\'/%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23n)\' opacity=\'0.03\'/%3E%3C/svg%3E")',
-          opacity: 0.4,
-          zIndex: 1,
-        }}
-      />
-
       {/* Ambient gold glow behind scene */}
       <div
         className="fixed top-[30%] left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none"
@@ -72,7 +61,7 @@ export default function TitlePage() {
             <div className="scene-badge-dot" />
             <span
               className="font-pixel"
-              style={{ fontSize: '8px', color: 'rgba(250,246,240,0.8)', letterSpacing: '0.1em' }}
+              style={{ fontSize: '8px', color: 'var(--text-secondary)', letterSpacing: '0.1em' }}
             >
               LIVE
             </span>
@@ -113,7 +102,7 @@ export default function TitlePage() {
             fontFamily: "'DM Mono', monospace",
             fontSize: 'clamp(0.6rem, 1.4vw, 0.75rem)',
             letterSpacing: '0.14em',
-            color: 'rgba(255,255,255,0.4)',
+            color: 'var(--text-muted)',
             textTransform: 'uppercase',
           }}
         >
@@ -134,7 +123,7 @@ export default function TitlePage() {
             style={{
               fontFamily: "'DM Mono', monospace",
               fontSize: '13px',
-              color: 'rgba(255,255,255,0.35)',
+              color: 'var(--text-secondary)',
             }}
           >
             Built by{' '}
@@ -146,9 +135,18 @@ export default function TitlePage() {
             >
               Gavin Purcell
             </a>
-            , a human
+            , a human and{' '}
+            <a
+              href="https://claude.ai"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ color: 'var(--accent-gold)', textDecoration: 'none' }}
+            >
+              Claude
+            </a>
+            , an AI
           </p>
-          <div className="flex items-center gap-4" style={{ color: 'rgba(255,255,255,0.3)' }}>
+          <div className="flex items-center gap-4" style={{ color: 'var(--text-muted)' }}>
             <a
               href="https://x.com/gavinpurcell"
               target="_blank"

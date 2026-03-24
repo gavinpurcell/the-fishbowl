@@ -45,6 +45,7 @@ export class PanelistTag extends Container {
         fontWeight: '700',
         fill: 0xfff8e8,
         letterSpacing: 1.0,
+        padding: 8,
       }),
     });
     this.addChild(this.nameText);
@@ -56,6 +57,7 @@ export class PanelistTag extends Container {
         fontSize: 9,
         fill: 0xc8b898,
         letterSpacing: 1.0,
+        padding: 8,
       }),
     });
     this.addChild(this.roleText);

@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import './globals.css';
 import ActiveSessionBanner from '@/components/ActiveSessionBanner';
+import ThemeToggle from '@/components/ThemeToggle';
 
 export const metadata: Metadata = {
   title: {
@@ -32,16 +33,30 @@ export const metadata: Metadata = {
   },
 };
 
+// Blocking script to apply saved theme before first paint (prevents flash)
+const themeScript = `
+  (function() {
+    try {
+      var t = localStorage.getItem('fishbowl-theme');
+      if (t === 'light') {
+        document.documentElement.setAttribute('data-theme', 'light');
+      }
+    } catch(e) {}
+  })();
+`;
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
       <head>
-        <meta name="theme-color" content="#f5f0e8" />
+        <meta name="theme-color" content="#111010" />
+        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
       <body className="antialiased">
         <a href="#main-content" className="skip-to-content">
           Skip to main content
         </a>
+        <ThemeToggle />
         <ActiveSessionBanner />
         <main id="main-content" className="page-transition-wrapper">{children}</main>
       </body>
