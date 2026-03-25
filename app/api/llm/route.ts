@@ -36,7 +36,7 @@ async function handleClaude(messages: { role: string; content: string }[], apiKe
 
   const requestBody: Record<string, unknown> = {
     model: modelId,
-    max_tokens: 1024,
+    max_tokens: 4096,
     messages: nonSystemMessages.map((m) => ({ role: m.role, content: m.content })),
     stream,
   };

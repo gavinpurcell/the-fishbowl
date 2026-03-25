@@ -623,25 +623,40 @@ export class ConversationOrchestrator {
 
     const prompt = `${transcriptContext}\n\nSynthesize this discussion into a structured summary using the following markdown format:\n\nUse ## headings for each section: ## Key Insights, ## Points of Agreement, ## Points of Disagreement, ## Top Recommendations.\n\nUse **bold** for panelist names when referencing who said what.\n\nUse - bullet lists for multiple points within a section.\n\nUse 1. numbered lists for the Top Recommendations (in priority order, 3 to 5 items).\n\nUse > blockquotes for one or two notable direct quotes from panelists.\n\nBe specific and reference which panelists made which points.`;
 
+    // Use streaming to avoid Vercel edge function 30s timeout on large transcripts.
+    // Non-streaming generate() waits for the full response, which can exceed 30s
+    // when the transcript is large. Streaming keeps the connection alive.
     for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
       try {
         if (attempt > 0) {
           await sleep(RETRY_BASE_DELAY_MS * Math.pow(2, attempt - 1));
         }
 
-        const result = await Promise.race([
-          this.provider.generate([{ role: 'user', content: prompt }]),
-          sleep(GENERATE_TIMEOUT_MS).then(() => {
-            throw new Error('Summary generation timed out');
-          }),
-        ]);
+        let text = '';
+        let usage: { inputTokens: number; outputTokens: number } | undefined;
 
-        // result is GenerateResult since the timeout path throws
-        const generateResult = result as { text: string; usage?: { inputTokens: number; outputTokens: number } };
-        if (generateResult.usage) {
-          this.callbacks.onTokenUsage(generateResult.usage.inputTokens, generateResult.usage.outputTokens);
+        const timeoutController = new AbortController();
+        const timeoutId = setTimeout(() => timeoutController.abort(), GENERATE_TIMEOUT_MS);
+
+        try {
+          for await (const event of this.provider.stream(
+            [{ role: 'user', content: prompt }],
+            { signal: timeoutController.signal }
+          )) {
+            if (event.type === 'text') {
+              text += event.text;
+            } else if (event.type === 'usage') {
+              usage = { inputTokens: event.inputTokens, outputTokens: event.outputTokens };
+            }
+          }
+        } finally {
+          clearTimeout(timeoutId);
         }
-        return generateResult.text;
+
+        if (usage) {
+          this.callbacks.onTokenUsage(usage.inputTokens, usage.outputTokens);
+        }
+        return text;
       } catch (error) {
         const classified = classifyError(error);
 
