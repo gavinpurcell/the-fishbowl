@@ -73,8 +73,8 @@ export class FishbowlScene {
   private getSeatLayout(count: number): SeatPlacement[] {
     // Tight diamond around the fishbowl table, matching the mock-up composition.
     const CENTER_BACK =  { x: 400, y: 300, facing: 'right' as const, scale: 0.70, tagX: 0, tagY: -42, tagAlign: 'center' as const };
-    const LEFT_BACK =    { x: 321, y: 330, facing: 'right' as const, scale: 0.72, tagX: -83, tagY: -84, tagAlign: 'right' as const };
-    const RIGHT_BACK =   { x: 481, y: 333, facing: 'left' as const, scale: 0.72, tagX: 62, tagY: -84, tagAlign: 'left' as const };
+    const LEFT_BACK =    { x: 321, y: 330, facing: 'right' as const, scale: 0.75, tagX: -83, tagY: -84, tagAlign: 'right' as const };
+    const RIGHT_BACK =   { x: 481, y: 333, facing: 'left' as const, scale: 0.75, tagX: 62, tagY: -84, tagAlign: 'left' as const };
     const LEFT_MID =     { x: 308, y: 304, facing: 'right' as const, scale: 0.75, tagX: -48, tagY: -34, tagAlign: 'right' as const };
     const RIGHT_MID =    { x: 452, y: 300, facing: 'left' as const, scale: 0.75, tagX: 48, tagY: -34, tagAlign: 'left' as const };
     const LEFT_FRONT =   { x: 303, y: 394, facing: 'right' as const, scale: 0.80, tagX: -51, tagY: -86, tagAlign: 'right' as const };
@@ -107,6 +107,21 @@ export class FishbowlScene {
     x = Math.max(10, Math.min(790, x));
     const y = Math.max(10, seat.y + seat.tagY);
     return { x, y };
+  }
+
+  private constrainTagX(tag: PanelistTag, x: number, align: SeatPlacement['tagAlign']): number {
+    const bounds = tag.getLocalBounds();
+    const width = bounds.width;
+
+    if (align === 'right') {
+      return Math.max(width + 10, Math.min(790, x));
+    }
+
+    if (align === 'center') {
+      return Math.max(width / 2 + 10, Math.min(790 - width / 2, x));
+    }
+
+    return Math.max(10, Math.min(790 - width, x));
   }
 
   private updateCharacterAnchors(id: string): void {
@@ -233,7 +248,8 @@ export class FishbowlScene {
         accentColor: panelist.color,
       });
       const tagPos = this.getTagPosition(seat);
-      tag.position.set(tagPos.x, tagPos.y);
+      const tagX = this.constrainTagX(tag, tagPos.x, seat.tagAlign);
+      tag.position.set(tagX, tagPos.y);
       tag.zIndex = 15000;
       this.tags.set(panelist.id, tag);
       this.app!.stage.addChild(tag);

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import type { ReactNode } from 'react';
 import type { RoundType } from '@/engine/types';
 import { formatCost, formatTokens } from '@/lib/models';
 
@@ -14,6 +15,7 @@ interface Props {
   costDollars?: number;
   totalTokens?: number;
   isOllama?: boolean;
+  centerContent?: ReactNode;
 }
 
 const ROUND_LABELS: Record<RoundType, string> = {
@@ -24,7 +26,7 @@ const ROUND_LABELS: Record<RoundType, string> = {
   'summary': 'GENERATING SUMMARY...',
 };
 
-export default function StatusBar({ round, panelistsSpoken, totalPanelists, onWrapUp, canWrapUp, modelLabel, costDollars, totalTokens, isOllama }: Props) {
+export default function StatusBar({ round, panelistsSpoken, totalPanelists, onWrapUp, canWrapUp, modelLabel, costDollars, totalTokens, isOllama, centerContent }: Props) {
   // Timer: counts up from session start
   const [elapsed, setElapsed] = useState(0);
   const startTimeRef = useRef(Date.now());
@@ -48,6 +50,7 @@ export default function StatusBar({ round, panelistsSpoken, totalPanelists, onWr
       style={{
         background: 'var(--dark-surface)',
         borderTop: '2px solid var(--dark-border)',
+        position: 'relative',
       }}
     >
       {/* Thin gold accent line at top */}
@@ -227,6 +230,23 @@ export default function StatusBar({ round, panelistsSpoken, totalPanelists, onWr
           )}
         </div>
       </div>
+
+      {centerContent && (
+        <div
+          style={{
+            position: 'absolute',
+            inset: 0,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            pointerEvents: 'none',
+          }}
+        >
+          <div style={{ pointerEvents: 'auto' }}>
+            {centerContent}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

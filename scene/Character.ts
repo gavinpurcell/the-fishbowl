@@ -21,6 +21,9 @@ const CHARACTER_APPEARANCES: CharacterAppearance[] = [
   { hairStyle: 'curly', hairColor: 0x5a3a1a, skinTone: 0xf5d0a9, hasGlasses: false },
 ];
 
+const BASE_SPRITE_SCALE = 0.17;
+const BASE_SHADOW_SCALE = 0.17;
+
 /**
  * A seated character rendered with a pixel art sprite.
  * Falls back to procedural Graphics if sprite textures aren't loaded.
@@ -104,7 +107,7 @@ export class Character extends Container {
       this.shadowSprite = new Sprite(shadowTexture);
       this.shadowSprite.texture.source.scaleMode = 'nearest';
       this.shadowSprite.anchor.set(0.5, 1.0);
-      this.shadowSprite.scale.set(0.224);
+      this.shadowSprite.scale.set(BASE_SHADOW_SCALE);
       this.shadowSprite.alpha = 0.45;
       this.shadowSprite.roundPixels = true;
       this.groundShadow = this.shadowSprite;
@@ -126,7 +129,7 @@ export class Character extends Container {
       this.sprite = new Sprite(texture);
       this.sprite.texture.source.scaleMode = 'nearest';
       this.sprite.anchor.set(0.5, 1.0);
-      this.sprite.scale.set(0.224);
+      this.sprite.scale.set(BASE_SPRITE_SCALE);
       this.sprite.roundPixels = true;
     } else {
       // === FALLBACK: PROCEDURAL RENDERING ===
@@ -240,8 +243,8 @@ export class Character extends Container {
       // Sprite-based shadow: subtle breathing pulse
       this.shadowSprite.alpha = (this.isObserver ? 0.35 : 0.45) + shadowPulse * 0.03;
       this.shadowSprite.scale.set(
-        0.17 * (1 + shadowPulse * 0.01),
-        0.17 * (1 + shadowPulse * 0.008),
+        BASE_SHADOW_SCALE * (1 + shadowPulse * 0.01),
+        BASE_SHADOW_SCALE * (1 + shadowPulse * 0.008),
       );
     } else {
       // Procedural shadow fallback
@@ -269,7 +272,7 @@ export class Character extends Container {
         this.sprite.x = xShift;
 
         // --- Subtle scale pulse: simulate breathing ---
-        const scaleBase = 0.17;
+        const scaleBase = BASE_SPRITE_SCALE;
         const scalePulse = Math.sin(this.animTime * 1.1 + this.breathOffset * 1.5) * 0.0008;
         const facingSign = this.sprite.scale.x < 0 ? -1 : 1;
         let spriteScaleX = (scaleBase + scalePulse) * facingSign;

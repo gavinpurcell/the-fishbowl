@@ -220,34 +220,46 @@ export default function TransitionOverlay({ panelists, onComplete, ready = true 
         .broadcast-lineup {
           display: flex;
           flex-direction: column;
-          gap: 6px;
-          width: min(460px, 85vw);
+          gap: 10px;
+          width: min(720px, 88vw);
         }
 
         .broadcast-panelist {
           display: flex;
           align-items: center;
-          gap: 12px;
+          justify-content: center;
+          gap: 18px;
           opacity: 0;
-          padding: 6px 0;
+          padding: 8px 0;
         }
 
         .broadcast-panelist-bar {
           width: 0;
           height: 2px;
-          flex-shrink: 0;
+          flex: 1 1 0;
+          min-width: 80px;
+          max-width: 240px;
+        }
+
+        .broadcast-panelist-copy {
+          display: flex;
+          align-items: baseline;
+          justify-content: center;
+          gap: 12px;
+          min-width: min(340px, 52vw);
+          text-align: center;
         }
 
         .broadcast-panelist-name {
           font-family: 'Silkscreen', 'Courier New', monospace;
-          font-size: clamp(0.85rem, 2vw, 1.15rem);
+          font-size: clamp(1rem, 2.35vw, 1.4rem);
           white-space: nowrap;
           letter-spacing: 0.04em;
         }
 
         .broadcast-panelist-role {
           font-family: 'DM Mono', monospace;
-          font-size: clamp(0.55rem, 1.2vw, 0.7rem);
+          font-size: clamp(0.65rem, 1.35vw, 0.84rem);
           letter-spacing: 0.1em;
           text-transform: uppercase;
           color: rgba(212, 205, 194, 0.5);
@@ -305,7 +317,7 @@ export default function TransitionOverlay({ panelists, onComplete, ready = true 
         .broadcast-live-text {
           font-family: 'Silkscreen', 'Courier New', monospace;
           font-size: clamp(2.5rem, 7vw, 4rem);
-          color: var(--bg-deep);
+          color: rgba(250, 246, 240, 0.96);
           letter-spacing: 0.15em;
           animation: liveGlow 1.5s ease-in-out infinite;
         }
@@ -341,14 +353,23 @@ export default function TransitionOverlay({ panelists, onComplete, ready = true 
                       style={{
                         background: panelist.color,
                         animation: `panelistBarExpand 1500ms cubic-bezier(0.22, 1, 0.36, 1) ${index * 200}ms forwards`,
-                        minWidth: '24px',
                       }}
                     />
-                    <span className="broadcast-panelist-name" style={{ color: panelist.color }}>
-                      {panelist.name}
-                    </span>
-                    <span className="broadcast-panelist-divider">//</span>
-                    <span className="broadcast-panelist-role">{panelist.role}</span>
+                    <div className="broadcast-panelist-copy">
+                      <span className="broadcast-panelist-name" style={{ color: panelist.color }}>
+                        {panelist.name}
+                      </span>
+                      <span className="broadcast-panelist-divider">//</span>
+                      <span className="broadcast-panelist-role">{panelist.role}</span>
+                    </div>
+                    <div
+                      className="broadcast-panelist-bar"
+                      style={{
+                        background: panelist.color,
+                        opacity: 0.32,
+                        animation: `panelistBarExpand 1500ms cubic-bezier(0.22, 1, 0.36, 1) ${index * 200}ms forwards`,
+                      }}
+                    />
                   </div>
                 ))}
               </div>

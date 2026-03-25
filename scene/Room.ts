@@ -1,4 +1,4 @@
-import { Container, Graphics, Sprite, Texture } from 'pixi.js';
+import { Container, Graphics, Rectangle, Sprite, Texture } from 'pixi.js';
 import { getRoomTexture, getShadowTexture } from '@/lib/spriteLoader';
 
 /**
@@ -17,6 +17,13 @@ interface DustParticle {
 }
 
 export class Room extends Container {
+  private static readonly TABLE_X = 398;
+  private static readonly TABLE_Y = 373;
+  private static readonly TABLE_SCALE = 0.194;
+  private static readonly TABLE_SHADOW_SCALE = 0.346;
+  private static readonly TABLE_SHADOW_OFFSET_Y = 17;
+  private static readonly TABLE_SHADOW_BASE_ALPHA = 0.58;
+  private static readonly TABLE_SHADOW_ANCHOR_X = 0.62;
   private pulseTime = 0;
   private useSpriteBackground: boolean;
   private fishbowlTable: Sprite | null = null;
@@ -63,12 +70,20 @@ export class Room extends Container {
         // Table shadow (rendered below the table sprite)
         const tableShadowTex = getShadowTexture('table_shadow');
         if (tableShadowTex && tableShadowTex !== Texture.EMPTY) {
-          const tShadow = new Sprite(tableShadowTex);
+          // Crop to the painted pixels so placement is based on the actual shadow,
+          // not the large transparent padding in the source PNG.
+          const croppedShadowTex = new Texture({
+            source: tableShadowTex.source,
+            frame: new Rectangle(40, 757, 767, 232),
+          });
+          const tShadow = new Sprite(croppedShadowTex);
           tShadow.texture.source.scaleMode = 'nearest';
-          tShadow.anchor.set(0.5, 0.5);
-          tShadow.position.set(398, 407);
-          tShadow.scale.set(0.384);
-          tShadow.alpha = 0.55;
+          tShadow.anchor.set(Room.TABLE_SHADOW_ANCHOR_X, 1.0);
+          tShadow.position.set(Room.TABLE_X, Room.TABLE_Y + Room.TABLE_SHADOW_OFFSET_Y);
+          tShadow.scale.set(Room.TABLE_SHADOW_SCALE);
+          // The table shadow art is baked lighter than the character shadows,
+          // so it needs a slightly higher runtime alpha to read the same on wood.
+          tShadow.alpha = Room.TABLE_SHADOW_BASE_ALPHA;
           tShadow.zIndex = 2790;
           this.tableShadow = tShadow;
           this.addChild(tShadow);
@@ -87,8 +102,8 @@ export class Room extends Container {
         const fishbowl = new Sprite(fishbowlTexture);
         fishbowl.texture.source.scaleMode = 'nearest';
         fishbowl.anchor.set(0.5, 0.75);
-        fishbowl.position.set(398, 373);  // placed from the in-browser layout editor
-        fishbowl.scale.set(0.216);
+        fishbowl.position.set(Room.TABLE_X, Room.TABLE_Y);  // placed from the in-browser layout editor
+        fishbowl.scale.set(Room.TABLE_SCALE);
         fishbowl.zIndex = 2800;  // above floor & back row, below front characters
         this.fishbowlTable = fishbowl;
         this.addChild(fishbowl);
@@ -102,20 +117,7 @@ export class Room extends Container {
       this.ambientOverlay.zIndex = 2;
       this.addChild(this.ambientOverlay);
 
-      // 2. Window light shimmer patches
-      // Primary light patch — warm rectangle on the floor
-      this.lightPatch = new Graphics();
-      this.lightPatch.rect(420, 360, 180, 90).fill({ color: 0xfff8e0, alpha: 0.07 });
-      this.lightPatch.zIndex = 3;
-      this.addChild(this.lightPatch);
-
-      // Secondary light patch — smaller, offset, adds depth
-      this.lightPatchSecondary = new Graphics();
-      this.lightPatchSecondary.rect(320, 380, 100, 60).fill({ color: 0xffe8b0, alpha: 0.05 });
-      this.lightPatchSecondary.zIndex = 3;
-      this.addChild(this.lightPatchSecondary);
-
-      // 3. Floating dust motes / particles (12-18 normal + 2-3 bokeh)
+      // 2. Floating dust motes / particles (12-18 normal + 2-3 bokeh)
       const particleCount = 12 + Math.floor(Math.random() * 7); // 12-18
       // Tint palette: warm gold variations
       const dustTints = [0xf5e6c8, 0xf8e0b0, 0xfff0d0, 0xe8d4a8, 0xfce8c0];
@@ -350,6 +352,15 @@ export class Room extends Container {
         this.ambientOverlay.alpha = Math.max(0, ambientAlpha);
       }
 
+      if (this.tableShadow) {
+        const pulse = Math.sin(this.pulseTime * 2);
+        this.tableShadow.alpha = Room.TABLE_SHADOW_BASE_ALPHA + pulse * 0.03;
+        this.tableShadow.scale.set(
+          Room.TABLE_SHADOW_SCALE * (1 + pulse * 0.01),
+          Room.TABLE_SHADOW_SCALE * (1 + pulse * 0.008),
+        );
+      }
+
       return;
     }
 
@@ -376,7 +387,7 @@ export class Room extends Container {
     if (!this.fishbowlTable) return;
     this.fishbowlTable.position.set(x, y);
     if (this.tableShadow) {
-      this.tableShadow.position.set(x, y + 18);
+      this.tableShadow.position.set(x, y + Room.TABLE_SHADOW_OFFSET_Y);
     }
   }
 }

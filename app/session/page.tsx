@@ -1110,7 +1110,7 @@ export default function SessionPage() {
               {/* === OVERLAYS — all positioned inside the scene viewport === */}
 
               {/* Hint bar — single compact pixel-themed element */}
-              {hint && viewMode === 'roundtable' && !inModeration && !showModerationChoice && (
+              {hint && viewMode === 'roundtable' && !inModeration && !showModerationChoice && !waitingForSpace && (
                 <div
                   style={{
                     position: 'absolute',
@@ -1123,47 +1123,20 @@ export default function SessionPage() {
                     zIndex: 10,
                   }}
                 >
-                  {!isSpeaking && waitingForSpace ? (
-                    <button
-                      onClick={() => {
-                        if (advanceResolverRef.current) {
-                          const resolver = advanceResolverRef.current;
-                          advanceResolverRef.current = null;
-                          setWaitingForSpace(false);
-                          resolver();
-                        }
-                      }}
-                      className="font-pixel transition-all cursor-pointer animate-pulse"
-                      style={{
-                        pointerEvents: 'auto',
-                        background: 'var(--dark-deep)',
-                        color: 'var(--accent-gold)',
-                        border: '2px solid var(--accent-gold)',
-                        boxShadow: '4px 4px 0 rgba(0,0,0,0.5), inset 0 0 12px rgba(196,154,42,0.06)',
-                        borderRadius: '2px',
-                        padding: '8px 20px',
-                        fontSize: '10px',
-                        letterSpacing: '0.08em',
-                      }}
-                    >
-                      {hint.replace('Press SPACE to ', '').replace('press SPACE', '').replace(' — ', ' ').toUpperCase().replace(/^TO /, '')} ▸
-                    </button>
-                  ) : (
-                    <div
-                      className="font-pixel"
-                      style={{
-                        background: 'rgba(0,0,0,0.75)',
-                        color: 'rgba(255,255,255,0.6)',
-                        border: '1px solid rgba(255,255,255,0.1)',
-                        borderRadius: '2px',
-                        padding: '6px 16px',
-                        fontSize: '9px',
-                        letterSpacing: '0.08em',
-                      }}
-                    >
-                      {hint.toUpperCase()}
-                    </div>
-                  )}
+                  <div
+                    className="font-pixel"
+                    style={{
+                      background: 'rgba(0,0,0,0.75)',
+                      color: 'rgba(255,255,255,0.6)',
+                      border: '1px solid rgba(255,255,255,0.1)',
+                      borderRadius: '2px',
+                      padding: '6px 16px',
+                      fontSize: '9px',
+                      letterSpacing: '0.08em',
+                    }}
+                  >
+                    {hint.toUpperCase()}
+                  </div>
                 </div>
               )}
 
@@ -1341,6 +1314,32 @@ export default function SessionPage() {
                     costDollars={cost}
                     totalTokens={totalTokens}
                     isOllama={store.provider === 'claude-code'}
+                    centerContent={!isSpeaking && waitingForSpace ? (
+                      <button
+                        onClick={() => {
+                          if (advanceResolverRef.current) {
+                            const resolver = advanceResolverRef.current;
+                            advanceResolverRef.current = null;
+                            setWaitingForSpace(false);
+                            resolver();
+                          }
+                        }}
+                        className="font-pixel transition-all cursor-pointer animate-pulse"
+                        style={{
+                          background: 'var(--dark-deep)',
+                          color: 'var(--accent-gold)',
+                          border: '2px solid var(--accent-gold)',
+                          boxShadow: '4px 4px 0 rgba(0,0,0,0.45), inset 0 0 12px rgba(196,154,42,0.06)',
+                          borderRadius: '2px',
+                          padding: '8px 22px',
+                          fontSize: '10px',
+                          letterSpacing: '0.08em',
+                          textTransform: 'uppercase',
+                        }}
+                      >
+                        {hint.replace('Press SPACE to ', '').replace('press SPACE', '').replace(' — ', ' ').replace(/^to /i, '')} ▸
+                      </button>
+                    ) : null}
                   />
                 );
               })()}
