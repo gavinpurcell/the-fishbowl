@@ -49,10 +49,10 @@ export class Room extends Container {
       // Room background — scaled up and offset to crop roof off the top
       const bgSprite = new Sprite(bgTexture);
       bgSprite.texture.source.scaleMode = 'nearest';
-      // Room background — fill 16:9 canvas exactly
-      bgSprite.width = 800;
-      bgSprite.height = 450;
-      bgSprite.position.set(0, 0);
+      // Room background — 10% zoom, shifted up to crop ceiling
+      bgSprite.width = 880;
+      bgSprite.height = 495;
+      bgSprite.position.set(-40, -36);
       this.addChild(bgSprite);
 
       // Table is baked into the background sprite — no separate table layer needed
@@ -66,8 +66,8 @@ export class Room extends Container {
           const tShadow = new Sprite(tableShadowTex);
           tShadow.texture.source.scaleMode = 'nearest';
           tShadow.anchor.set(0.5, 0.5);
-          tShadow.position.set(400, 410);
-          tShadow.scale.set(0.32);
+          tShadow.position.set(398, 407);
+          tShadow.scale.set(0.384);
           tShadow.alpha = 0.55;
           tShadow.zIndex = 2790;
           this.tableShadow = tShadow;
@@ -87,8 +87,8 @@ export class Room extends Container {
         const fishbowl = new Sprite(fishbowlTexture);
         fishbowl.texture.source.scaleMode = 'nearest';
         fishbowl.anchor.set(0.5, 0.75);
-        fishbowl.position.set(400, 376);  // placed from the in-browser layout editor
-        fishbowl.scale.set(0.18);
+        fishbowl.position.set(398, 373);  // placed from the in-browser layout editor
+        fishbowl.scale.set(0.216);
         fishbowl.zIndex = 2800;  // above floor & back row, below front characters
         this.fishbowlTable = fishbowl;
         this.addChild(fishbowl);

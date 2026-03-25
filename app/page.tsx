@@ -146,6 +146,31 @@ export default function TitlePage() {
             </a>
             , an AI
           </p>
+          <a
+            href="/about"
+            style={{
+              fontFamily: "'Silkscreen', cursive",
+              fontSize: '10px',
+              letterSpacing: '0.08em',
+              textTransform: 'uppercase',
+              color: 'var(--text-muted)',
+              textDecoration: 'none',
+              border: '1px solid var(--dark-border)',
+              borderRadius: '4px',
+              padding: '4px 12px',
+              transition: 'border-color 0.2s ease, color 0.2s ease',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.borderColor = 'var(--accent-gold)';
+              e.currentTarget.style.color = 'var(--accent-gold)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.borderColor = 'var(--dark-border)';
+              e.currentTarget.style.color = 'var(--text-muted)';
+            }}
+          >
+            Why I Made This
+          </a>
           <div className="flex items-center gap-4" style={{ color: 'var(--text-muted)' }}>
             <a
               href="https://x.com/gavinpurcell"

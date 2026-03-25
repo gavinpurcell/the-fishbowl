@@ -29,7 +29,7 @@ export async function loadAllSprites(): Promise<void> {
   assets.push({ alias: 'table_shadow', src: '/sprites/shadows/table_shadow.png' });
 
   // Room
-  assets.push({ alias: 'room_bg', src: '/sprites/room/USETHISASBACKGROUND.png' });
+  assets.push({ alias: 'room_bg', src: '/sprites/room/background_prev.png' });
   assets.push({ alias: 'room_bg_clean', src: '/sprites/room/background_clean.png' });
   assets.push({ alias: 'coffee_table', src: '/sprites/room/coffee_table.png' });
   assets.push({ alias: 'table_only', src: '/sprites/room/table_only.png' });

@@ -73,12 +73,12 @@ export class FishbowlScene {
   private getSeatLayout(count: number): SeatPlacement[] {
     // Tight diamond around the fishbowl table, matching the mock-up composition.
     const CENTER_BACK =  { x: 400, y: 300, facing: 'right' as const, scale: 0.70, tagX: 0, tagY: -42, tagAlign: 'center' as const };
-    const LEFT_BACK =    { x: 329, y: 348, facing: 'right' as const, scale: 0.72, tagX: -81, tagY: -90, tagAlign: 'right' as const };
-    const RIGHT_BACK =   { x: 473, y: 346, facing: 'left' as const, scale: 0.72, tagX: 79, tagY: -87, tagAlign: 'left' as const };
+    const LEFT_BACK =    { x: 321, y: 330, facing: 'right' as const, scale: 0.72, tagX: -83, tagY: -84, tagAlign: 'right' as const };
+    const RIGHT_BACK =   { x: 481, y: 333, facing: 'left' as const, scale: 0.72, tagX: 62, tagY: -84, tagAlign: 'left' as const };
     const LEFT_MID =     { x: 308, y: 304, facing: 'right' as const, scale: 0.75, tagX: -48, tagY: -34, tagAlign: 'right' as const };
     const RIGHT_MID =    { x: 452, y: 300, facing: 'left' as const, scale: 0.75, tagX: 48, tagY: -34, tagAlign: 'left' as const };
-    const LEFT_FRONT =   { x: 304, y: 402, facing: 'right' as const, scale: 0.80, tagX: -43, tagY: -71, tagAlign: 'right' as const };
-    const RIGHT_FRONT =  { x: 489, y: 409, facing: 'left' as const, scale: 0.80, tagX: 49, tagY: -78, tagAlign: 'left' as const };
+    const LEFT_FRONT =   { x: 303, y: 394, facing: 'right' as const, scale: 0.80, tagX: -51, tagY: -86, tagAlign: 'right' as const };
+    const RIGHT_FRONT =  { x: 489, y: 396, facing: 'left' as const, scale: 0.80, tagX: 44, tagY: -87, tagAlign: 'left' as const };
     const CENTER_FRONT = { x: 400, y: 420, facing: 'right' as const, scale: 0.85, tagX: 0, tagY: -30, tagAlign: 'center' as const };
 
     switch (count) {

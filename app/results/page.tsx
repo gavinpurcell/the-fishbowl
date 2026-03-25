@@ -191,6 +191,7 @@ export default function ResultsPage() {
             summary={store.summary}
             mode={exportMode}
             onModeChange={handleModeChange}
+            ideaText={store.ideaText}
           />
         </div>
 

@@ -1753,10 +1753,10 @@ html, body {
   margin-top: 6px;
 }
 
-/* Transcript in report mode — dark teleprompter style */
+/* Transcript in report mode — matches summary document style */
 .transcript-report {
-  background: var(--dark-surface);
-  border: 1px solid var(--dark-border);
+  background: var(--bg-card);
+  border: 1px solid var(--border);
   border-radius: 12px;
   overflow: hidden;
 }

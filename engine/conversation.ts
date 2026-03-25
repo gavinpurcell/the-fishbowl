@@ -132,7 +132,7 @@ export class ConversationOrchestrator {
     this.prefetching = true;
 
     const ideaContext = this.buildIdeaContext();
-    const prompt = `${ideaContext}\n\nReact naturally, like you just heard this pitch for the first time. What stands out? What concerns you? What excites you? Be specific and draw on your expertise. Keep your response to 100-200 words. Write in plain text only. No markdown, no em-dashes, no formatting.`;
+    const prompt = `${ideaContext}\n\nReact naturally, like you just heard this pitch for the first time. What stands out? What concerns you? What excites you? Be specific and draw on your expertise. Focus on what YOUR specific expertise reveals that others might miss. Keep your response to 100-200 words. Write in plain text only. No markdown, no em-dashes, no formatting.`;
 
     for (const panelist of this.panelists) {
       const prefetched: PrefetchedResponse = {
@@ -219,7 +219,7 @@ export class ConversationOrchestrator {
 
     const ideaContext = this.buildIdeaContext();
     const transcriptContext = this.buildTranscriptContext();
-    const prompt = `${ideaContext}\n\n${transcriptContext}\n\nJump in like you would in a real meeting. Agree, push back, or build on what was said. Reference specific panelists by name. Be direct and specific. Keep your response to 100-200 words. Write in plain text only. No markdown, no em-dashes, no formatting.`;
+    const prompt = `${ideaContext}\n\n${transcriptContext}\n\nJump in like you would in a real meeting. Push back, challenge, or build on what was said. Reference specific panelists by name. Do NOT restate or summarize points that were already made. If you agree with something, say so in one line and move on to a NEW point. Bring something to the table that hasn't been said yet. Keep your response to 100-200 words. Write in plain text only. No markdown, no em-dashes, no formatting.`;
 
     for (const panelist of this.panelists) {
       const prefetched: PrefetchedResponse = {
@@ -253,7 +253,7 @@ export class ConversationOrchestrator {
 
     const ideaContext = this.buildIdeaContext();
     const transcriptContext = this.buildTranscriptContext();
-    const prompt = `${ideaContext}\n\n${transcriptContext}\n\nModerator: ${question}\n\nThe moderator has stepped in with a question or directive. Respond directly to what they asked. You can also reference what other panelists have said. Be specific and actionable. Keep your response to 100-200 words. Write in plain text only. No markdown, no em-dashes, no formatting.`;
+    const prompt = `${ideaContext}\n\n${transcriptContext}\n\nModerator: ${question}\n\nThe moderator has stepped in with a question or directive. Respond directly to what they asked. You can reference what other panelists have said but do NOT repeat their points. If a previous panelist already answered part of the question, acknowledge it briefly and add something new. Be specific and actionable. Keep your response to 100-200 words. Write in plain text only. No markdown, no em-dashes, no formatting.`;
 
     for (const panelist of this.panelists) {
       const prefetched: PrefetchedResponse = {
@@ -551,9 +551,9 @@ export class ConversationOrchestrator {
 
     let prompt: string;
     if (round === 'initial-takes') {
-      prompt = `${ideaContext}\n\nReact naturally, like you just heard this pitch for the first time. What stands out? What concerns you? What excites you? Be specific and draw on your expertise. Keep your response to 100-200 words. Write in plain text only. No markdown, no em-dashes, no formatting.`;
+      prompt = `${ideaContext}\n\nReact naturally, like you just heard this pitch for the first time. What stands out? What concerns you? What excites you? Be specific and draw on your expertise. Focus on what YOUR specific expertise reveals that others might miss. Keep your response to 100-200 words. Write in plain text only. No markdown, no em-dashes, no formatting.`;
     } else if (round === 'cross-talk') {
-      prompt = `${ideaContext}\n\n${transcriptContext}\n\nJump in like you would in a real meeting. Agree, push back, or build on what was said. Reference specific panelists by name. Be direct and specific. Keep your response to 100-200 words. Write in plain text only. No markdown, no em-dashes, no formatting.`;
+      prompt = `${ideaContext}\n\n${transcriptContext}\n\nJump in like you would in a real meeting. Push back, challenge, or build on what was said. Reference specific panelists by name. Do NOT restate or summarize points that were already made. If you agree with something, say so in one line and move on to a NEW point. Bring something to the table that hasn't been said yet. Keep your response to 100-200 words. Write in plain text only. No markdown, no em-dashes, no formatting.`;
     } else if (round === 'wrap-up') {
       prompt = `${transcriptContext}\n\nThe discussion is wrapping up. Give one honest takeaway in a single sentence. Be real. No markdown, no em-dashes, just plain talk.`;
     } else {
@@ -570,7 +570,7 @@ export class ConversationOrchestrator {
     for (const panelist of this.panelists) {
       if (this.aborted) return;
       const transcriptContext = this.buildTranscriptContext();
-      const prompt = `${ideaContext}\n\n${transcriptContext}\n\nJump in like you would in a real meeting. Agree, push back, or build on what was said. Reference specific panelists by name. Be direct and specific. Keep your response to 100-200 words. Write in plain text only. No markdown, no em-dashes, no formatting.`;
+      const prompt = `${ideaContext}\n\n${transcriptContext}\n\nJump in like you would in a real meeting. Push back, challenge, or build on what was said. Reference specific panelists by name. Do NOT restate or summarize points that were already made. If you agree with something, say so in one line and move on to a NEW point. Bring something to the table that hasn't been said yet. Keep your response to 100-200 words. Write in plain text only. No markdown, no em-dashes, no formatting.`;
       await this.streamPanelistResponse(panelist, prompt, 'cross-talk');
     }
   }
@@ -598,7 +598,7 @@ export class ConversationOrchestrator {
     const ideaContext = this.buildIdeaContext();
     // Build transcript fresh each time — includes previous panelists' responses
     const transcriptContext = this.buildTranscriptContext();
-    const prompt = `${ideaContext}\n\n${transcriptContext}\n\nModerator: ${question}\n\nThe moderator has stepped in with a question or directive. Respond directly to what they asked. You should also react to what other panelists have said — agree, disagree, or build on their points. Be specific and actionable. Keep your response to 100-200 words. Write in plain text only. No markdown, no em-dashes, no formatting.`;
+    const prompt = `${ideaContext}\n\n${transcriptContext}\n\nModerator: ${question}\n\nThe moderator has stepped in with a question or directive. Respond directly to what they asked. You can react to what other panelists have said, but do NOT repeat their points. If someone already made the point you were going to make, acknowledge it briefly ("Like Jordan said...") and move to a NEW angle. Bring your unique expertise. Be specific and actionable. Keep your response to 100-200 words. Write in plain text only. No markdown, no em-dashes, no formatting.`;
     await this.streamPanelistResponse(panelist, prompt, 'moderation');
   }
 

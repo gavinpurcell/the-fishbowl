@@ -45,10 +45,10 @@ export class TitleScene {
 
   // Use the same seat positions as FishbowlScene for 4 characters
   private SEATS = [
-    { x: 329, y: 348, scale: 0.72, facing: 'right' as const, tagX: -81, tagY: -90, tagAlign: 'right' as const },
-    { x: 473, y: 346, scale: 0.72, facing: 'left' as const, tagX: 79, tagY: -87, tagAlign: 'left' as const },
-    { x: 304, y: 402, scale: 0.80, facing: 'right' as const, tagX: -43, tagY: -71, tagAlign: 'right' as const },
-    { x: 489, y: 409, scale: 0.80, facing: 'left' as const, tagX: 49, tagY: -78, tagAlign: 'left' as const },
+    { x: 321, y: 330, scale: 0.72, facing: 'right' as const, tagX: -83, tagY: -84, tagAlign: 'right' as const },
+    { x: 481, y: 333, scale: 0.72, facing: 'left' as const, tagX: 62, tagY: -84, tagAlign: 'left' as const },
+    { x: 303, y: 394, scale: 0.80, facing: 'right' as const, tagX: -51, tagY: -86, tagAlign: 'right' as const },
+    { x: 489, y: 396, scale: 0.80, facing: 'left' as const, tagX: 44, tagY: -87, tagAlign: 'left' as const },
   ];
 
   // Conversation simulation state

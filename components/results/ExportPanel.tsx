@@ -8,6 +8,17 @@ interface ExportPanelProps {
   summary: string | null;
   mode: 'summary' | 'transcript';
   onModeChange: (mode: 'summary' | 'transcript') => void;
+  ideaText?: string;
+}
+
+function slugify(text: string, maxLen = 50): string {
+  return text
+    .toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, '')
+    .trim()
+    .replace(/\s+/g, '-')
+    .slice(0, maxLen)
+    .replace(/-$/, '');
 }
 
 function transcriptToMarkdown(transcript: TranscriptEntry[]): string {
@@ -43,10 +54,12 @@ function summaryToMarkdown(summary: string): string {
   return `# Fishbowl Summary\n\n${summary}\n`;
 }
 
-export default function ExportPanel({ transcript, summary, mode, onModeChange }: ExportPanelProps) {
+export default function ExportPanel({ transcript, summary, mode, onModeChange, ideaText }: ExportPanelProps) {
   const [mdFeedback, setMdFeedback] = useState(false);
   const [pdfFeedback, setPdfFeedback] = useState(false);
   const [copyFeedback, setCopyFeedback] = useState(false);
+
+  const fileBase = ideaText ? slugify(ideaText) || 'fishbowl' : 'fishbowl';
 
   const getContent = useCallback(() => {
     return mode === 'summary' && summary
@@ -60,7 +73,7 @@ export default function ExportPanel({ transcript, summary, mode, onModeChange }:
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = mode === 'summary' ? 'fishbowl-summary.md' : 'fishbowl-transcript.md';
+    a.download = `${fileBase}-${mode}.md`;
     a.click();
     URL.revokeObjectURL(url);
     setMdFeedback(true);
@@ -139,7 +152,7 @@ export default function ExportPanel({ transcript, summary, mode, onModeChange }:
         doc.text(`Page ${i} of ${totalPages}`, pageWidth - margin - 20, pageHeight - 10);
       }
 
-      doc.save(mode === 'summary' ? 'fishbowl-summary.pdf' : 'fishbowl-transcript.pdf');
+      doc.save(`${fileBase}-${mode}.pdf`);
 
       setPdfFeedback(true);
       setTimeout(() => setPdfFeedback(false), 2000);
@@ -160,7 +173,7 @@ export default function ExportPanel({ transcript, summary, mode, onModeChange }:
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `fishbowl-${mode}-${new Date().toISOString().slice(0, 10)}.md`;
+      a.download = `${fileBase}-${mode}.md`;
       a.click();
       URL.revokeObjectURL(url);
     }

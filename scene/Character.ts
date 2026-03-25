@@ -104,7 +104,7 @@ export class Character extends Container {
       this.shadowSprite = new Sprite(shadowTexture);
       this.shadowSprite.texture.source.scaleMode = 'nearest';
       this.shadowSprite.anchor.set(0.5, 1.0);
-      this.shadowSprite.scale.set(0.17);
+      this.shadowSprite.scale.set(0.224);
       this.shadowSprite.alpha = 0.45;
       this.shadowSprite.roundPixels = true;
       this.groundShadow = this.shadowSprite;
@@ -126,7 +126,7 @@ export class Character extends Container {
       this.sprite = new Sprite(texture);
       this.sprite.texture.source.scaleMode = 'nearest';
       this.sprite.anchor.set(0.5, 1.0);
-      this.sprite.scale.set(0.17);
+      this.sprite.scale.set(0.224);
       this.sprite.roundPixels = true;
     } else {
       // === FALLBACK: PROCEDURAL RENDERING ===
