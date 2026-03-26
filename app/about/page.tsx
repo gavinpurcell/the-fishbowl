@@ -283,7 +283,7 @@ export default function AboutPage() {
           </blockquote>
         </section>
 
-        {/* --- SECTION 3: Background / why this matters --- */}
+        {/* --- SECTION 3: AndThen --- */}
         <section style={{ marginBottom: '64px' }}>
           <h2
             style={{
@@ -294,7 +294,96 @@ export default function AboutPage() {
               marginBottom: '20px',
             }}
           >
-            03 / WHY I THINK THIS MATTERS
+            03 / I TRIED THIS BEFORE
+          </h2>
+
+          <div
+            style={{
+              fontFamily: "'Outfit', sans-serif",
+              fontSize: '15px',
+              lineHeight: 1.8,
+              color: 'var(--text-secondary)',
+            }}
+          >
+            <p style={{ marginBottom: '16px' }}>
+              The Fishbowl isn&apos;t my first attempt at making AI conversations something you experience rather than something you type into. Before this, I co-founded a company called AndThen with my friend Kevin Pereira. We raised money from a16z through their Speedrun program and built a voice-first platform where you could talk to AI characters in real time. Interactive audio experiences. Games, stories, challenges, all driven by conversation.
+            </p>
+            <p style={{ marginBottom: '16px' }}>
+              The tagline was &quot;Play The Conversation&quot; and the core idea was that talking with AI should feel like entertainment, not a productivity tool. We built a whole engine for it. Multiple AI agents with distinct personalities, goals, and storylines, and you&apos;re in the middle of it controlling the experience with your voice. Think of it like a podcast you can talk back to.
+            </p>
+            <p style={{ marginBottom: '16px' }}>
+              What I learned from AndThen is that making AI entertaining is one way to get people to engage with it, but it&apos;s not the only way. Entertainment gets people in the door. But when someone uses an AI conversation to actually solve a problem they care about, that&apos;s when the lightbulb goes on. That&apos;s the moment where they stop thinking of AI as a novelty and start thinking of it as something real.
+            </p>
+            <p style={{ marginBottom: '16px' }}>
+              The Fishbowl is what happens when you take everything I learned building AndThen and point it at a different problem. Same belief: AI conversations should be visual, multi-character, and something you watch unfold. Different format: instead of entertainment, it&apos;s a tool. Instead of stories, it&apos;s your ideas getting challenged by a room full of experts.
+            </p>
+          </div>
+
+          {/* PHOTO PLACEHOLDER: AndThen screenshot or logo */}
+          <div
+            style={{
+              margin: '36px 0',
+              background: 'var(--bg-surface)',
+              border: '1px solid var(--dark-border)',
+              borderRadius: '8px',
+              aspectRatio: '16/9',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              position: 'relative',
+              overflow: 'hidden',
+            }}
+          >
+            <div style={{ textAlign: 'center' }}>
+              <div
+                style={{
+                  fontFamily: "'DM Mono', monospace",
+                  fontSize: '10px',
+                  letterSpacing: '0.1em',
+                  textTransform: 'uppercase',
+                  color: 'var(--text-muted)',
+                  marginBottom: '4px',
+                }}
+              >
+                PHOTO
+              </div>
+              <div
+                style={{
+                  fontFamily: "'Outfit', sans-serif",
+                  fontSize: '13px',
+                  color: 'var(--text-muted)',
+                  opacity: 0.5,
+                }}
+              >
+                Screenshot of AndThen, or a photo from the a16z Speedrun launch
+              </div>
+            </div>
+            {/* Corner fold */}
+            <div
+              style={{
+                position: 'absolute',
+                top: 0,
+                right: 0,
+                width: '24px',
+                height: '24px',
+                background: 'linear-gradient(225deg, var(--bg-deep) 50%, var(--dark-border) 50%)',
+              }}
+            />
+          </div>
+        </section>
+
+        {/* --- SECTION 4: Background / why this matters --- */}
+        <section style={{ marginBottom: '64px' }}>
+          <h2
+            style={{
+              fontFamily: "'Silkscreen', monospace",
+              fontSize: '14px',
+              letterSpacing: '0.06em',
+              color: 'var(--accent-gold)',
+              marginBottom: '20px',
+            }}
+          >
+            04 / WHY I THINK THIS MATTERS
           </h2>
 
           {/* PHOTO PLACEHOLDER: Gavin headshot or working */}
@@ -389,7 +478,7 @@ export default function AboutPage() {
               marginBottom: '20px',
             }}
           >
-            04 / I ACTUALLY USE THIS THING
+            05 / I ACTUALLY USE THIS THING
           </h2>
 
           <div
@@ -509,7 +598,7 @@ export default function AboutPage() {
               marginBottom: '20px',
             }}
           >
-            05 / IT&apos;S YOURS NOW
+            06 / IT&apos;S YOURS NOW
           </h2>
 
           <div
