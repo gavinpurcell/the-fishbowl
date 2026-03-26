@@ -9,7 +9,6 @@ import { createProvider } from '@/providers/index';
 import StatusBar from '@/components/scene/StatusBar';
 import IntroOverlay from '@/components/scene/IntroOverlay';
 import TransitionOverlay from '@/components/scene/TransitionOverlay';
-import { getModelById } from '@/lib/models';
 // Note: PixiJS scene is managed directly via ref, not via FishbowlCanvas component
 import ModerationInput from '@/components/scene/ModerationInput';
 import KeyboardHelp from '@/components/scene/KeyboardHelp';
@@ -1297,12 +1296,6 @@ export default function SessionPage() {
 
               {/* Status bar — below canvas */}
               {(() => {
-                const model = getModelById(store.modelId);
-                const cost = model
-                  ? (store.sessionCost.inputTokens / 1_000_000) * model.inputPer1M +
-                    (store.sessionCost.outputTokens / 1_000_000) * model.outputPer1M
-                  : 0;
-                const totalTokens = store.sessionCost.inputTokens + store.sessionCost.outputTokens;
                 return (
                   <StatusBar
                     round={currentRound}
@@ -1310,10 +1303,6 @@ export default function SessionPage() {
                     totalPanelists={store.panelists.length}
                     onWrapUp={handleWrapUp}
                     canWrapUp={inModeration && !isSpeaking}
-                    modelLabel={model?.label}
-                    costDollars={cost}
-                    totalTokens={totalTokens}
-                    isOllama={store.provider === 'claude-code'}
                     centerContent={!isSpeaking && waitingForSpace ? (
                       <button
                         onClick={() => {

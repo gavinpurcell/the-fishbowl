@@ -4,13 +4,30 @@ import type { LLMProvider } from '@/providers/types';
 const PANELIST_COLORS = ['#4a9a7a', '#e74c4c', '#4477ee', '#e44a9a', '#eea444', '#9a44ee', '#44aacc', '#cc7744'];
 const ALL_SPRITE_INDICES = [0, 1, 2, 3, 4, 5, 6, 7];
 
-/** Pick a random sprite index not already used by existing panelists */
-export function pickUnusedSpriteIndex(existingPanelists: Panelist[]): number {
+// Sprites that read as female (ponytail, long bangs, curly+pink)
+const FEMALE_SPRITE_INDICES = [3, 5, 7];
+const MALE_SPRITE_INDICES = [0, 1, 2, 4, 6];
+
+/** Pick a random sprite index not already used by existing panelists, respecting gender hint */
+export function pickUnusedSpriteIndex(existingPanelists: Panelist[], gender?: 'male' | 'female' | 'neutral'): number {
   const usedIndices = existingPanelists.map(p => p.spriteIndex);
-  const available = ALL_SPRITE_INDICES.filter(i => !usedIndices.includes(i));
-  // Fallback: if somehow all 8 are used (shouldn't happen with max 4), pick randomly from all
-  const pool = available.length > 0 ? available : ALL_SPRITE_INDICES;
-  return pool[Math.floor(Math.random() * pool.length)];
+
+  // Pick from gender-appropriate sprites if specified
+  let candidates = ALL_SPRITE_INDICES;
+  if (gender === 'female') {
+    candidates = FEMALE_SPRITE_INDICES;
+  } else if (gender === 'male') {
+    candidates = MALE_SPRITE_INDICES;
+  }
+
+  const available = candidates.filter(i => !usedIndices.includes(i));
+  // Fallback to any unused sprite if gender-matched pool is exhausted
+  const pool = available.length > 0
+    ? available
+    : ALL_SPRITE_INDICES.filter(i => !usedIndices.includes(i));
+  // Final fallback: all sprites
+  const finalPool = pool.length > 0 ? pool : ALL_SPRITE_INDICES;
+  return finalPool[Math.floor(Math.random() * finalPool.length)];
 }
 
 export function generateId(): string {
@@ -18,10 +35,10 @@ export function generateId(): string {
 }
 
 export function createPanelistFromTemplate(
-  data: Omit<Panelist, 'id' | 'systemPrompt' | 'spriteIndex'>,
+  data: Omit<Panelist, 'id' | 'systemPrompt' | 'spriteIndex'> & { gender?: 'male' | 'female' | 'neutral' },
   existingPanelists: Panelist[]
 ): Panelist {
-  const spriteIndex = pickUnusedSpriteIndex(existingPanelists);
+  const spriteIndex = pickUnusedSpriteIndex(existingPanelists, data.gender);
   return {
     ...data,
     id: generateId(),

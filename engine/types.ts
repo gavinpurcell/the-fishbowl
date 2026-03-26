@@ -49,7 +49,7 @@ export interface PanelTemplate {
   id: string;
   name: string;
   description: string;
-  panelists: Omit<Panelist, 'id' | 'systemPrompt' | 'spriteIndex'>[];
+  panelists: (Omit<Panelist, 'id' | 'systemPrompt' | 'spriteIndex'> & { gender?: 'male' | 'female' | 'neutral' })[];
 }
 
 /** A saved session (for JSON export/import) */
