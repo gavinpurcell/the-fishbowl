@@ -113,17 +113,19 @@ export default function TitlePage() {
         <button
           onClick={() => router.push('/setup')}
           className="cta-game-button animate-fade-in animate-fade-in-delay-3 mt-4"
+          style={{ fontSize: '28px', padding: '16px 46px' }}
         >
           Start a Session
         </button>
 
         {/* Footer */}
-        <div className="animate-fade-in animate-fade-in-delay-4 mt-5 flex flex-col items-center gap-1.5">
+        <div className="animate-fade-in animate-fade-in-delay-4 mt-3 flex flex-col items-center gap-3">
           <p
             style={{
               fontFamily: "'DM Mono', monospace",
-              fontSize: '13px',
-              color: 'var(--text-secondary)',
+              fontSize: '12px',
+              color: 'var(--text-muted)',
+              margin: 0,
             }}
           >
             Built by{' '}
@@ -146,32 +148,33 @@ export default function TitlePage() {
             </a>
             , an AI
           </p>
-          <a
-            href="/about"
-            style={{
-              fontFamily: "'Silkscreen', cursive",
-              fontSize: '10px',
-              letterSpacing: '0.08em',
-              textTransform: 'uppercase',
-              color: 'var(--text-muted)',
-              textDecoration: 'none',
-              border: '1px solid var(--dark-border)',
-              borderRadius: '4px',
-              padding: '4px 12px',
-              transition: 'border-color 0.2s ease, color 0.2s ease',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.borderColor = 'var(--accent-gold)';
-              e.currentTarget.style.color = 'var(--accent-gold)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.borderColor = 'var(--dark-border)';
-              e.currentTarget.style.color = 'var(--text-muted)';
-            }}
-          >
-            Why I Made This
-          </a>
-          <div className="flex items-center gap-4" style={{ color: 'var(--text-muted)' }}>
+          <div className="flex items-center gap-3" style={{ color: 'var(--text-muted)' }}>
+            <a
+              href="/about"
+              style={{
+                fontFamily: "'Silkscreen', monospace",
+                fontSize: '9px',
+                letterSpacing: '0.08em',
+                textTransform: 'uppercase',
+                color: 'var(--text-muted)',
+                textDecoration: 'none',
+                border: '1px solid var(--dark-border)',
+                borderRadius: '4px',
+                padding: '4px 10px',
+                transition: 'border-color 0.2s ease, color 0.2s ease',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.borderColor = 'var(--accent-gold)';
+                e.currentTarget.style.color = 'var(--accent-gold)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.borderColor = 'var(--dark-border)';
+                e.currentTarget.style.color = 'var(--text-muted)';
+              }}
+            >
+              Why I Made This
+            </a>
+            <span style={{ opacity: 0.2 }}>&middot;</span>
             <a
               href="https://x.com/gavinpurcell"
               target="_blank"
@@ -184,7 +187,7 @@ export default function TitlePage() {
               </svg>
               @gavinpurcell
             </a>
-            <span style={{ opacity: 0.3 }}>&middot;</span>
+            <span style={{ opacity: 0.2 }}>&middot;</span>
             <a
               href="https://aiforhumans.show"
               target="_blank"
