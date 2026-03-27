@@ -1117,11 +1117,20 @@ export default function SessionPage() {
                   <span className="topic-banner-text">{store.ideaText}</span>
                 </div>
               )}
-              {/* PixiJS canvas */}
+              {/* PixiJS canvas — clickable to advance when waiting */}
               <div
                 ref={sceneContainerRef}
                 className="w-full scene-viewport overflow-hidden"
-                style={{ aspectRatio: '16/9', borderRadius: store.ideaText ? '0' : '10px 10px 0 0', borderBottom: 'none' }}
+                style={{ aspectRatio: '16/9', borderRadius: store.ideaText ? '0' : '10px 10px 0 0', borderBottom: 'none', cursor: waitingForSpace ? 'pointer' : 'default' }}
+                onClick={() => {
+                  if (!waitingForSpace || isSpeaking) return;
+                  if (advanceResolverRef.current) {
+                    const resolver = advanceResolverRef.current;
+                    advanceResolverRef.current = null;
+                    setWaitingForSpace(false);
+                    resolver();
+                  }
+                }}
               />
 
               {/* === OVERLAYS — all positioned inside the scene viewport === */}
