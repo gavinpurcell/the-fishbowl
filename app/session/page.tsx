@@ -38,11 +38,18 @@ export default function SessionPage() {
   const firstChunkReceivedRef = useRef(false);
   const isMountedRef = useRef(true);
   const handleWrapUpRef = useRef<() => void>(() => {});
+  const activeIntervalsRef = useRef<Set<ReturnType<typeof setInterval>>>(new Set());
 
-  // Clean up isMountedRef on unmount to prevent stale closures from calling setState
+  // Clean up on unmount: isMountedRef + all active polling intervals
   useEffect(() => {
     isMountedRef.current = true;
-    return () => { isMountedRef.current = false; };
+    return () => {
+      isMountedRef.current = false;
+      for (const id of activeIntervalsRef.current) {
+        clearInterval(id);
+      }
+      activeIntervalsRef.current.clear();
+    };
   }, []);
 
   // UI state
@@ -338,8 +345,10 @@ export default function SessionPage() {
       if (s.panelists.length > 0 && orchestrator.isInitialTakeReady(s.panelists[0].id)) {
         setFirstTakeReady(true);
         clearInterval(firstTakePoll);
+        activeIntervalsRef.current.delete(firstTakePoll);
       }
     }, 200);
+    activeIntervalsRef.current.add(firstTakePoll);
 
     // Run the session flow
     (async () => {
@@ -378,10 +387,13 @@ export default function SessionPage() {
                 setHint(`${nextPanelist.name}'s response is ready — press SPACE`);
                 setPrefetchReady(true);
                 clearInterval(readyPoll);
+                activeIntervalsRef.current.delete(readyPoll);
               }
             }, 200);
+            activeIntervalsRef.current.add(readyPoll);
             await waitForSpace();
             clearInterval(readyPoll);
+            activeIntervalsRef.current.delete(readyPoll);
             setPrefetchReady(false);
             setBriefingIndex(i + 1);
             setBriefingText('');
@@ -400,8 +412,10 @@ export default function SessionPage() {
           if (orchestrator.isAllCrossTalkReady()) {
             setCrossTalkReady(true);
             clearInterval(crossTalkPoll);
+            activeIntervalsRef.current.delete(crossTalkPoll);
           }
         }, 200);
+        activeIntervalsRef.current.add(crossTalkPoll);
 
         // === TRANSITION ===
         await waitForSpace();
@@ -502,9 +516,11 @@ export default function SessionPage() {
               const poll = setInterval(() => {
                 if (orchestrator.isAllCrossTalkReady()) {
                   clearInterval(poll);
+                  activeIntervalsRef.current.delete(poll);
                   resolve();
                 }
               }, 200);
+              activeIntervalsRef.current.add(poll);
             });
 
             // Play the responses
@@ -667,9 +683,11 @@ export default function SessionPage() {
             const poll = setInterval(() => {
               if (orchestrator.isAllCrossTalkReady()) {
                 clearInterval(poll);
+                activeIntervalsRef.current.delete(poll);
                 resolve();
               }
             }, 200);
+            activeIntervalsRef.current.add(poll);
           });
 
           const panelists = storeRef.current.panelists;

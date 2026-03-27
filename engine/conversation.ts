@@ -621,6 +621,11 @@ export class ConversationOrchestrator {
     this.callbacks.onRoundChange('summary');
     const transcriptContext = this.buildTranscriptContext();
 
+    // Don't send an empty discussion to the LLM — it would fabricate a summary
+    if (!transcriptContext.trim()) {
+      return 'No discussion was recorded. The session may have ended early.';
+    }
+
     const prompt = `${transcriptContext}\n\nSynthesize this discussion into a structured summary using the following markdown format:\n\nUse ## headings for each section: ## Key Insights, ## Points of Agreement, ## Points of Disagreement, ## Top Recommendations.\n\nUse **bold** for panelist names when referencing who said what.\n\nUse - bullet lists for multiple points within a section.\n\nUse 1. numbered lists for the Top Recommendations (in priority order, 3 to 5 items).\n\nUse > blockquotes for one or two notable direct quotes from panelists.\n\nBe specific and reference which panelists made which points.`;
 
     // Use streaming to avoid Vercel edge function 30s timeout on large transcripts.

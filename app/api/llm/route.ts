@@ -3,9 +3,46 @@ import type { LLMRequestBody } from '@/providers/types';
 
 export const runtime = 'edge';
 
+// Allowed Claude model IDs — reject anything else to prevent abuse
+const ALLOWED_MODELS = new Set([
+  'claude-haiku-4-5-20251001',
+  'claude-sonnet-4-6',
+  'claude-opus-4-6',
+]);
+
+// Max request body size (100KB — generous for even long transcripts)
+const MAX_BODY_SIZE = 100_000;
+
+/** Strip sensitive values (API keys, tokens) from error messages before sending to client */
+function sanitizeError(message: string): string {
+  // Remove anything that looks like an API key
+  return message.replace(/sk-ant-[a-zA-Z0-9_-]+/g, 'sk-ant-***').replace(/sk-[a-zA-Z0-9_-]{20,}/g, 'sk-***');
+}
+
 export async function POST(req: NextRequest) {
-  const body: LLMRequestBody = await req.json();
+  // Check content length before parsing
+  const contentLength = req.headers.get('content-length');
+  if (contentLength && parseInt(contentLength) > MAX_BODY_SIZE) {
+    return new Response(JSON.stringify({ error: 'Request too large.' }), { status: 413 });
+  }
+
+  let body: LLMRequestBody;
+  try {
+    body = await req.json();
+  } catch {
+    return new Response(JSON.stringify({ error: 'Invalid JSON.' }), { status: 400 });
+  }
+
   const { messages, provider, modelId, stream = true } = body;
+
+  // Validate required fields
+  if (!Array.isArray(messages) || messages.length === 0) {
+    return new Response(JSON.stringify({ error: 'Messages array is required.' }), { status: 400 });
+  }
+
+  if (!modelId || !ALLOWED_MODELS.has(modelId)) {
+    return new Response(JSON.stringify({ error: 'Invalid or unsupported model.' }), { status: 400 });
+  }
 
   // Use client-provided key, or fall back to server-side env var
   const apiKey = body.apiKey || process.env.ANTHROPIC_API_KEY || '';
@@ -13,20 +50,16 @@ export async function POST(req: NextRequest) {
     return new Response(JSON.stringify({ error: 'No API key configured. Set ANTHROPIC_API_KEY on the server.' }), { status: 400 });
   }
 
-  if (!modelId) {
-    return new Response(JSON.stringify({ error: 'Model ID is required' }), { status: 400 });
-  }
-
   try {
     if (provider === 'claude') {
       return await handleClaude(messages, apiKey, modelId, stream);
     } else {
-      return new Response(JSON.stringify({ error: `Unknown provider: ${provider}` }), { status: 400 });
+      return new Response(JSON.stringify({ error: 'Unknown provider.' }), { status: 400 });
     }
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Unknown error';
-    console.error('[LLM API Route Error]', message);
-    return new Response(JSON.stringify({ error: message }), { status: 500 });
+    const raw = error instanceof Error ? error.message : 'Unknown error';
+    console.error('[LLM API Route Error]', raw);
+    return new Response(JSON.stringify({ error: sanitizeError(raw) }), { status: 500 });
   }
 }
 
@@ -98,7 +131,9 @@ async function handleClaude(messages: { role: string; content: string }[], apiKe
     });
   }
 
-  return new Response(response.body, {
+  // Non-streaming: read the full response and forward it
+  const data = await response.json();
+  return new Response(JSON.stringify(data), {
     headers: { 'Content-Type': 'application/json' },
   });
 }
