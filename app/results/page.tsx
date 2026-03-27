@@ -8,6 +8,7 @@ import Summary from '@/components/results/Summary';
 import Transcript from '@/components/results/Transcript';
 import ExportPanel from '@/components/results/ExportPanel';
 import CostTally from '@/components/results/CostTally';
+import LeadCapturePopup from '@/components/results/LeadCapturePopup';
 
 export default function ResultsPage() {
   const router = useRouter();
@@ -15,6 +16,7 @@ export default function ResultsPage() {
   const [exportMode, setExportMode] = useState<'summary' | 'transcript'>('summary');
   const [jsonSaved, setJsonSaved] = useState(false);
   const [viewTransition, setViewTransition] = useState(false);
+  const [showLeadPopup, setShowLeadPopup] = useState(true);
 
   // Redirect if no completed session
   useEffect(() => {
@@ -97,6 +99,11 @@ export default function ResultsPage() {
 
   return (
     <div className="min-h-screen" style={{ background: 'var(--bg-deep)' }}>
+      {/* Lead capture popup — shows once before results */}
+      {showLeadPopup && (
+        <LeadCapturePopup onDismiss={() => setShowLeadPopup(false)} />
+      )}
+
       {/* Ambient glow */}
       <div
         className="fixed top-0 left-1/2 -translate-x-1/2 w-[600px] h-[400px] opacity-[0.06] rounded-full blur-[120px] pointer-events-none"

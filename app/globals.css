@@ -1837,12 +1837,12 @@ html, body {
   font-family: 'DM Mono', monospace;
   font-size: 12px;
   line-height: 1.65;
-  color: rgba(255,255,255,0.55);
+  color: var(--text-secondary);
   white-space: pre-wrap;
 }
 
 .transcript-text.moderator {
-  color: rgba(255,255,255,0.8);
+  color: var(--text-primary);
 }
 
 /* Cost tally — compact inline strip */

@@ -33,11 +33,10 @@ export default function Summary({ summary }: Props) {
     );
   }
 
-  // Escape HTML before parsing markdown
-  const escaped = escapeHtml(summary);
-
-  // Parse the summary into rendered elements
-  const lines = escaped.split('\n');
+  // No manual HTML escaping needed — React auto-escapes text in JSX.
+  // The previous escapeHtml() call was breaking markdown parsing by
+  // converting > to &gt; (blockquotes) and " to &quot; (pull quotes).
+  const lines = summary.split('\n');
   const elements: React.ReactNode[] = [];
 
   for (let i = 0; i < lines.length; i++) {

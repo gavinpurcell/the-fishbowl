@@ -702,7 +702,7 @@ export class ConversationOrchestrator {
   /** Check if a panelist's initial take has been prefetched and is ready */
   isInitialTakeReady(panelistId: string): boolean {
     const prefetched = this.prefetchedInitialTakes.get(panelistId);
-    return prefetched?.ready === true && !prefetched.error;
+    return prefetched?.ready === true;
   }
 
   /** Check if all cross-talk responses have finished generating */
