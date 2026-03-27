@@ -99,9 +99,42 @@ export default function ResultsPage() {
 
   return (
     <div className="min-h-screen" style={{ background: 'var(--bg-deep)' }}>
-      {/* Lead capture popup — shows once before results */}
+      {/* Lead capture — full modal first time, slim banner after */}
       {showLeadPopup && (
         <LeadCapturePopup onDismiss={() => setShowLeadPopup(false)} />
+      )}
+      {!showLeadPopup && (
+        <div
+          style={{
+            background: 'var(--bg-surface)',
+            borderBottom: '1px solid var(--border)',
+            padding: '10px 16px',
+            textAlign: 'center',
+          }}
+        >
+          <span
+            style={{
+              fontFamily: "'DM Mono', monospace",
+              fontSize: '12px',
+              color: 'var(--text-muted)',
+            }}
+          >
+            I build AI experiences like this.{' '}
+            <a
+              href="mailto:gavin@gavinpurcell.com"
+              style={{ color: 'var(--accent-gold)', textDecoration: 'none' }}
+            >
+              Let&apos;s talk
+            </a>
+            {' '}&middot;{' '}
+            <a
+              href="/about"
+              style={{ color: 'var(--text-muted)', textDecoration: 'none' }}
+            >
+              Why I made this
+            </a>
+          </span>
+        </div>
       )}
 
       {/* Ambient glow */}
