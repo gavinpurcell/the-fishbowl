@@ -132,9 +132,11 @@ export class ConversationOrchestrator {
     this.prefetching = true;
 
     const ideaContext = this.buildIdeaContext();
-    const prompt = `${ideaContext}\n\nReact naturally, like you just heard this pitch for the first time. What stands out? What concerns you? What excites you? Be specific and draw on your expertise. Focus on what YOUR specific expertise reveals that others might miss. Keep your response to 100-200 words. Write in plain text only. No markdown, no em-dashes, no formatting.`;
+    const totalPanelists = this.panelists.length;
 
-    for (const panelist of this.panelists) {
+    for (let idx = 0; idx < this.panelists.length; idx++) {
+      const panelist = this.panelists[idx];
+      const prompt = `${ideaContext}\n\nYou are panelist ${idx + 1} of ${totalPanelists}. React naturally, like you just heard this pitch for the first time. Focus specifically on what your expertise as a ${panelist.role} reveals that a generalist would miss. Don't give a broad overview. Go deep on the one or two things that matter most from YOUR perspective. Be specific and draw on your expertise. Keep your response to 100-200 words. Write in plain text only. No markdown, no em-dashes, no formatting.`;
       const prefetched: PrefetchedResponse = {
         text: '',
         chunks: [],
@@ -551,7 +553,8 @@ export class ConversationOrchestrator {
 
     let prompt: string;
     if (round === 'initial-takes') {
-      prompt = `${ideaContext}\n\nReact naturally, like you just heard this pitch for the first time. What stands out? What concerns you? What excites you? Be specific and draw on your expertise. Focus on what YOUR specific expertise reveals that others might miss. Keep your response to 100-200 words. Write in plain text only. No markdown, no em-dashes, no formatting.`;
+      const panelistIdx = this.panelists.indexOf(panelist);
+      prompt = `${ideaContext}\n\nYou are panelist ${panelistIdx + 1} of ${this.panelists.length}. React naturally, like you just heard this pitch for the first time. Focus specifically on what your expertise as a ${panelist.role} reveals that a generalist would miss. Don't give a broad overview. Go deep on the one or two things that matter most from YOUR perspective. Be specific and draw on your expertise. Keep your response to 100-200 words. Write in plain text only. No markdown, no em-dashes, no formatting.`;
     } else if (round === 'cross-talk') {
       prompt = `${ideaContext}\n\n${transcriptContext}\n\nJump in like you would in a real meeting. Push back, challenge, or build on what was said. Reference specific panelists by name. Do NOT restate or summarize points that were already made. If you agree with something, say so in one line and move on to a NEW point. Bring something to the table that hasn't been said yet. Keep your response to 100-200 words. Write in plain text only. No markdown, no em-dashes, no formatting.`;
     } else if (round === 'wrap-up') {
