@@ -97,7 +97,7 @@ export class SpeechBubble extends Container {
     this.MAX_WIDTH = Math.round(420 * (isMobile ? 1.3 : 1));
     this.PADDING = Math.round(12 * s);
     this.TAIL_HEIGHT = Math.round(10 * s);
-    this.MAX_BUBBLE_HEIGHT = Math.round(280 * (isMobile ? 1.2 : 1));
+    this.MAX_BUBBLE_HEIGHT = isMobile ? 240 : 280;
     this.LINE_HEIGHT = Math.round(16 * s);
     this.MIN_HEIGHT = Math.round(50 * s);
 
