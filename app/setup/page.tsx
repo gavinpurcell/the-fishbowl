@@ -10,7 +10,7 @@ import PanelistBuilder from '@/components/setup/PanelistBuilder';
 import IdeaInput from '@/components/setup/IdeaInput';
 import ApiKeyConfig from '@/components/setup/ApiKeyConfig';
 import OnboardingTour from '@/components/setup/OnboardingTour';
-import { estimateSessionCost, formatCost } from '@/lib/models';
+
 
 export default function SetupPage() {
   const router = useRouter();
@@ -41,14 +41,14 @@ export default function SetupPage() {
     setStep('configure');
   };
 
+  const isHosted = process.env.NEXT_PUBLIC_HOSTED_MODE === 'true';
   const hasPanelists = store.panelists.length >= 3;
   const hasIdea = !!(store.ideaText.trim() || store.ideaFiles.length > 0);
-  // Provider is always ready — server has ANTHROPIC_API_KEY
-  const hasProvider = true;
-  const canStart = hasPanelists && hasIdea;
+  const hasProvider = isHosted || store.provider === 'claude-code' || !!store.apiKey.trim();
+  const canStart = hasPanelists && hasIdea && hasProvider;
 
-  // Progress calculation for readiness bar (2 steps now: panel + idea)
-  const readinessSteps = [hasPanelists, hasIdea];
+  // Progress calculation for readiness bar
+  const readinessSteps = isHosted ? [hasPanelists, hasIdea] : [hasPanelists, hasIdea, hasProvider];
   const completedSteps = readinessSteps.filter(Boolean).length;
   const readinessPercent = (completedSteps / readinessSteps.length) * 100;
 
@@ -164,31 +164,19 @@ export default function SetupPage() {
                   />
                 </div>
 
-                {/* Cost estimate */}
-                {store.panelists.length >= 3 && (
-                  <div className="cost-badge">
-                    <div className="cost-badge-icon">
-                      <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
-                        <path d="M8 1L10.5 6L16 7L12 11L13 16L8 13.5L3 16L4 11L0 7L5.5 6L8 1Z" fill="var(--accent-gold)" />
-                      </svg>
-                    </div>
-                    <div className="flex flex-col gap-1">
-                      <span className="cost-badge-label">Estimated Cost</span>
-                      {store.provider === 'claude-code' ? (
-                        <span className="cost-badge-free">Free</span>
-                      ) : (
-                        <span className="cost-badge-value">
-                          {(() => {
-                            const est = estimateSessionCost(store.modelId, store.panelists.length);
-                            return `${formatCost(est.low)} - ${formatCost(est.high)}`;
-                          })()}
-                        </span>
-                      )}
-                    </div>
+                {/* API config — only shown for self-hosted installs */}
+                {!isHosted && (
+                  <div id="section-api">
+                    <ApiKeyConfig
+                      provider={store.provider}
+                      apiKey={store.apiKey}
+                      modelId={store.modelId}
+                      onProviderChange={store.setProvider}
+                      onApiKeyChange={store.setApiKey}
+                      onModelChange={store.setModelId}
+                    />
                   </div>
                 )}
-
-                {/* API config hidden — server uses ANTHROPIC_API_KEY */}
               </div>
             </div>
 
