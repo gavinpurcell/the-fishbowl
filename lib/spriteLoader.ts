@@ -6,6 +6,29 @@ const OBSERVER_POSES = ['standing_idle', 'standing_talking'] as const;
 export type CharacterPose = (typeof POSES)[number];
 export type ObserverPose = (typeof OBSERVER_POSES)[number];
 
+/** Load only the sprites needed for the title screen (4 characters + room) */
+export async function loadTitleSprites(): Promise<void> {
+  const assets: { alias: string; src: string }[] = [];
+  const titleChars = [1, 2, 3, 4]; // sprite indices used by TitleScene
+
+  for (const i of titleChars) {
+    for (const pose of POSES) {
+      assets.push({ alias: `char_${i}_${pose}`, src: `/sprites/characters/char_${i}_${pose}.png` });
+    }
+    assets.push({ alias: `char_${i}_shadow`, src: `/sprites/shadows/char_${i}_shadow.png` });
+  }
+
+  // Room essentials
+  assets.push({ alias: 'room_bg', src: '/sprites/room/background_prev.png' });
+  assets.push({ alias: 'room_bg_clean', src: '/sprites/room/background_clean.png' });
+  assets.push({ alias: 'coffee_table', src: '/sprites/room/coffee_table.png' });
+  assets.push({ alias: 'table_only', src: '/sprites/room/table_only.png' });
+  assets.push({ alias: 'fishbowl_table', src: '/sprites/room/fishbowl_table.png' });
+
+  await Assets.load(assets.map(a => ({ alias: a.alias, src: a.src })));
+}
+
+/** Load all sprites (full set for sessions) */
 export async function loadAllSprites(): Promise<void> {
   const assets: { alias: string; src: string }[] = [];
 

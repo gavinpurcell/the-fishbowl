@@ -3,7 +3,7 @@
 import { useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { TitleScene } from '@/scene/TitleScene';
-import { loadAllSprites } from '@/lib/spriteLoader';
+import { loadTitleSprites } from '@/lib/spriteLoader';
 
 const ROSTER_COLORS = ['#4a9e6e', '#c45a5a', '#5a7ec4', '#d4a040', '#9a6ab4'];
 
@@ -16,7 +16,7 @@ export default function TitlePage() {
     if (!canvasRef.current || sceneRef.current) return;
     const scene = new TitleScene();
     sceneRef.current = scene;
-    loadAllSprites().then(() => {
+    loadTitleSprites().then(() => {
       if (canvasRef.current) scene.init(canvasRef.current);
     });
 
