@@ -26,6 +26,14 @@ const ROUND_LABELS: Record<RoundType, string> = {
   'summary': 'GENERATING SUMMARY...',
 };
 
+const ROUND_LABELS_SHORT: Record<RoundType, string> = {
+  'initial-takes': 'RD 1',
+  'cross-talk': 'RD 2',
+  'moderation': 'Q&A',
+  'wrap-up': 'WRAP-UP',
+  'summary': 'SUMMARY...',
+};
+
 export default function StatusBar({ round, panelistsSpoken, totalPanelists, onWrapUp, canWrapUp, modelLabel, costDollars, totalTokens, isOllama, centerContent }: Props) {
   // Timer: counts up from session start
   const [elapsed, setElapsed] = useState(0);
@@ -98,7 +106,8 @@ export default function StatusBar({ round, panelistsSpoken, totalPanelists, onWr
               color: 'var(--accent-gold)',
             }}
           >
-            {ROUND_LABELS[round]}
+            <span className="hidden sm:inline">{ROUND_LABELS[round]}</span>
+            <span className="sm:hidden">{ROUND_LABELS_SHORT[round]}</span>
           </span>
         </div>
 
@@ -232,20 +241,32 @@ export default function StatusBar({ round, panelistsSpoken, totalPanelists, onWr
       </div>
 
       {centerContent && (
-        <div
-          style={{
-            position: 'absolute',
-            inset: 0,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            pointerEvents: 'none',
-          }}
-        >
-          <div style={{ pointerEvents: 'auto' }}>
+        <>
+          {/* Desktop: overlay centered on the bar */}
+          <div
+            className="hidden sm:flex"
+            style={{
+              position: 'absolute',
+              inset: 0,
+              alignItems: 'center',
+              justifyContent: 'center',
+              pointerEvents: 'none',
+            }}
+          >
+            <div style={{ pointerEvents: 'auto' }}>
+              {centerContent}
+            </div>
+          </div>
+          {/* Mobile: below the bar as its own row */}
+          <div
+            className="sm:hidden flex justify-center py-2"
+            style={{
+              borderTop: '1px solid var(--dark-border)',
+            }}
+          >
             {centerContent}
           </div>
-        </div>
+        </>
       )}
     </div>
   );

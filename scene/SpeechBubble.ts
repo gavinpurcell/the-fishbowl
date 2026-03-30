@@ -386,7 +386,10 @@ export class SpeechBubble extends Container {
     const availableAbove = this.position.y - 8 - this.PADDING * 2 - this.TAIL_HEIGHT;
     const positionMaxTextH = Math.max(this.MIN_HEIGHT - this.PADDING * 2, availableAbove);
     const maxTextH = Math.min(hardMaxTextH, positionMaxTextH);
-    const maxVisibleLines = Math.max(1, Math.floor(maxTextH / this.LINE_HEIGHT));
+    // Use a slightly inflated line height for the count to avoid overflow
+    // (PixiJS text rendering can exceed the nominal lineHeight)
+    const effectiveLH = this.LINE_HEIGHT * 1.15;
+    const maxVisibleLines = Math.max(1, Math.floor(maxTextH / effectiveLH));
     const isOverflowing = fullLines.length > maxVisibleLines;
     const visibleLines = isOverflowing
       ? fullLines.slice(fullLines.length - maxVisibleLines)
