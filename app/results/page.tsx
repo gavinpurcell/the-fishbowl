@@ -279,10 +279,12 @@ export default function ResultsPage() {
           )}
         </div>
 
-        {/* === COST TALLY — Compact budget line strip === */}
-        <div className="report-enter report-enter-4 mb-6">
-          <CostTally />
-        </div>
+        {/* === COST TALLY — Compact budget line strip (hidden in hosted mode) === */}
+        {process.env.NEXT_PUBLIC_HOSTED_MODE !== 'true' && (
+          <div className="report-enter report-enter-4 mb-6">
+            <CostTally />
+          </div>
+        )}
 
         {/* === SAVE JSON ROW === */}
         <div className="report-enter report-enter-4 mb-6">
