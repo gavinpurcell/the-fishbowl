@@ -52,7 +52,7 @@ const DEMO_PANELISTS: Panelist[] = [
 const DEMO_IDEA = 'Should I keep working on The Fishbowl, or is this whole thing a terrible idea?';
 
 const INITIAL_TAKES = [
-  "OK so full disclosure, I made this thing. The idea was pretty simple: I wanted to watch AI characters argue about ideas instead of just reading a wall of text from ChatGPT. Is it practical? Debatable. Is it fun to watch four pixel people roast your startup idea? Absolutely. I spent way too long getting the speech bubbles to work in PixiJS and I regret nothing. The real question is whether anyone besides me finds this entertaining.",
+  "OK so full disclosure, I made this thing. The idea was pretty simple: I wanted to watch AI characters argue about ideas instead of just reading a wall of text from Claude. Is it practical? Debatable. Is it fun to watch four pixel people roast your startup idea? Absolutely. I spent way too long getting the speech bubbles to work in PixiJS and I regret nothing. The real question is whether anyone besides me finds this entertaining.",
   "I'll be honest, my first reaction was 'oh great, another AI wrapper.' But then I actually used it and something weird happened. I cared what the fake people thought. Like, I know Jordan isn't real, but when he said my product timeline was unrealistic, I felt personally attacked. There's something about the visual format that makes the feedback land differently than a text response. I hate that it works.",
   "Let me put on my investor hat for a second. The core insight here is that AI conversations are invisible, and making them visible is a product. The focus group format is clever because it gives each AI response a character, a personality, a face. That's a distribution advantage. People share screenshots of funny AI responses all the time. Now imagine those responses are coming from a tiny pixel person named Carl who is professionally skeptical of everything.",
   "As someone who has actually moderated real focus groups, this is both ridiculous and weirdly accurate. Real focus groups have one person who dominates, one who agrees with everyone, one who goes off topic, and one who says the thing everyone was thinking but wouldn't say. Gavin basically recreated that dynamic with prompt engineering. The pixel art is cute but the real magic is in the system prompts. Each panelist actually feels different.",
@@ -188,8 +188,6 @@ function DemoPageContent() {
       if (i === 0) {
         setBriefingIndex(i);
         setBriefingText('');
-        setHint(`Press SPACE to hear ${DEMO_PANELISTS[i].name}'s take`);
-        await waitForSpace();
       }
 
       setHint(`${DEMO_PANELISTS[i].name} is sharing their take...`);
@@ -514,7 +512,7 @@ function DemoPageContent() {
                     </div>
                     <p
                       className="text-xs text-center mt-3 leading-relaxed px-2 hidden sm:block"
-                      style={{ color: 'rgba(255,255,255,0.4)' }}
+                      style={{ color: 'rgba(255,255,255,0.6)' }}
                     >
                       {currentPanelist.description}
                     </p>
@@ -595,6 +593,7 @@ function DemoPageContent() {
               className="w-full max-w-[800px] mx-auto scene-viewport overflow-hidden"
               style={{ aspectRatio: '16/9', borderRadius: '10px 10px 0 0', borderBottom: 'none' }}
             />
+            <div className="max-w-[800px] mx-auto">
             <StatusBar
               round={currentRound}
               panelistsSpoken={panelistsSpoken}
@@ -628,6 +627,7 @@ function DemoPageContent() {
                 </button>
               ) : null}
             />
+            </div>
           </div>
         </div>
 
@@ -668,10 +668,10 @@ function DemoPageContent() {
 
         {/* Demo complete state */}
         {demoComplete && (
-          <div className="max-w-[600px] mx-auto text-center py-12 sm:py-20">
+          <div className="max-w-[600px] mx-auto text-center py-6 sm:py-10">
             {/* Gold accent line */}
             <div
-              className="mx-auto mb-8"
+              className="mx-auto mb-5"
               style={{
                 width: '60px',
                 height: '2px',
@@ -692,21 +692,7 @@ function DemoPageContent() {
               THAT&apos;S THE FISHBOWL
             </h2>
 
-            <p
-              className="text-sm sm:text-base mb-8 leading-relaxed"
-              style={{
-                color: 'var(--text-secondary)',
-                fontFamily: "'Outfit', sans-serif",
-                maxWidth: '440px',
-                margin: '0 auto 2rem',
-              }}
-            >
-              Four AI experts. Your idea. One honest conversation.
-              <br />
-              What you just watched was a pre-recorded demo. The real thing uses live AI — every session is unique.
-            </p>
-
-            <div className="flex flex-col sm:flex-row gap-3 justify-center items-center">
+            <div className="flex flex-col sm:flex-row gap-3 justify-center items-center mt-4">
               <Link
                 href="/setup"
                 className="cta-game-button font-pixel"

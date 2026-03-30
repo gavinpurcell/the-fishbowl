@@ -118,8 +118,39 @@ export default function TitlePage() {
           Start a Session
         </button>
 
+        {/* Demo link */}
+        <a
+          href="/demo"
+          className="animate-fade-in animate-fade-in-delay-4 group"
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '6px',
+            marginTop: '14px',
+            fontFamily: "'DM Mono', monospace",
+            fontSize: '11px',
+            letterSpacing: '0.06em',
+            color: 'var(--text-muted)',
+            textDecoration: 'none',
+            transition: 'color 0.2s ease',
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.color = 'var(--accent-gold)';
+            const arrow = e.currentTarget.querySelector('.demo-arrow') as HTMLElement;
+            if (arrow) arrow.style.transform = 'translateX(3px)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.color = 'var(--text-muted)';
+            const arrow = e.currentTarget.querySelector('.demo-arrow') as HTMLElement;
+            if (arrow) arrow.style.transform = 'translateX(0)';
+          }}
+        >
+          <span>or watch the demo</span>
+          <span className="demo-arrow" style={{ transition: 'transform 0.2s ease', display: 'inline-block' }}>&rarr;</span>
+        </a>
+
         {/* Footer */}
-        <div className="animate-fade-in animate-fade-in-delay-4 mt-3 flex flex-col items-center gap-3">
+        <div className="animate-fade-in animate-fade-in-delay-5 mt-3 flex flex-col items-center gap-3">
           <p
             style={{
               fontFamily: "'DM Mono', monospace",

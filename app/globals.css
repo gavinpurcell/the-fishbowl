@@ -96,6 +96,7 @@ body::before {
 .animate-fade-in-delay-2 { animation-delay: 0.2s; opacity: 0; }
 .animate-fade-in-delay-3 { animation-delay: 0.3s; opacity: 0; }
 .animate-fade-in-delay-4 { animation-delay: 0.4s; opacity: 0; }
+.animate-fade-in-delay-5 { animation-delay: 0.5s; opacity: 0; }
 
 @keyframes pulseRing {
   0%, 100% { box-shadow: 0 0 0 0 rgba(232, 184, 75, 0.4); }
