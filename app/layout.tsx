@@ -5,23 +5,33 @@ import ThemeToggle from '@/components/ThemeToggle';
 
 export const metadata: Metadata = {
   title: {
-    default: 'The Fishbowl — AI Focus Groups',
+    default: 'The Fishbowl',
     template: '%s — The Fishbowl',
   },
   description:
-    'Assemble a panel of AI experts, pitch your idea, and watch them debate it live in a pixel-art scene. Then step in and ask questions.',
+    'Assemble a panel of AI experts, pitch your idea, and watch them debate it live in a pixel-art scene.',
   openGraph: {
-    title: 'The Fishbowl — AI Focus Groups',
+    title: 'The Fishbowl',
     description:
-      'Assemble a panel of AI experts, pitch your idea, and watch them debate it live. Then step in and ask questions.',
+      'Assemble a panel of AI experts, pitch your idea, and watch them debate it live in a pixel-art scene.',
     type: 'website',
     siteName: 'The Fishbowl',
+    url: 'https://fishbowl.show',
+    images: [
+      {
+        url: 'https://fishbowl.show/og-image.png',
+        width: 1200,
+        height: 630,
+        alt: 'The Fishbowl - AI experts debating in a pixel art scene',
+      },
+    ],
   },
   twitter: {
-    card: 'summary',
-    title: 'The Fishbowl — AI Focus Groups',
+    card: 'summary_large_image',
+    title: 'The Fishbowl',
     description:
-      'Assemble a panel of AI experts, pitch your idea, and watch them debate it live.',
+      'Assemble a panel of AI experts, pitch your idea, and watch them debate it live in a pixel-art scene.',
+    images: ['https://fishbowl.show/og-image.png'],
   },
   icons: {
     icon: [

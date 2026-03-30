@@ -45,7 +45,7 @@ export class PanelistTag extends Container {
         fontWeight: '700',
         fill: 0xfff8e8,
         letterSpacing: 1.0,
-        padding: 8,
+        padding: 14,
       }),
     });
     this.addChild(this.nameText);
@@ -57,7 +57,7 @@ export class PanelistTag extends Container {
         fontSize: 9,
         fill: 0xc8b898,
         letterSpacing: 1.0,
-        padding: 8,
+        padding: 14,
       }),
     });
     this.addChild(this.roleText);
@@ -77,7 +77,7 @@ export class PanelistTag extends Container {
     // estimate as a floor so names are never truncated even if PixiJS measures
     // the text before the web font has fully loaded.
     const nameChars = this.nameText.text.length;
-    const estimatedNameWidth = nameChars * 11;
+    const estimatedNameWidth = nameChars * 13;
     const contentWidth = Math.max(measuredWidth, estimatedNameWidth);
     const width = contentWidth + paddingX * 2 + accentWidth;
     const height = roleY + this.roleText.height + 7;

@@ -833,7 +833,7 @@ export default function SessionPage() {
   const totalResponses = localTranscriptRef.current.filter((e) => e.panelistId !== 'user').length;
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen overflow-x-hidden">
       <KeyboardHelp />
 
       {/* Wrap-up overlay — broadcast sign-off */}
@@ -1017,7 +1017,7 @@ export default function SessionPage() {
                     </div>
 
                     {/* Right: Initial Take content — scrollable so long responses don't push the page */}
-                    <div className="flex-1 p-4 sm:p-8 overflow-y-auto" style={{ maxHeight: '60vh' }}>
+                    <div className="flex-1 min-w-0 p-4 sm:p-8 overflow-y-auto" style={{ maxHeight: '60vh' }}>
                       <div
                         className="font-pixel mb-4"
                         style={{
@@ -1030,8 +1030,8 @@ export default function SessionPage() {
                       </div>
                       {briefingText ? (
                         <p
-                          className="text-sm leading-relaxed whitespace-pre-wrap"
-                          style={{ color: 'rgba(255,255,255,0.65)' }}
+                          className="text-sm leading-relaxed whitespace-pre-wrap break-words"
+                          style={{ color: 'rgba(255,255,255,0.65)', overflowWrap: 'break-word' }}
                         >
                           {briefingText.replace(/\n*▸ continue\n*/g, '\n\n')}
                           {isSpeaking && (

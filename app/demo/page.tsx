@@ -302,7 +302,7 @@ function DemoPageContent() {
   const currentPanelist = briefingIndex >= 0 ? DEMO_PANELISTS[briefingIndex] : null;
 
   return (
-    <div className="min-h-screen" style={{ background: 'var(--bg-deep)' }}>
+    <div className="min-h-screen overflow-x-hidden" style={{ background: 'var(--bg-deep)' }}>
       <KeyboardHelp />
 
       {/* Demo banner */}
@@ -530,7 +530,7 @@ function DemoPageContent() {
                     </div>
                   </div>
 
-                  <div className="flex-1 p-4 sm:p-8">
+                  <div className="flex-1 min-w-0 p-4 sm:p-8">
                     <div
                       className="font-pixel mb-4"
                       style={{
