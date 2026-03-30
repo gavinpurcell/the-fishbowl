@@ -1,145 +1,58 @@
-# The Fishbowl: AI Focus Groups
+# The Fishbowl
 
-**Watch AI experts debate your idea. In pixel art.**
+**AI focus groups, visualized.** Assemble a panel of AI experts, pitch them your idea, and watch them debate it in a live pixel art scene.
 
-The Fishbowl is an AI-powered focus group simulator. You assemble a panel of expert personas, pitch them your idea, and watch them debate it in a live pixel art scene. Think *AI Town* meets *usability testing*: multi-persona AI conversations made visual, watchable, and accessible to everyone.
+Try it now at **[fishbowl.show](https://fishbowl.show)** or **[watch the demo](https://fishbowl.show/demo)** (no account needed).
 
-<!-- SCREENSHOT: title-screen.png -->
+<!-- TODO: add a screenshot or GIF of the roundtable scene -->
 
-## Why This Exists
+## Why
 
-In 2023, Stanford's *Generative Agents* paper (and the viral [AI Town](https://www.convex.dev/ai-town) demo that followed) proved something: **people will watch AI characters interact for hours.** Tiny pixel art NPCs wandering a town, chatting, forming opinions. It was mesmerizing. But it was a tech demo. The characters talked about nothing. There was no practical output.
+Most AI conversations are invisible. You type into a box, you get text back. But multi-persona AI, where different experts debate, push back, and build on each other's points, is way more interesting to watch than to read. Stanford's [Generative Agents](https://arxiv.org/abs/2304.03442) paper and [AI Town](https://www.convex.dev/ai-town) proved people will watch pixel art characters interact for hours. The Fishbowl takes that a step further: what if you could actually *see* AI agents think, react, and argue, instead of just reading the output?
 
-Around the same time, multi-agent AI orchestration was getting powerful. Tools like Claude Code's `/agents` command could spin up swarms of AI personas that research, debate, and build things together. The problem? It all happens in a terminal. Text flying by. Only developers get excited watching that.
+## How It Works
 
-**The Fishbowl sits in the gap between what AI can do and what people can see AI doing.**
+1. **Pick a panel.** Choose from preset expert teams (startup pitch reviewers, marketing strategists, product critics) or build your own with custom personas.
+2. **Pitch your idea.** Describe what you're working on. The panel reads it as a brief.
+3. **Watch the discussion.** Each panelist gives their take, then they cross-talk: referencing each other, pushing back, building on points. All rendered in a live PixiJS scene with pixel art characters, speech bubbles, and reaction animations.
+4. **Moderate.** Jump in with follow-up questions. The panel responds with full context of the conversation so far.
+5. **Get the report.** Export a summary or full transcript.
 
-It takes the core insight from AI Town (that visualization makes AI accessible) and applies it to something practical: getting expert feedback on your ideas. Instead of NPCs chatting about the weather, you have a skeptical CFO, a growth hacker, a UX designer, and a senior engineer debating whether your startup idea will work.
+The magic is in the shared context. After initial takes, every panelist sees the full transcript. This creates real back-and-forth where a UX researcher pushes back on an engineer's architecture choice, or a CFO challenges a growth hacker's budget assumptions.
 
-<!-- SCREENSHOT: roundtable.png -->
+## Self-Hosting
 
-## What It Does
-
-1. **Assemble your panel.** Pick from preset expert teams or build your own. Each panelist gets a unique persona, expertise, and pixel art character.
-
-<!-- SCREENSHOT: setup-page.png -->
-
-2. **Brief them.** Describe your idea, product, campaign, or problem. Drop in documents for additional context.
-
-3. **Watch them debate.** The panelists give initial reactions, then engage in cross-talk where they reference each other's points, agree, disagree, and build on ideas. All animated in a cozy pixel art office scene.
-
-<!-- SCREENSHOT: briefing-card.png -->
-
-4. **Moderate.** Step in with follow-up questions. The panelists respond with full context of the discussion so far.
-
-5. **Get the report.** Export an executive summary or full transcript as Markdown or PDF.
-
-<!-- SCREENSHOT: results-page.png -->
-
-## The Experience
-
-The Fishbowl is designed to feel like watching a live broadcast of a focus group:
-
-- **Title screen** / Retro game title with CRT viewport and pixel characters
-- **Setup** / RPG party assembly where you pick your team of experts
-- **"Going Live" transition** / Cinematic broadcast countdown with panelist lineup
-- **Roundtable** / Dark production control room UI with live PixiJS scene, speech bubbles, thinking indicators, and a teleprompter-style transcript
-- **"That's a Wrap"** / Broadcast sign-off with session stats
-- **Results** / Classified post-show debrief report
-
-<!-- SCREENSHOT: transition.png -->
-
-## How It Works Under the Hood
-
-The Fishbowl is **not** a multi-agent swarm. It's a sequential orchestrator that queries the same LLM multiple times with different expert personas. Each panelist is a carefully crafted system prompt, not an autonomous agent.
-
-### Conversation Flow
-
-```
-INITIAL TAKES          Each panelist reacts independently (prefetched in parallel)
-       ↓
-CROSS-TALK (×2)        Panelists see the full transcript. They reference each
-                       other by name, agree, disagree, and build on points.
-       ↓
-MODERATION             You ask follow-up questions, all panelists respond
-       ↓
-WRAP-UP                Each panelist gives their single most important takeaway
-       ↓
-SUMMARY                AI synthesizes key insights, agreements, and disagreements
-```
-
-The magic is in the **shared context**: after initial takes, every panelist sees the full transcript of everything said so far. This creates genuine back-and-forth where a UX designer pushes back on an engineer's architecture choice, or a CFO challenges a growth hacker's budget assumptions.
-
-### Providers
-
-| Provider | What it uses | Streaming | Cost |
-|----------|-------------|-----------|------|
-| **Claude** | Anthropic API | Real-time | Per token |
-| **OpenAI** | OpenAI API | Real-time | Per token |
-| **Claude Local** | Claude Code CLI on your machine | Simulated | Your Claude subscription |
-| **Ollama** | Local models (Llama, Mistral, etc.) | Real-time | Free |
-
-**Claude Local** is the zero-cost option for Claude Pro/Max subscribers. It runs through the Claude Code CLI installed on your machine, using your existing subscription. No API key needed.
-
-## Quick Start
-
-### Prerequisites
-
-- Node.js 18+
-- An API key for Claude or OpenAI, **or** Claude Code CLI installed (for Claude Local), **or** Ollama running locally
-
-### Install and Run
+The hosted version at [fishbowl.show](https://fishbowl.show) is free to use, but every session costs Gavin real money and he is not rich. If you're going to use it a lot, please run your own instance:
 
 ```bash
 git clone https://github.com/gavinpurcell/the-fishbowl.git
 cd the-fishbowl
 npm install
+cp .env.example .env.local
+# Add your ANTHROPIC_API_KEY to .env.local
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000).
 
-### Try the Demo
+### Providers
 
-Visit [http://localhost:3000/test](http://localhost:3000/test) to run a full session with fake data, no API key needed. This shows the complete experience: briefing cards, broadcast countdown, roundtable with speech bubbles, and results.
-
-### Using Claude Local (No API Key)
-
-If you have [Claude Code](https://docs.anthropic.com/en/docs/claude-code) installed and logged in:
-
-1. Select **Claude Local** as your provider on the setup page
-2. Choose a model (Haiku, Sonnet, or Opus)
-3. No API key required. Uses your Claude Pro/Max subscription.
-4. Responses may be slightly slower due to CLI startup time
+| Provider | Setup | Cost |
+|----------|-------|------|
+| **Claude (API)** | Add your Anthropic API key | Per-token |
+| **Claude Local** | Requires [Claude Code](https://docs.anthropic.com/en/docs/claude-code) CLI installed and logged in | Uses your Claude Pro/Max subscription |
 
 ## Tech Stack
 
 - **Next.js 16** with App Router and React 19
 - **PixiJS 8** for 2D scene rendering (characters, speech bubbles, animations)
 - **Zustand** for state management with sessionStorage persistence
-- **Tailwind CSS v4** for styling
-- **Silkscreen** as the pixel font for headings
-- **DM Mono** as the monospace font for data and transcripts
-- **fal.ai** for sprite generation (Nano Banana 2)
-
-## The Bigger Idea
-
-The Fishbowl is an experiment in **AI theater**: the idea that giving AI conversations a visual layer changes who can participate in them and what they understand about how AI works.
-
-Most AI tools are still text-in, text-out. A chat box. Maybe a loading spinner. But AI is increasingly collaborative and multi-persona. Agents debating, reasoning together, challenging each other. That process is fascinating, but it's invisible to most people.
-
-What if the most powerful thing about multi-agent AI isn't the output, but **making the process watchable**?
-
-The focus group is the first format. The concept (pixel characters + real AI reasoning + watchable interaction) could extend to brainstorming sessions, war-gaming, educational panels, debate practice, and more.
+- **Tailwind CSS v4**
+- **Silkscreen** / **DM Mono** / **Outfit** for pixel, mono, and body fonts
 
 ## Credits
 
-Built by [Gavin Purcell](https://gavinpurcell.com). Co-host of [AI For Humans](https://aiforhumans.show).
+Built by [Gavin Purcell](https://gavinpurcell.com) and [Claude](https://claude.ai). Gavin co-hosts [AI For Humans](https://aiforhumans.show). Pixel art sprites generated with [fal.ai](https://fal.ai).
 
-Inspired by [AI Town](https://www.convex.dev/ai-town) (Convex), the Stanford [Generative Agents](https://arxiv.org/abs/2304.03442) paper, and the experience of watching Claude Code's `/agents` command orchestrate AI swarms in a terminal and thinking: *what if everyone could see this?*
+## License
 
-Pixel art sprites generated with [fal.ai](https://fal.ai) Nano Banana 2.
-
----
-
-*The Fishbowl: because the best feedback comes from watching experts argue about your idea.*
+MIT
