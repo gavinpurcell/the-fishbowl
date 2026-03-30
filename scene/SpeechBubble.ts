@@ -49,9 +49,9 @@ export class SpeechBubble extends Container {
   private readonly DISAPPEAR_FRAMES = 8;
 
   // Height clamping — canvas is 800x450; keep bubble within viewport
-  private readonly MAX_BUBBLE_HEIGHT = 280;
-  private readonly LINE_HEIGHT = 16;
-  private readonly MIN_HEIGHT = 50;
+  private readonly MAX_BUBBLE_HEIGHT: number;
+  private readonly LINE_HEIGHT: number;
+  private readonly MIN_HEIGHT: number;
 
   // Style constants per mode — pixel-art RPG dialog box palette
   private static readonly STYLES = {
@@ -79,9 +79,9 @@ export class SpeechBubble extends Container {
     },
   } as const;
 
-  private readonly MAX_WIDTH = 420;
-  private readonly PADDING = 12;
-  private readonly TAIL_HEIGHT = 10;
+  private readonly MAX_WIDTH: number;
+  private readonly PADDING: number;
+  private readonly TAIL_HEIGHT: number;
   private readonly BORDER_OUTER = 2;
   private readonly BORDER_INNER = 1;
   private readonly CORNER_RADIUS = 4; // tight pixel-art corners
@@ -89,6 +89,19 @@ export class SpeechBubble extends Container {
   constructor() {
     super();
     this.visible = false;
+
+    // Detect mobile and scale up text/bubble for readability
+    const isMobile = typeof window !== 'undefined' && window.innerWidth < 640;
+    const s = isMobile ? 1.5 : 1;
+
+    this.MAX_WIDTH = Math.round(420 * (isMobile ? 1.3 : 1));
+    this.PADDING = Math.round(12 * s);
+    this.TAIL_HEIGHT = Math.round(10 * s);
+    this.MAX_BUBBLE_HEIGHT = Math.round(280 * (isMobile ? 1.2 : 1));
+    this.LINE_HEIGHT = Math.round(16 * s);
+    this.MIN_HEIGHT = Math.round(50 * s);
+
+    const fontSize = Math.round(11 * s);
 
     // Drop shadow (drawn behind bubble)
     this.shadow = new Graphics();
@@ -116,7 +129,7 @@ export class SpeechBubble extends Container {
       text: '',
       style: new TextStyle({
         fontFamily: '"DM Mono", "Courier New", monospace',
-        fontSize: 11,
+        fontSize,
         fill: 0x3a2e22,
         wordWrap: true,
         wordWrapWidth: this.MAX_WIDTH - this.PADDING * 2,
@@ -132,7 +145,7 @@ export class SpeechBubble extends Container {
       text: '...',
       style: new TextStyle({
         fontFamily: '"DM Mono", "Courier New", monospace',
-        fontSize: 10,
+        fontSize: Math.round(10 * s),
         fill: 0x8a7a66,
         fontWeight: 'bold',
         letterSpacing: 1.5,

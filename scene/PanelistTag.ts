@@ -27,6 +27,10 @@ export class PanelistTag extends Container {
     super();
     this.align = align;
 
+    // Detect mobile and scale up for readability
+    const isMobile = typeof window !== 'undefined' && window.innerWidth < 640;
+    const s = isMobile ? 1.5 : 1;
+
     // Border drawn behind bg
     this.borderGraphics = new Graphics();
     this.addChild(this.borderGraphics);
@@ -41,7 +45,7 @@ export class PanelistTag extends Container {
       text: name.toUpperCase(),
       style: new TextStyle({
         fontFamily: "'Silkscreen', 'Courier New', monospace",
-        fontSize: 11,
+        fontSize: Math.round(11 * s),
         fontWeight: '700',
         fill: 0xfff8e8,
         letterSpacing: 1.0,
@@ -54,7 +58,7 @@ export class PanelistTag extends Container {
       text: role,
       style: new TextStyle({
         fontFamily: '"DM Mono", monospace',
-        fontSize: 9,
+        fontSize: Math.round(9 * s),
         fill: 0xc8b898,
         letterSpacing: 1.0,
         padding: 14,
