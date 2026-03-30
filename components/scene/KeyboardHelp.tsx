@@ -59,6 +59,10 @@ export default function KeyboardHelp({ extraShortcuts = [] }: KeyboardHelpProps)
 
   const allShortcuts = [...DEFAULT_SHORTCUTS, ...extraShortcuts];
 
+  // Hide entirely on touch devices
+  const isTouchDevice = typeof window !== 'undefined' && ('ontouchstart' in window || navigator.maxTouchPoints > 0);
+  if (isTouchDevice) return null;
+
   return (
     <>
       {/* Badge — fixed bottom-right "?" button */}

@@ -77,6 +77,10 @@ function demoId(): string {
   return `demo-${++demoIdCounter}`;
 }
 
+const isTouchDevice = typeof window !== 'undefined' && ('ontouchstart' in window || navigator.maxTouchPoints > 0);
+const ACTION = isTouchDevice ? 'Tap' : 'Press SPACE';
+const ACTION_LC = isTouchDevice ? 'tap' : 'press SPACE';
+
 type ViewMode = 'briefing' | 'transition' | 'roundtable';
 
 function DemoPageContent() {
@@ -91,7 +95,7 @@ function DemoPageContent() {
   const [briefingText, setBriefingText] = useState('');
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [panelistsSpoken, setPanelistsSpoken] = useState(0);
-  const [hint, setHint] = useState('Press SPACE to watch the demo');
+  const [hint, setHint] = useState(`${ACTION} to watch the demo`);
 
   const [transcript, setTranscript] = useState<TranscriptEntry[]>([]);
   const [demoComplete, setDemoComplete] = useState(false);
@@ -204,12 +208,12 @@ function DemoPageContent() {
       });
 
       if (i < DEMO_PANELISTS.length - 1) {
-        setHint(`Press SPACE for ${DEMO_PANELISTS[i + 1].name}'s take`);
+        setHint(`${ACTION} for ${DEMO_PANELISTS[i + 1].name}'s take`);
         await waitForSpace();
         setBriefingIndex(i + 1);
         setBriefingText('');
       } else {
-        setHint('Press SPACE to start the discussion');
+        setHint(`${ACTION} to start the discussion`);
       }
     }
 
@@ -228,7 +232,7 @@ function DemoPageContent() {
     if (!s) return;
 
     for (let i = 0; i < CROSSTALK.length; i++) {
-      setHint(`Press SPACE to hear ${DEMO_PANELISTS[i].name}'s response`);
+      setHint(`${ACTION} to hear ${DEMO_PANELISTS[i].name}'s response`);
       await waitForSpace();
 
       setHint(`${DEMO_PANELISTS[i].name} is responding...`);
@@ -250,7 +254,7 @@ function DemoPageContent() {
     setPanelistsSpoken(0);
 
     for (let i = 0; i < DEMO_PANELISTS.length; i++) {
-      setHint(`Press SPACE for ${DEMO_PANELISTS[i].name}'s final takeaway`);
+      setHint(`${ACTION} for ${DEMO_PANELISTS[i].name}'s final takeaway`);
       await waitForSpace();
 
       setHint(`${DEMO_PANELISTS[i].name} is wrapping up...`);
@@ -623,7 +627,7 @@ function DemoPageContent() {
                     textTransform: 'uppercase',
                   }}
                 >
-                  {hint.replace('Press SPACE to ', '').replace('press SPACE', '').replace(' — ', ' ').replace(/^to /i, '')} &#9658;
+                  {hint.replace(/^(Tap|Press SPACE) (to |for )?/i, '')} &#9658;
                 </button>
               ) : null}
             />

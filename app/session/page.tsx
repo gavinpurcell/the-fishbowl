@@ -16,6 +16,10 @@ import WrapUpOverlay from '@/components/scene/WrapUpOverlay';
 import { loadAllSprites } from '@/lib/spriteLoader';
 import type { RoundType, TranscriptEntry, Panelist } from '@/engine/types';
 
+const isTouchDevice = typeof window !== 'undefined' && ('ontouchstart' in window || navigator.maxTouchPoints > 0);
+const ACTION = isTouchDevice ? 'Tap' : 'Press SPACE';
+const ACTION_LC = isTouchDevice ? 'tap' : 'press SPACE';
+
 type ViewMode = 'intro' | 'briefing' | 'transition' | 'roundtable';
 
 export default function SessionPage() {
@@ -58,7 +62,7 @@ export default function SessionPage() {
   const [currentRound, setCurrentRound] = useState<RoundType>('initial-takes');
   const [panelistsSpoken, setPanelistsSpoken] = useState(0);
   const [error, setError] = useState<string | null>(null);
-  const [hint, setHint] = useState('Press SPACE to meet your panel');
+  const [hint, setHint] = useState(`${ACTION} to meet your panel`);
   const [isSpeaking, setIsSpeaking] = useState(false);
   // Briefing state
   const [briefingIndex, setBriefingIndex] = useState(-1);
@@ -384,7 +388,7 @@ export default function SessionPage() {
             setHint(`Preparing ${nextPanelist.name}'s take...`);
             const readyPoll = setInterval(() => {
               if (orchestrator.isInitialTakeReady(nextPanelist.id)) {
-                setHint(`${nextPanelist.name}'s response is ready — press SPACE`);
+                setHint(`${nextPanelist.name}'s response is ready, ${ACTION_LC}`);
                 setPrefetchReady(true);
                 clearInterval(readyPoll);
                 activeIntervalsRef.current.delete(readyPoll);
@@ -398,7 +402,7 @@ export default function SessionPage() {
             setBriefingIndex(i + 1);
             setBriefingText('');
           } else {
-            setHint('Press SPACE to start the discussion');
+            setHint(`${ACTION} to start the discussion`);
           }
         }
 
@@ -444,7 +448,7 @@ export default function SessionPage() {
 
           // First panelist plays immediately, rest wait for SPACE
           if (ci > 0) {
-            setHint(`Press SPACE to hear ${panelist.name}`);
+            setHint(`${ACTION} to hear ${panelist.name}`);
             await waitForSpace();
           }
 
@@ -474,7 +478,7 @@ export default function SessionPage() {
               const suffix = isLast ? '' : '\n\n▸ continue';
               await typeIntoBubble(panelist.id, paragraphs[p], suffix);
               if (!isLast) {
-                setHint('Press SPACE to continue reading...');
+                setHint(`${ACTION} to continue reading...`);
                 await waitForSpace();
               }
             }
@@ -529,7 +533,7 @@ export default function SessionPage() {
               if (orchestrator.isAborted) return;
 
               if (ci > 0) {
-                setHint(`Press SPACE to hear ${panelist.name}`);
+                setHint(`${ACTION} to hear ${panelist.name}`);
                 await waitForSpace();
               }
 
@@ -556,7 +560,7 @@ export default function SessionPage() {
                   const suffix = isLast ? '' : '\n\n▸ continue';
                   await typeIntoBubble(panelist.id, paragraphs[p], suffix);
                   if (!isLast) {
-                    setHint('Press SPACE to continue reading...');
+                    setHint(`${ACTION} to continue reading...`);
                     await waitForSpace();
                   }
                 }
@@ -632,7 +636,7 @@ export default function SessionPage() {
             const suffix = isLast ? '' : '\n\n▸ continue';
             await typeIntoBubble(panelist.id, paragraphs[p], suffix);
             if (!isLast) {
-              setHint('Press SPACE to continue reading...');
+              setHint(`${ACTION} to continue reading...`);
               setIsSpeaking(false);
               isSpeakingRef.current = false;
               await waitForSpace();
@@ -645,11 +649,11 @@ export default function SessionPage() {
 
         if (ci < panelists.length - 1) {
           // More panelists to go
-          setHint(`Press SPACE to hear ${panelists[ci + 1].name}`);
+          setHint(`${ACTION} to hear ${panelists[ci + 1].name}`);
           await waitForSpace();
         } else {
           // Last panelist — let user read before returning to input
-          setHint('Press SPACE when you\'re ready to continue');
+          setHint(`${ACTION} when you're ready to continue`);
           await waitForSpace();
         }
       }
@@ -696,7 +700,7 @@ export default function SessionPage() {
             if (orchestrator.isAborted) return;
 
             if (ci > 0) {
-              setHint(`Press SPACE to hear ${panelist.name}`);
+              setHint(`${ACTION} to hear ${panelist.name}`);
               await waitForSpace();
             }
 
@@ -724,7 +728,7 @@ export default function SessionPage() {
                 const suffix = isLast ? '' : '\n\n▸ continue';
                 await typeIntoBubble(panelist.id, paragraphs[p], suffix);
                 if (!isLast) {
-                  setHint('Press SPACE to continue reading...');
+                  setHint(`${ACTION} to continue reading...`);
                   await waitForSpace();
                 }
               }
@@ -781,11 +785,11 @@ export default function SessionPage() {
         if (sceneRef.current) sceneRef.current.setCharacterState(panelist.id, 'idle');
 
         if (i < panelists.length - 1) {
-          setHint(`Press SPACE to hear ${panelists[i + 1].name}'s final thought`);
+          setHint(`${ACTION} to hear ${panelists[i + 1].name}'s final thought`);
           await waitForSpace();
         } else {
           // Last panelist — let user read before wrap-up overlay
-          setHint('Press SPACE to wrap up the session');
+          setHint(`${ACTION} to wrap up the session`);
           await waitForSpace();
         }
       }
@@ -1352,7 +1356,7 @@ export default function SessionPage() {
                           textTransform: 'uppercase',
                         }}
                       >
-                        {hint.replace('Press SPACE to ', '').replace('press SPACE', '').replace(' — ', ' ').replace(/^to /i, '')} ▸
+                        {hint.replace(/^(Tap|Press SPACE) (to |for )?/i, '')} ▸
                       </button>
                     ) : null}
                   />
@@ -1363,9 +1367,9 @@ export default function SessionPage() {
 
           {/* Transcript is shown on the results page after the session */}
 
-          {/* Footer links — fills the dead space below the session, hidden on mobile */}
+          {/* Footer links — fills the dead space below the session */}
           <div
-            className="hidden sm:flex items-center justify-center gap-3 flex-wrap mt-4 mb-6"
+            className="flex items-center justify-center gap-3 flex-wrap mt-4 mb-6"
             style={{
               fontFamily: "'DM Mono', monospace",
               fontSize: '11px',
