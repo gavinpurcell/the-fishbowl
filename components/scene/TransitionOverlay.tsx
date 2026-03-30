@@ -291,10 +291,13 @@ export default function TransitionOverlay({ panelists, onComplete, ready = true 
 
         .thinking-word {
           font-family: 'Silkscreen', 'Courier New', monospace;
-          font-size: clamp(1.8rem, 5vw, 3rem);
+          font-size: clamp(1.2rem, 4vw, 3rem);
           color: var(--accent-gold);
           text-transform: uppercase;
           letter-spacing: 0.08em;
+          text-align: center;
+          max-width: 100%;
+          overflow: hidden;
           animation: wordZoomThrough 1600ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
         }
 

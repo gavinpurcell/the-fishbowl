@@ -534,7 +534,7 @@ function DemoPageContent() {
                     <div
                       className="font-pixel mb-4"
                       style={{
-                        fontSize: '9px',
+                        fontSize: '12px',
                         letterSpacing: '0.1em',
                         color: currentPanelist.color,
                       }}
@@ -543,7 +543,7 @@ function DemoPageContent() {
                     </div>
                     {briefingText ? (
                       <p
-                        className="text-sm leading-relaxed whitespace-pre-wrap"
+                        className="text-xl sm:text-sm leading-relaxed whitespace-pre-wrap"
                         style={{ color: 'rgba(255,255,255,0.65)' }}
                       >
                         {briefingText}

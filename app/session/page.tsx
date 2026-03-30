@@ -908,7 +908,7 @@ export default function SessionPage() {
                 <>
                 {/* Character Dossier Card — classified document / RPG briefing */}
                 <div
-                  className="dossier-slide-in overflow-hidden"
+                  className="dossier-slide-in"
                   key={currentPanelist.id}
                   style={{
                     background: 'var(--dark-surface)',
@@ -917,7 +917,6 @@ export default function SessionPage() {
                     borderRadius: '10px',
                     boxShadow: '0 4px 24px rgba(0,0,0,0.3), 0 0 40px rgba(196,154,42,0.04)',
                     position: 'relative',
-                    maxHeight: '70vh',
                   }}
                 >
                   {/* Top gold accent line */}
@@ -1017,11 +1016,11 @@ export default function SessionPage() {
                     </div>
 
                     {/* Right: Initial Take content — scrollable so long responses don't push the page */}
-                    <div className="flex-1 min-w-0 p-4 sm:p-8 overflow-y-auto" style={{ maxHeight: '60vh' }}>
+                    <div className="flex-1 min-w-0 p-4 sm:p-8 overflow-y-auto" style={{ maxHeight: '50vh' }}>
                       <div
                         className="font-pixel mb-4"
                         style={{
-                          fontSize: '9px',
+                          fontSize: '12px',
                           letterSpacing: '0.1em',
                           color: currentPanelist.color,
                         }}
@@ -1030,7 +1029,7 @@ export default function SessionPage() {
                       </div>
                       {briefingText ? (
                         <p
-                          className="text-sm leading-relaxed whitespace-pre-wrap break-words"
+                          className="text-xl sm:text-sm leading-relaxed whitespace-pre-wrap break-words"
                           style={{ color: 'rgba(255,255,255,0.65)', overflowWrap: 'break-word' }}
                         >
                           {briefingText.replace(/\n*▸ continue\n*/g, '\n\n')}
@@ -1364,9 +1363,9 @@ export default function SessionPage() {
 
           {/* Transcript is shown on the results page after the session */}
 
-          {/* Footer links — fills the dead space below the session */}
+          {/* Footer links — fills the dead space below the session, hidden on mobile */}
           <div
-            className="flex items-center justify-center gap-3 flex-wrap mt-4 mb-6"
+            className="hidden sm:flex items-center justify-center gap-3 flex-wrap mt-4 mb-6"
             style={{
               fontFamily: "'DM Mono', monospace",
               fontSize: '11px',
