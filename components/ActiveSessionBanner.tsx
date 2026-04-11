@@ -17,6 +17,7 @@ export default function ActiveSessionBanner() {
   const [mounted, setMounted] = useState(false);
 
   // Avoid hydration mismatch — only read persisted store on the client
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- SSR mount check
   useEffect(() => setMounted(true), []);
 
   // Don't show on the session page itself, or if no session is running

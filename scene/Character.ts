@@ -264,7 +264,7 @@ export class Character extends Container {
     if (this.useSprite) {
       if (this.sprite) {
         // --- No vertical bob — characters are seated, vertical movement looks like floating ---
-        let yOffset = 0;
+        const yOffset = 0;
 
         // --- Micro-movements: subtle weight shifting in chair (horizontal only) ---
         const shiftFreqA = 0.7 + this.breathOffset * 0.1;

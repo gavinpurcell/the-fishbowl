@@ -1,15 +1,5 @@
 'use client';
 
-/** Escape HTML special characters to prevent injection. */
-function escapeHtml(str: string): string {
-  return str
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
-}
-
 interface Props {
   summary: string | null;
 }
@@ -34,8 +24,6 @@ export default function Summary({ summary }: Props) {
   }
 
   // No manual HTML escaping needed — React auto-escapes text in JSX.
-  // The previous escapeHtml() call was breaking markdown parsing by
-  // converting > to &gt; (blockquotes) and " to &quot; (pull quotes).
   const lines = summary.split('\n');
   const elements: React.ReactNode[] = [];
 
@@ -126,7 +114,7 @@ export default function Summary({ summary }: Props) {
               opacity: 0.6,
             }}
           >
-            //
+            {'//'}
           </span>
           <p
             className="text-sm leading-relaxed"

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -59,11 +59,10 @@ export default function LiveTranscript({
   const [animatedIds, setAnimatedIds] = useState<Set<string>>(new Set());
 
   // Build a quick lookup for panelist info
-  const panelistMap = useRef<Map<string, PanelistInfo>>(new Map());
-  useEffect(() => {
+  const panelistMap = useMemo(() => {
     const map = new Map<string, PanelistInfo>();
     panelists.forEach((p) => map.set(p.id, p));
-    panelistMap.current = map;
+    return map;
   }, [panelists]);
 
   // Track which entries are "new" for fade-in animation
@@ -73,6 +72,7 @@ export default function LiveTranscript({
       for (let i = prevEntryCountRef.current; i < entries.length; i++) {
         newIds.add(entries[i].id);
       }
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- tracks new entries for fade-in animation
       setAnimatedIds(newIds);
 
       // Remove from animated set after animation completes
@@ -93,11 +93,12 @@ export default function LiveTranscript({
   }, [entries.length]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Auto-scroll to bottom when new entries arrive
+  const lastEntryContentLength = entries[entries.length - 1]?.content.length ?? 0;
   useEffect(() => {
     if (autoScroll && bottomSentinelRef.current && !isCollapsed) {
       bottomSentinelRef.current.scrollIntoView({ behavior: 'smooth' });
     }
-  }, [entries.length, entries[entries.length - 1]?.content.length, autoScroll, isCollapsed]);
+  }, [entries.length, lastEntryContentLength, autoScroll, isCollapsed]);
 
   // Detect manual scroll to disable auto-scroll
   const handleScroll = useCallback(() => {
@@ -224,7 +225,7 @@ export default function LiveTranscript({
         >
           <EntryRow
             entry={lastEntry}
-            panelist={panelistMap.current.get(lastEntry.panelistId) || null}
+            panelist={panelistMap.get(lastEntry.panelistId) || null}
             isActive={isSpeaking && activePanelistId === lastEntry.panelistId}
             isSpeaking={isSpeaking}
             isAnimating={false}
@@ -285,7 +286,7 @@ export default function LiveTranscript({
               {entries.map((entry, index) => {
                 const prevEntry = index > 0 ? entries[index - 1] : null;
                 const showRoundDivider = prevEntry && prevEntry.round !== entry.round;
-                const panelist = panelistMap.current.get(entry.panelistId) || null;
+                const panelist = panelistMap.get(entry.panelistId) || null;
                 const isActive = isSpeaking && activePanelistId === entry.panelistId;
                 const isLastByActiveSpeaker =
                   isActive && index === entries.length - 1;

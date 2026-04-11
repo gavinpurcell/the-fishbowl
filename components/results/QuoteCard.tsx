@@ -6,7 +6,6 @@ import type { TranscriptEntry, Panelist } from '@/engine/types';
 interface QuoteCardProps {
   transcript: TranscriptEntry[];
   panelists: Panelist[];
-  ideaText?: string;
 }
 
 interface QuoteOption {
@@ -183,15 +182,14 @@ function wrapText(ctx: CanvasRenderingContext2D, text: string, maxWidth: number)
   return lines;
 }
 
-export default function QuoteCard({ transcript, panelists, ideaText }: QuoteCardProps) {
+export default function QuoteCard({ transcript, panelists }: QuoteCardProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [quotes] = useState(() => pickQuotes(transcript, panelists));
   const [selectedIdx, setSelectedIdx] = useState(0);
   const [rendered, setRendered] = useState(false);
   const [copied, setCopied] = useState(false);
 
-  const selected = quotes[selectedIdx];
-  if (!selected || quotes.length === 0) return null;
+  const selected = quotes[selectedIdx] ?? null;
 
   const render = useCallback(async () => {
     if (!canvasRef.current || !selected) return;
@@ -200,10 +198,12 @@ export default function QuoteCard({ transcript, panelists, ideaText }: QuoteCard
   }, [selected]);
 
   // Auto-render when quote changes
-  // eslint-disable-next-line react-hooks/rules-of-hooks
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- render() draws to canvas then sets rendered flag
     render();
   }, [render]);
+
+  if (!selected || quotes.length === 0) return null;
 
   const handleDownload = () => {
     if (!canvasRef.current) return;

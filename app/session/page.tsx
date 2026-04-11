@@ -14,7 +14,7 @@ import ModerationInput from '@/components/scene/ModerationInput';
 import KeyboardHelp from '@/components/scene/KeyboardHelp';
 import WrapUpOverlay from '@/components/scene/WrapUpOverlay';
 import { loadAllSprites } from '@/lib/spriteLoader';
-import type { RoundType, TranscriptEntry, Panelist } from '@/engine/types';
+import type { RoundType, TranscriptEntry } from '@/engine/types';
 
 const isTouchDevice = typeof window !== 'undefined' && ('ontouchstart' in window || navigator.maxTouchPoints > 0);
 const ACTION = isTouchDevice ? 'Tap' : 'Press SPACE';
@@ -47,12 +47,13 @@ export default function SessionPage() {
   // Clean up on unmount: isMountedRef + all active polling intervals
   useEffect(() => {
     isMountedRef.current = true;
+    const intervals = activeIntervalsRef.current;
     return () => {
       isMountedRef.current = false;
-      for (const id of activeIntervalsRef.current) {
+      for (const id of intervals) {
         clearInterval(id);
       }
-      activeIntervalsRef.current.clear();
+      intervals.clear();
     };
   }, []);
 
@@ -750,7 +751,7 @@ export default function SessionPage() {
     }
     setIsSpeaking(false);
     isSpeakingRef.current = false;
-  }, [getBubblePages, inModeration, waitForSpace, typeIntoBubble]);
+  }, [getBubblePages, inModeration, waitForSpace, typeIntoBubble, showError]);
 
   const handleWrapUp = useCallback(async () => {
     const orchestrator = orchestratorRef.current;
@@ -807,7 +808,7 @@ export default function SessionPage() {
       showError(err instanceof Error ? err.message : 'Error during wrap-up.');
       setInModeration(true);
     }
-  }, [waitForSpace, typeIntoBubble]);
+  }, [waitForSpace, typeIntoBubble, showError]);
   handleWrapUpRef.current = handleWrapUp;
 
   // Called by WrapUpOverlay when its animation is ready for summary generation
@@ -821,7 +822,7 @@ export default function SessionPage() {
       storeRef.current.setTranscript(orchestrator.getTranscript());
       storeRef.current.completeSession();
       setWrapSummaryReady(true);
-    } catch (err) {
+    } catch {
       // Even on error, mark as ready so the overlay can proceed
       storeRef.current.completeSession();
       setWrapSummaryReady(true);

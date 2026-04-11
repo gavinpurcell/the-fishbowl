@@ -9,7 +9,7 @@ import TemplatePicker from '@/components/setup/TemplatePicker';
 import PanelistBuilder from '@/components/setup/PanelistBuilder';
 import IdeaInput from '@/components/setup/IdeaInput';
 import ApiKeyConfig from '@/components/setup/ApiKeyConfig';
-import OnboardingTour from '@/components/setup/OnboardingTour';
+
 
 
 export default function SetupPage() {

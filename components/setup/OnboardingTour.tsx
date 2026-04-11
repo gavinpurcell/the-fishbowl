@@ -58,6 +58,7 @@ export default function OnboardingTour({ setStep }: OnboardingTourProps) {
   useEffect(() => {
     const alreadyOnboarded = localStorage.getItem(STORAGE_KEY);
     if (!alreadyOnboarded) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- SSR: must check localStorage on mount
       setVisible(true);
     }
   }, []);
@@ -90,6 +91,7 @@ export default function OnboardingTour({ setStep }: OnboardingTourProps) {
     if (!visible || showFinale) return;
     const stop = TOUR_STOPS[stopIndex];
     if (!stop) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- positions tooltip via DOM measurement
     positionTooltip(stop.targetId);
   }, [visible, stopIndex, showFinale, positionTooltip]);
 

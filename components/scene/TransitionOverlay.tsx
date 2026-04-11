@@ -31,10 +31,8 @@ export default function TransitionOverlay({ panelists, onComplete, ready = true 
   const [thinkingIndex, setThinkingIndex] = useState(0);
   const [isDone, setIsDone] = useState(false);
 
-  // Shuffle thinking lines once
-  const shuffledLines = useRef(
-    [...THINKING_LINES].sort(() => Math.random() - 0.5)
-  );
+  // Shuffle thinking lines once on mount
+  const [shuffledLines] = useState(() => [...THINKING_LINES].sort(() => Math.random() - 0.5));
 
   const finish = useCallback(() => {
     if (hasCompletedRef.current) return;
@@ -59,15 +57,15 @@ export default function TransitionOverlay({ panelists, onComplete, ready = true 
   useEffect(() => {
     if (phase !== 'thinking') return;
     const interval = setInterval(() => {
-      setThinkingIndex((i) => (i + 1) % shuffledLines.current.length);
+      setThinkingIndex((i) => (i + 1) % shuffledLines.length);
     }, 1600);
     return () => clearInterval(interval);
-  }, [phase]);
+  }, [phase, shuffledLines.length]);
 
   // When ready + min time passed, show LIVE then finish
   useEffect(() => {
     if (phase === 'thinking' && ready && minTimePassedRef.current && !hasCompletedRef.current) {
-      setPhase('live');
+      setPhase('live'); // eslint-disable-line react-hooks/set-state-in-effect -- state machine transition
       // LIVE shows for 1.2s then fade out
       setTimeout(finish, 1200);
     }
@@ -76,7 +74,7 @@ export default function TransitionOverlay({ panelists, onComplete, ready = true 
   // Also check on phase change
   useEffect(() => {
     if (phase === 'thinking' && ready && minTimePassedRef.current) {
-      setPhase('live');
+      setPhase('live'); // eslint-disable-line react-hooks/set-state-in-effect -- state machine transition
       setTimeout(finish, 1200);
     }
   }, [phase, ready, finish]);
@@ -362,7 +360,7 @@ export default function TransitionOverlay({ panelists, onComplete, ready = true 
                       <span className="broadcast-panelist-name" style={{ color: panelist.color }}>
                         {panelist.name}
                       </span>
-                      <span className="broadcast-panelist-divider">//</span>
+                      <span className="broadcast-panelist-divider">{'//'}</span>
                       <span className="broadcast-panelist-role">{panelist.role}</span>
                     </div>
                     <div
@@ -386,7 +384,7 @@ export default function TransitionOverlay({ panelists, onComplete, ready = true 
               key={thinkingIndex}
               className="thinking-word"
             >
-              {shuffledLines.current[thinkingIndex]}
+              {shuffledLines[thinkingIndex]}
             </div>
           )}
 

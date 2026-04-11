@@ -88,7 +88,6 @@ function TestPageContent() {
   const [sessionComplete, setSessionComplete] = useState(false);
   const [showWrapOverlay, setShowWrapOverlay] = useState(false);
   const [wrapSummaryReady, setWrapSummaryReady] = useState(false);
-  const [sessionStartTime] = useState(Date.now());
   const [fakeTokens, setFakeTokens] = useState({ input: 0, output: 0 });
   const [testExportMode, setTestExportMode] = useState<'summary' | 'transcript'>('transcript');
   const [layoutSnapshot, setLayoutSnapshot] = useState<LayoutEditorSnapshot | null>(null);
@@ -406,10 +405,11 @@ function TestPageContent() {
   }, [skipToRoundtable, waitForSpace, streamBriefingText, addTranscriptEntry, addFakeTokens, runCrosstalkRound]);
 
   const runDemoRef = useRef(runDemo);
-  runDemoRef.current = runDemo;
+  useEffect(() => { runDemoRef.current = runDemo; }, [runDemo]);
 
   const isSpeakingRef = useRef(false);
-  isSpeakingRef.current = isSpeaking;
+  // eslint-disable-next-line react-hooks/immutability -- sync state to ref for event handler access
+  useEffect(() => { isSpeakingRef.current = isSpeaking; }, [isSpeaking]);
 
   // Spacebar handler — blocks during speaking, ignores when typing in input
   useEffect(() => {
@@ -463,7 +463,8 @@ function TestPageContent() {
       ].filter(Boolean).join('\n')
     : '';
 
-  const testSessionDurationMs = Date.now() - sessionStartTime;
+  // Test page uses a fixed simulated duration (all data is fake)
+  const testSessionDurationMs = 90000;
   const testTotalResponses = transcript.filter((e) => e.panelistId !== 'user').length;
 
   return (

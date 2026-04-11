@@ -37,9 +37,10 @@ const ROUND_LABELS_SHORT: Record<RoundType, string> = {
 export default function StatusBar({ round, panelistsSpoken, totalPanelists, onWrapUp, canWrapUp, modelLabel, costDollars, totalTokens, isOllama, centerContent }: Props) {
   // Timer: counts up from session start
   const [elapsed, setElapsed] = useState(0);
-  const startTimeRef = useRef(Date.now());
+  const startTimeRef = useRef(0);
 
   useEffect(() => {
+    startTimeRef.current = Date.now();
     const interval = setInterval(() => {
       setElapsed(Math.floor((Date.now() - startTimeRef.current) / 1000));
     }, 1000);

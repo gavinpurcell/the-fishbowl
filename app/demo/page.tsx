@@ -79,14 +79,13 @@ function demoId(): string {
 
 const isTouchDevice = typeof window !== 'undefined' && ('ontouchstart' in window || navigator.maxTouchPoints > 0);
 const ACTION = isTouchDevice ? 'Tap' : 'Press SPACE';
-const ACTION_LC = isTouchDevice ? 'tap' : 'press SPACE';
 
 type ViewMode = 'briefing' | 'transition' | 'roundtable';
 
 function DemoPageContent() {
   const containerRef = useRef<HTMLDivElement>(null);
   const sceneRef = useRef<FishbowlScene | null>(null);
-  const [scene, setScene] = useState<FishbowlScene | null>(null);
+  const [, setScene] = useState<FishbowlScene | null>(null);
   const sceneStateRef = useRef<FishbowlScene | null>(null);
 
   const [viewMode, setViewMode] = useState<ViewMode>('briefing');
@@ -97,7 +96,7 @@ function DemoPageContent() {
   const [panelistsSpoken, setPanelistsSpoken] = useState(0);
   const [hint, setHint] = useState(`${ACTION} to watch the demo`);
 
-  const [transcript, setTranscript] = useState<TranscriptEntry[]>([]);
+  const [, setTranscript] = useState<TranscriptEntry[]>([]);
   const [demoComplete, setDemoComplete] = useState(false);
 
   const advanceResolverRef = useRef<(() => void) | null>(null);
@@ -181,7 +180,7 @@ function DemoPageContent() {
   }, []);
 
   const isSpeakingRef = useRef(false);
-  isSpeakingRef.current = isSpeaking;
+  useEffect(() => { isSpeakingRef.current = isSpeaking; }, [isSpeaking]);
 
   const runDemo = useCallback(async () => {
     // === PHASE 1: BRIEFINGS ===
@@ -276,7 +275,7 @@ function DemoPageContent() {
   }, [waitForSpace, streamBriefingText, streamRoundtableText, addTranscriptEntry]);
 
   const runDemoRef = useRef(runDemo);
-  runDemoRef.current = runDemo;
+  useEffect(() => { runDemoRef.current = runDemo; }, [runDemo]);
 
   // Spacebar handler
   useEffect(() => {

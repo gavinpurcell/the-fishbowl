@@ -5,14 +5,15 @@ import { useEffect, useState } from 'react';
 type Theme = 'dark' | 'light';
 
 export default function ThemeToggle() {
-  const [theme, setTheme] = useState<Theme>('dark');
   const [mounted, setMounted] = useState(false);
+  const [theme, setTheme] = useState<Theme>('dark');
 
   useEffect(() => {
-    setMounted(true);
     const stored = localStorage.getItem('fishbowl-theme') as Theme | null;
     const current = document.documentElement.getAttribute('data-theme') as Theme | null;
-    setTheme(stored || current || 'dark');
+    const resolved = stored || current || 'dark';
+    setTheme(resolved); // eslint-disable-line react-hooks/set-state-in-effect -- SSR hydration
+    setMounted(true);
   }, []);
 
   const toggle = () => {

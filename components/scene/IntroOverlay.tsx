@@ -12,6 +12,7 @@ interface IntroOverlayProps {
 
 export default function IntroOverlay({ topic, panelists, onComplete, ready = false }: IntroOverlayProps) {
   const hasCompletedRef = useRef(false);
+  const [isDone, setIsDone] = useState(false);
   const [phase, setPhase] = useState<'topic' | 'panel' | 'ready'>('topic');
   const minTimeRef = useRef(false);
 
@@ -29,6 +30,8 @@ export default function IntroOverlay({ topic, panelists, onComplete, ready = fal
   useEffect(() => {
     if (phase === 'ready' && ready && !hasCompletedRef.current) {
       hasCompletedRef.current = true;
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- triggers fade-out animation
+      setIsDone(true);
       // Small delay for the "ready" state to render
       setTimeout(onComplete, 800);
     }
@@ -39,6 +42,8 @@ export default function IntroOverlay({ topic, panelists, onComplete, ready = fal
     if (!ready || hasCompletedRef.current) return;
     if (minTimeRef.current) {
       hasCompletedRef.current = true;
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- triggers fade-out animation
+      setIsDone(true);
       setTimeout(onComplete, 800);
     }
   }, [ready, onComplete]);
@@ -144,7 +149,7 @@ export default function IntroOverlay({ topic, panelists, onComplete, ready = fal
       `}</style>
 
       <div
-        className={`intro-overlay${hasCompletedRef.current ? ' is-done' : ''}`}
+        className={`intro-overlay${isDone ? ' is-done' : ''}`}
         role="status"
         aria-live="assertive"
         aria-label="Session briefing"
