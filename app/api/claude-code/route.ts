@@ -10,13 +10,95 @@ interface ClaudeCodeRequest {
   stream?: boolean;
 }
 
+const MAX_BODY_SIZE = 100_000;
+const MAX_MESSAGES = 64;
+const MAX_MESSAGE_CHARS = 20_000;
+const MAX_TOTAL_MESSAGE_CHARS = 80_000;
+const ALLOWED_ROLES = new Set(['system', 'user', 'assistant']);
+const ALLOWED_MODELS = new Set(['haiku', 'sonnet', 'opus']);
+
+function jsonError(message: string, status: number): Response {
+  return new Response(JSON.stringify({ error: message }), {
+    status,
+    headers: {
+      'Content-Type': 'application/json',
+      'Cache-Control': 'no-store',
+    },
+  });
+}
+
+function sanitizeError(message: string): string {
+  return message
+    .replace(/sk-ant-[a-zA-Z0-9_-]+/g, 'sk-ant-***')
+    .replace(/sk-[a-zA-Z0-9_-]{20,}/g, 'sk-***')
+    .replace(/\/Users\/[^/\s]+/g, '/Users/***');
+}
+
+function hasTrustedOrigin(req: NextRequest): boolean {
+  const origin = req.headers.get('origin');
+  const host = req.headers.get('x-forwarded-host') || req.headers.get('host');
+
+  if (!origin || !host) return true;
+
+  try {
+    return new URL(origin).host === host;
+  } catch {
+    return false;
+  }
+}
+
+function validateMessages(messages: unknown): messages is { role: string; content: string }[] {
+  if (!Array.isArray(messages) || messages.length === 0 || messages.length > MAX_MESSAGES) {
+    return false;
+  }
+
+  let totalChars = 0;
+
+  for (const message of messages) {
+    if (!message || typeof message !== 'object') return false;
+    const role = 'role' in message ? message.role : undefined;
+    const content = 'content' in message ? message.content : undefined;
+
+    if (typeof role !== 'string' || !ALLOWED_ROLES.has(role)) return false;
+    if (typeof content !== 'string' || content.length === 0 || content.length > MAX_MESSAGE_CHARS) return false;
+
+    totalChars += content.length;
+    if (totalChars > MAX_TOTAL_MESSAGE_CHARS) return false;
+  }
+
+  return true;
+}
+
 /**
  * API route that shells out to `claude -p` (Claude Code CLI).
  * Uses the locally logged-in Pro/Max subscription — no API key needed.
  */
 export async function POST(req: NextRequest) {
-  const body: ClaudeCodeRequest = await req.json();
+  if ((process.env.NEXT_PUBLIC_HOSTED_MODE === 'true') || process.env.VERCEL === '1') {
+    return jsonError('Claude Local is disabled in hosted deployments.', 403);
+  }
+
+  if (!hasTrustedOrigin(req)) {
+    return jsonError('Cross-origin requests are not allowed.', 403);
+  }
+
+  const contentLength = req.headers.get('content-length');
+  if (contentLength && parseInt(contentLength) > MAX_BODY_SIZE) {
+    return jsonError('Request too large.', 413);
+  }
+
+  let body: ClaudeCodeRequest;
+  try {
+    body = await req.json();
+  } catch {
+    return jsonError('Invalid JSON.', 400);
+  }
+
   const { messages, modelId, stream = true } = body;
+
+  if (!validateMessages(messages)) {
+    return jsonError('Messages must be a non-empty, valid conversation payload.', 400);
+  }
 
   // Build the prompt from the messages array
   const prompt = buildPrompt(messages);
@@ -33,10 +115,7 @@ export async function POST(req: NextRequest) {
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';
     console.error('[Claude Code API Error]', message);
-    return new Response(JSON.stringify({ error: message }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' },
-    });
+    return jsonError(sanitizeError(message), 500);
   }
 }
 
@@ -64,8 +143,11 @@ function mapModel(modelId?: string): string {
   if (modelId.includes('opus')) return 'opus';
   if (modelId.includes('sonnet')) return 'sonnet';
 
-  // If it's already a short name, use as-is
-  return modelId;
+  if (ALLOWED_MODELS.has(modelId)) {
+    return modelId;
+  }
+
+  return 'sonnet';
 }
 
 function streamResponse(prompt: string, model: string): Response {
@@ -146,7 +228,8 @@ function streamResponse(prompt: string, model: string): Response {
 
       proc.on('close', (code) => {
         if (code !== 0 && wordCount === 0) {
-          const errorEvent = `data: ${JSON.stringify({ type: 'text', text: `[Claude Code error: ${stderrOutput || `exit code ${code}`}]` })}\n\n`;
+          const safeError = sanitizeError(stderrOutput || `exit code ${code}`);
+          const errorEvent = `data: ${JSON.stringify({ type: 'text', text: `[Claude Code error: ${safeError}]` })}\n\n`;
           controller.enqueue(encoder.encode(errorEvent));
         }
 
@@ -159,7 +242,7 @@ function streamResponse(prompt: string, model: string): Response {
         controller.close();
       });
 
-      proc.on('error', (err) => {
+      proc.on('error', () => {
         const errorEvent = `data: ${JSON.stringify({
           type: 'text',
           text: `[Claude Code not found. Make sure \`claude\` CLI is installed and you're logged in with your Pro/Max subscription.]`,
@@ -174,7 +257,7 @@ function streamResponse(prompt: string, model: string): Response {
   return new Response(readableStream, {
     headers: {
       'Content-Type': 'text/event-stream',
-      'Cache-Control': 'no-cache',
+      'Cache-Control': 'no-store',
       Connection: 'keep-alive',
     },
   });
@@ -196,10 +279,7 @@ async function generateResponse(prompt: string, model: string): Promise<Response
 
     proc.on('close', (code) => {
       if (code !== 0) {
-        resolve(new Response(
-          JSON.stringify({ error: stderr || `claude exited with code ${code}` }),
-          { status: 500, headers: { 'Content-Type': 'application/json' } },
-        ));
+        resolve(jsonError(sanitizeError(stderr || `claude exited with code ${code}`), 500));
         return;
       }
 
@@ -233,15 +313,17 @@ async function generateResponse(prompt: string, model: string): Promise<Response
 
       resolve(new Response(
         JSON.stringify({ text, usage: { inputTokens: 0, outputTokens: Math.round(text.split(/\s+/).length * 1.3) } }),
-        { headers: { 'Content-Type': 'application/json' } },
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            'Cache-Control': 'no-store',
+          },
+        },
       ));
     });
 
     proc.on('error', () => {
-      resolve(new Response(
-        JSON.stringify({ error: 'Claude Code CLI not found. Install it and log in with your Pro/Max subscription.' }),
-        { status: 500, headers: { 'Content-Type': 'application/json' } },
-      ));
+      resolve(jsonError('Claude Code CLI not found. Install it and log in with your Pro/Max subscription.', 500));
     });
   });
 }

@@ -9,6 +9,7 @@ import Transcript from '@/components/results/Transcript';
 import ExportPanel from '@/components/results/ExportPanel';
 import CostTally from '@/components/results/CostTally';
 import LeadCapturePopup from '@/components/results/LeadCapturePopup';
+import QuoteCard from '@/components/results/QuoteCard';
 
 export default function ResultsPage() {
   const router = useRouter();
@@ -224,6 +225,17 @@ export default function ResultsPage() {
           </div>
         </div>
 
+        {/* === SHARE QUOTE CARD === */}
+        {store.transcript.length > 0 && store.panelists.length > 0 && (
+          <div className="report-enter report-enter-2 mb-6">
+            <QuoteCard
+              transcript={store.transcript}
+              panelists={store.panelists}
+              ideaText={store.ideaText}
+            />
+          </div>
+        )}
+
         {/* === EXPORT PANEL — Document tabs + action badges === */}
         <div className="report-enter report-enter-2 mb-6">
           <ExportPanel
@@ -232,6 +244,8 @@ export default function ResultsPage() {
             mode={exportMode}
             onModeChange={handleModeChange}
             ideaText={store.ideaText}
+            sessionDate={store.sessionStartTime}
+            panelists={store.panelists}
           />
         </div>
 

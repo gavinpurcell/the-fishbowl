@@ -443,6 +443,13 @@ export class FishbowlScene {
     }
   }
 
+  /** Split long bubble text into viewport-safe pages for the current seat position. */
+  paginateBubbleText(id: string, text: string): string[] {
+    const bubble = this.bubbles.get(id);
+    if (!bubble) return [text];
+    return bubble.paginateText(text);
+  }
+
   /** Hide all speech bubbles */
   hideAllSpeechBubbles(): void {
     this.bubbles.forEach((b) => {

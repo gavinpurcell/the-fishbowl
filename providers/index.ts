@@ -3,10 +3,10 @@ import type { ProviderType } from '@/engine/types';
 import { ClaudeProvider } from './claude';
 import { ClaudeCodeProvider } from './claude-code';
 
-export function createProvider(type: ProviderType, apiKey: string, modelId?: string): LLMProvider {
+export function createProvider(type: ProviderType, apiKey: string, modelId?: string, sessionId?: string | null): LLMProvider {
   switch (type) {
     case 'claude':
-      return new ClaudeProvider(apiKey, modelId);
+      return new ClaudeProvider(apiKey, modelId, sessionId || undefined);
     case 'claude-code':
       return new ClaudeCodeProvider(modelId);
     default:

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useCallback } from 'react';
-import type { TranscriptEntry } from '@/engine/types';
+import type { TranscriptEntry, Panelist } from '@/engine/types';
 
 interface ExportPanelProps {
   transcript: TranscriptEntry[];
@@ -9,6 +9,8 @@ interface ExportPanelProps {
   mode: 'summary' | 'transcript';
   onModeChange: (mode: 'summary' | 'transcript') => void;
   ideaText?: string;
+  sessionDate?: number | null;
+  panelists?: Panelist[];
 }
 
 function slugify(text: string, maxLen = 50): string {
@@ -54,7 +56,20 @@ function summaryToMarkdown(summary: string): string {
   return `# Fishbowl Summary\n\n${summary}\n`;
 }
 
-export default function ExportPanel({ transcript, summary, mode, onModeChange, ideaText }: ExportPanelProps) {
+/** Truncate idea text into a short project-style title */
+function projectTitle(ideaText: string | undefined, maxLen = 80): string {
+  if (!ideaText) return 'Untitled Session';
+  const cleaned = ideaText.replace(/\n/g, ' ').trim();
+  if (cleaned.length <= maxLen) return cleaned;
+  return cleaned.slice(0, maxLen).replace(/\s+\S*$/, '') + '...';
+}
+
+function formatDate(timestamp: number | null | undefined): string {
+  const d = timestamp ? new Date(timestamp) : new Date();
+  return d.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+}
+
+export default function ExportPanel({ transcript, summary, mode, onModeChange, ideaText, sessionDate, panelists }: ExportPanelProps) {
   const [mdFeedback, setMdFeedback] = useState(false);
   const [pdfFeedback, setPdfFeedback] = useState(false);
   const [copyFeedback, setCopyFeedback] = useState(false);
@@ -80,6 +95,46 @@ export default function ExportPanel({ transcript, summary, mode, onModeChange, i
     setTimeout(() => setMdFeedback(false), 2000);
   };
 
+  /** Load an image as a base64 data URL */
+  function loadImageAsDataUrl(src: string): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = img.naturalWidth;
+        canvas.height = img.naturalHeight;
+        const ctx = canvas.getContext('2d')!;
+        ctx.drawImage(img, 0, 0);
+        resolve(canvas.toDataURL('image/png'));
+      };
+      img.onerror = reject;
+      img.src = src;
+    });
+  }
+
+  /** Render text to a canvas using a browser font, return as data URL */
+  function renderTextAsImage(
+    text: string,
+    font: string,
+    sizePx: number,
+    color: string,
+  ): string {
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d')!;
+    ctx.font = `${sizePx}px ${font}`;
+    const metrics = ctx.measureText(text);
+    // Size canvas to fit text with padding
+    canvas.width = Math.ceil(metrics.width) + 4;
+    canvas.height = Math.ceil(sizePx * 1.3);
+    // Re-set font after resize (canvas reset clears it)
+    ctx.font = `${sizePx}px ${font}`;
+    ctx.fillStyle = color;
+    ctx.textBaseline = 'top';
+    ctx.fillText(text, 2, sizePx * 0.15);
+    return canvas.toDataURL('image/png');
+  }
+
   const handleDownloadPdf = async () => {
     const content = getContent();
 
@@ -91,65 +146,153 @@ export default function ExportPanel({ transcript, summary, mode, onModeChange, i
       const pageHeight = doc.internal.pageSize.getHeight();
       const margin = 20;
       const maxWidth = pageWidth - margin * 2;
-      let y = margin;
+      const footerY = pageHeight - 12;
+
+      // -- Load assets for letterhead --
+      const fishbowlDataUrl = await loadImageAsDataUrl('/fishbowl-icon.png');
+      const wordmarkDataUrl = renderTextAsImage(
+        'THE FISHBOWL',
+        "'Silkscreen', 'Courier New', monospace",
+        48,
+        '#1a1714',
+      );
+      const taglineDataUrl = renderTextAsImage(
+        'Your idea. Four AI experts. One honest conversation.',
+        "'Outfit', 'Helvetica', sans-serif",
+        20,
+        '#8c877d',
+      );
+
+      // -- Draw letterhead on first page --
+      const iconSize = 18;
+      const iconX = margin;
+      const iconY = 8;
+      doc.addImage(fishbowlDataUrl, 'PNG', iconX, iconY, iconSize, iconSize);
+
+      const textX = margin + iconSize + 4;
+      // Wordmark — rendered in Silkscreen via canvas
+      doc.addImage(wordmarkDataUrl, 'PNG', textX, iconY + 2, 52, 8);
+      // Tagline
+      doc.addImage(taglineDataUrl, 'PNG', textX, iconY + 11, 80, 4);
+
+      // Gold divider
+      doc.setDrawColor(232, 196, 74);
+      doc.setLineWidth(0.5);
+      doc.line(margin, iconY + iconSize + 3, pageWidth - margin, iconY + iconSize + 3);
+
+      // -- Project / Date --
+      let y = iconY + iconSize + 7;
+
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(140, 135, 125);
+      doc.text('PROJECT', margin, y);
+      doc.text('DATE', pageWidth - margin - 30, y);
+
+      y += 5.5;
+      doc.setFontSize(11.5);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(26, 23, 20);
+      doc.text(projectTitle(ideaText), margin, y);
+      doc.text(formatDate(sessionDate), pageWidth - margin - 30, y);
+
+      y += 9;
+
+      // Build a name→role lookup and track first mentions
+      const roleByName: Record<string, string> = {};
+      if (panelists) {
+        for (const p of panelists) {
+          roleByName[p.name] = p.role;
+        }
+      }
+      const namesShown = new Set<string>();
 
       const lines = content.split('\n');
 
       for (const line of lines) {
-        // Check if we need a new page
-        if (y > pageHeight - margin) {
+        if (y > footerY - 8) {
           doc.addPage();
           y = margin;
         }
 
         if (line.startsWith('# ')) {
-          // Main heading
-          doc.setFontSize(20);
+          doc.setFontSize(16);
           doc.setFont('helvetica', 'bold');
+          doc.setTextColor(26, 23, 20);
           doc.text(line.replace(/^# /, ''), margin, y);
-          y += 10;
+          y += 9;
         } else if (line.startsWith('## ')) {
-          // Section heading
-          y += 4;
-          doc.setFontSize(14);
+          y += 3;
+          doc.setFontSize(12);
           doc.setFont('helvetica', 'bold');
+          doc.setTextColor(26, 23, 20);
           doc.text(line.replace(/^## /, ''), margin, y);
           y += 2;
-          // Underline
-          doc.setDrawColor(200, 200, 200);
+          doc.setDrawColor(232, 196, 74);
+          doc.setLineWidth(0.4);
           doc.line(margin, y, pageWidth - margin, y);
           y += 6;
         } else if (line.trim() === '') {
           y += 3;
         } else {
-          doc.setFontSize(11);
+          doc.setFontSize(10);
           doc.setFont('helvetica', 'normal');
+          doc.setTextColor(50, 50, 50);
 
-          // Handle **bold** speaker names
           const cleaned = line.replace(/\*\*(.+?)\*\*/g, '$1');
+          const boldMatch = line.match(/^\*\*(.+?)\*\*:/);
 
-          // Word-wrap long lines
-          const wrapped = doc.splitTextToSize(cleaned, maxWidth);
-          for (const wLine of wrapped) {
-            if (y > pageHeight - margin) {
+          // On first mention, append (Role) after the name
+          let displayName = '';
+          if (boldMatch) {
+            const rawName = boldMatch[1];
+            displayName = rawName + ':';
+            if (!namesShown.has(rawName) && roleByName[rawName]) {
+              displayName = rawName + ' (' + roleByName[rawName] + '):';
+              namesShown.add(rawName);
+            }
+          }
+
+          // Re-wrap with potentially longer display name
+          const bodyText = boldMatch
+            ? displayName + ' ' + cleaned.slice((boldMatch[1] + ':').length).trimStart()
+            : cleaned;
+          const wrapped = doc.splitTextToSize(bodyText, maxWidth);
+
+          for (let wi = 0; wi < wrapped.length; wi++) {
+            if (y > footerY - 8) {
               doc.addPage();
               y = margin;
             }
-            doc.text(wLine, margin, y);
-            y += 5.5;
+            if (wi === 0 && boldMatch) {
+              doc.setFont('helvetica', 'bold');
+              doc.setTextColor(26, 23, 20);
+              doc.text(displayName, margin, y);
+              const nameWidth = doc.getTextWidth(displayName) + 1;
+              doc.setFont('helvetica', 'normal');
+              doc.setTextColor(50, 50, 50);
+              const rest = wrapped[wi].slice(displayName.length).trimStart();
+              if (rest) doc.text(rest, margin + nameWidth, y);
+            } else {
+              doc.text(wrapped[wi], margin, y);
+            }
+            y += 5;
           }
         }
       }
 
-      // Add footer on each page
+      // -- Footer on every page --
       const totalPages = doc.getNumberOfPages();
       for (let i = 1; i <= totalPages; i++) {
         doc.setPage(i);
-        doc.setFontSize(8);
+        doc.setDrawColor(232, 196, 74);
+        doc.setLineWidth(0.3);
+        doc.line(margin, footerY - 3, pageWidth - margin, footerY - 3);
+        doc.setFontSize(7.5);
         doc.setFont('helvetica', 'normal');
-        doc.setTextColor(150, 150, 150);
-        doc.text('The Fishbowl', margin, pageHeight - 10);
-        doc.text(`Page ${i} of ${totalPages}`, pageWidth - margin - 20, pageHeight - 10);
+        doc.setTextColor(160, 155, 145);
+        doc.text('The Fishbowl  \u2022  fishbowl.show', margin, footerY);
+        doc.text(`${i} / ${totalPages}`, pageWidth - margin, footerY, { align: 'right' });
       }
 
       doc.save(`${fileBase}-${mode}.pdf`);

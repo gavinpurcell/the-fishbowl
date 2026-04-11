@@ -10,9 +10,10 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.78.0",
+    "@upstash/redis": "^1.37.0",
     "html2pdf.js": "^0.14.0",
     "jspdf": "^4.2.1",
-    "next": "16.1.6",
+    "next": "^16.2.1",
     "openai": "^6.29.0",
     "pixi.js": "^8.17.0",
     "react": "19.2.3",
@@ -25,7 +26,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
-    "eslint-config-next": "16.1.6",
+    "eslint-config-next": "^16.2.1",
     "tailwindcss": "^4",
     "typescript": "^5"
   }

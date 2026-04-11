@@ -1,5 +1,6 @@
 import { NextRequest } from 'next/server';
 import type { LLMRequestBody } from '@/providers/types';
+import { checkRateLimit, checkSpendCap, recordSpend } from '@/lib/redis';
 
 export const runtime = 'edge';
 
@@ -12,6 +13,10 @@ const ALLOWED_MODELS = new Set([
 
 // Max request body size (100KB — generous for even long transcripts)
 const MAX_BODY_SIZE = 100_000;
+const MAX_MESSAGES = 64;
+const MAX_MESSAGE_CHARS = 20_000;
+const MAX_TOTAL_MESSAGE_CHARS = 80_000;
+const ALLOWED_ROLES = new Set(['system', 'user', 'assistant']);
 
 /** Strip sensitive values (API keys, tokens) from error messages before sending to client */
 function sanitizeError(message: string): string {
@@ -19,47 +24,127 @@ function sanitizeError(message: string): string {
   return message.replace(/sk-ant-[a-zA-Z0-9_-]+/g, 'sk-ant-***').replace(/sk-[a-zA-Z0-9_-]{20,}/g, 'sk-***');
 }
 
+function jsonError(message: string, status: number): Response {
+  return new Response(JSON.stringify({ error: message }), {
+    status,
+    headers: {
+      'Content-Type': 'application/json',
+      'Cache-Control': 'no-store',
+    },
+  });
+}
+
+function hasTrustedOrigin(req: NextRequest): boolean {
+  const origin = req.headers.get('origin');
+  const host = req.headers.get('x-forwarded-host') || req.headers.get('host');
+
+  if (!origin || !host) return true;
+
+  try {
+    return new URL(origin).host === host;
+  } catch {
+    return false;
+  }
+}
+
+function validateMessages(messages: unknown): messages is { role: string; content: string }[] {
+  if (!Array.isArray(messages) || messages.length === 0 || messages.length > MAX_MESSAGES) {
+    return false;
+  }
+
+  let totalChars = 0;
+
+  for (const message of messages) {
+    if (!message || typeof message !== 'object') return false;
+    const role = 'role' in message ? message.role : undefined;
+    const content = 'content' in message ? message.content : undefined;
+
+    if (typeof role !== 'string' || !ALLOWED_ROLES.has(role)) return false;
+    if (typeof content !== 'string' || content.length === 0 || content.length > MAX_MESSAGE_CHARS) return false;
+
+    totalChars += content.length;
+    if (totalChars > MAX_TOTAL_MESSAGE_CHARS) return false;
+  }
+
+  return true;
+}
+
 export async function POST(req: NextRequest) {
+  if (!hasTrustedOrigin(req)) {
+    return jsonError('Cross-origin requests are not allowed.', 403);
+  }
+
   // Check content length before parsing
   const contentLength = req.headers.get('content-length');
   if (contentLength && parseInt(contentLength) > MAX_BODY_SIZE) {
-    return new Response(JSON.stringify({ error: 'Request too large.' }), { status: 413 });
+    return jsonError('Request too large.', 413);
   }
 
   let body: LLMRequestBody;
   try {
     body = await req.json();
   } catch {
-    return new Response(JSON.stringify({ error: 'Invalid JSON.' }), { status: 400 });
+    return jsonError('Invalid JSON.', 400);
   }
 
-  const { messages, provider, modelId, stream = true } = body;
+  const { messages, provider, modelId, stream = true, sessionId } = body;
 
   // Validate required fields
-  if (!Array.isArray(messages) || messages.length === 0) {
-    return new Response(JSON.stringify({ error: 'Messages array is required.' }), { status: 400 });
+  if (!validateMessages(messages)) {
+    return jsonError('Messages must be a non-empty, valid conversation payload.', 400);
   }
 
   if (!modelId || !ALLOWED_MODELS.has(modelId)) {
-    return new Response(JSON.stringify({ error: 'Invalid or unsupported model.' }), { status: 400 });
+    return jsonError('Invalid or unsupported model.', 400);
   }
 
-  // Use client-provided key, or fall back to server-side env var
-  const apiKey = body.apiKey || process.env.ANTHROPIC_API_KEY || '';
+  const isHostedMode = process.env.NEXT_PUBLIC_HOSTED_MODE === 'true';
+  // In hosted mode, always use the server key so the public site cannot act as a
+  // generic proxy for arbitrary client-supplied API keys.
+  const apiKey = isHostedMode
+    ? (process.env.ANTHROPIC_API_KEY || '')
+    : (body.apiKey || process.env.ANTHROPIC_API_KEY || '');
   if (!apiKey) {
-    return new Response(JSON.stringify({ error: 'No API key configured. Set ANTHROPIC_API_KEY on the server.' }), { status: 400 });
+    return jsonError('No API key configured. Set ANTHROPIC_API_KEY on the server.', 400);
+  }
+
+  // --- Rate limiting & spend cap (hosted mode only, requires Redis) ---
+  if (isHostedMode) {
+    const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
+      || req.headers.get('x-real-ip')
+      || 'unknown';
+
+    // Check per-IP session rate limit (only if this request has a sessionId)
+    if (sessionId) {
+      const rateResult = await checkRateLimit(ip, sessionId);
+      if (!rateResult.allowed) {
+        return jsonError(
+          "You've used your free sessions for today. Come back tomorrow, or run your own instance from GitHub.",
+          429,
+        );
+      }
+    }
+
+    // Check daily spend cap
+    const spendResult = await checkSpendCap();
+    if (!spendResult.allowed) {
+      return jsonError(
+        'The Fishbowl is at capacity for today. Try again tomorrow, or run your own instance from GitHub.',
+        503,
+      );
+    }
   }
 
   try {
     if (provider === 'claude') {
       return await handleClaude(messages, apiKey, modelId, stream);
     } else {
-      return new Response(JSON.stringify({ error: 'Unknown provider.' }), { status: 400 });
+      return jsonError('Unknown provider.', 400);
     }
   } catch (error) {
     const raw = error instanceof Error ? error.message : 'Unknown error';
     console.error('[LLM API Route Error]', raw);
-    return new Response(JSON.stringify({ error: sanitizeError(raw) }), { status: 500 });
+    return jsonError(sanitizeError(raw), 500);
   }
 }
 
@@ -122,19 +207,29 @@ async function handleClaude(messages: { role: string; content: string }[], apiKe
         if (inputTokens > 0 || outputTokens > 0) {
           const usageEvent = `data: ${JSON.stringify({ type: 'usage', inputTokens, outputTokens })}\n\n`;
           controller.enqueue(encoder.encode(usageEvent));
+          // Fire-and-forget spend tracking
+          recordSpend(inputTokens, outputTokens).catch(() => {});
         }
       },
     });
 
     return new Response(response.body!.pipeThrough(transform), {
-      headers: { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache' },
+      headers: {
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-store',
+      },
     });
   }
 
   // Non-streaming: read the full response and forward it
   const data = await response.json();
+  if (data.usage) {
+    recordSpend(data.usage.input_tokens || 0, data.usage.output_tokens || 0).catch(() => {});
+  }
   return new Response(JSON.stringify(data), {
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      'Cache-Control': 'no-store',
+    },
   });
 }
-

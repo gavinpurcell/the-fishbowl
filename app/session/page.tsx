@@ -201,6 +201,12 @@ export default function SessionPage() {
     scene.setBubbleText(panelistId, text + (suffix || ''));
   }, []);
 
+  const getBubblePages = useCallback((panelistId: string, text: string): string[] => {
+    const scene = sceneRef.current;
+    if (!scene) return [text];
+    return scene.paginateBubbleText(panelistId, text);
+  }, []);
+
   // PixiJS scene container ref (always in DOM, hidden until roundtable)
   const sceneContainerRef = useRef<HTMLDivElement>(null);
   const sceneInitializedRef = useRef(false);
@@ -238,7 +244,7 @@ export default function SessionPage() {
     startedRef.current = true;
 
     const s = storeRef.current;
-    const provider = createProvider(s.provider, s.apiKey, s.modelId);
+    const provider = createProvider(s.provider, s.apiKey, s.modelId, s.sessionId);
     const localTranscript: TranscriptEntry[] = [];
     localTranscriptRef.current = localTranscript;
 
@@ -472,11 +478,11 @@ export default function SessionPage() {
           // Show response in bubble with typing effect + paragraph pagination
           const lastEntry = localTranscript[localTranscript.length - 1];
           if (lastEntry && sceneRef.current) {
-            const paragraphs = lastEntry.content.split('\n\n').filter((p: string) => p.trim());
-            for (let p = 0; p < paragraphs.length; p++) {
-              const isLast = p === paragraphs.length - 1;
+            const pages = getBubblePages(panelist.id, lastEntry.content);
+            for (let p = 0; p < pages.length; p++) {
+              const isLast = p === pages.length - 1;
               const suffix = isLast ? '' : '\n\n▸ continue';
-              await typeIntoBubble(panelist.id, paragraphs[p], suffix);
+              await typeIntoBubble(panelist.id, pages[p], suffix);
               if (!isLast) {
                 setHint(`${ACTION} to continue reading...`);
                 await waitForSpace();
@@ -554,11 +560,11 @@ export default function SessionPage() {
 
               const lastEntry = localTranscript[localTranscript.length - 1];
               if (lastEntry && sceneRef.current) {
-                const paragraphs = lastEntry.content.split('\n\n').filter((p: string) => p.trim());
-                for (let p = 0; p < paragraphs.length; p++) {
-                  const isLast = p === paragraphs.length - 1;
+                const pages = getBubblePages(panelist.id, lastEntry.content);
+                for (let p = 0; p < pages.length; p++) {
+                  const isLast = p === pages.length - 1;
                   const suffix = isLast ? '' : '\n\n▸ continue';
-                  await typeIntoBubble(panelist.id, paragraphs[p], suffix);
+                  await typeIntoBubble(panelist.id, pages[p], suffix);
                   if (!isLast) {
                     setHint(`${ACTION} to continue reading...`);
                     await waitForSpace();
@@ -630,11 +636,11 @@ export default function SessionPage() {
         const localTranscript = localTranscriptRef.current;
         const lastEntry = localTranscript[localTranscript.length - 1];
         if (lastEntry && sceneRef.current) {
-          const paragraphs = lastEntry.content.split('\n\n').filter((p: string) => p.trim());
-          for (let p = 0; p < paragraphs.length; p++) {
-            const isLast = p === paragraphs.length - 1;
+          const pages = getBubblePages(panelist.id, lastEntry.content);
+          for (let p = 0; p < pages.length; p++) {
+            const isLast = p === pages.length - 1;
             const suffix = isLast ? '' : '\n\n▸ continue';
-            await typeIntoBubble(panelist.id, paragraphs[p], suffix);
+            await typeIntoBubble(panelist.id, pages[p], suffix);
             if (!isLast) {
               setHint(`${ACTION} to continue reading...`);
               setIsSpeaking(false);
@@ -722,11 +728,11 @@ export default function SessionPage() {
             const transcript = localTranscriptRef.current;
             const lastEntry = transcript[transcript.length - 1];
             if (lastEntry && sceneRef.current) {
-              const paragraphs = lastEntry.content.split('\n\n').filter((p: string) => p.trim());
-              for (let p = 0; p < paragraphs.length; p++) {
-                const isLast = p === paragraphs.length - 1;
+              const pages = getBubblePages(panelist.id, lastEntry.content);
+              for (let p = 0; p < pages.length; p++) {
+                const isLast = p === pages.length - 1;
                 const suffix = isLast ? '' : '\n\n▸ continue';
-                await typeIntoBubble(panelist.id, paragraphs[p], suffix);
+                await typeIntoBubble(panelist.id, pages[p], suffix);
                 if (!isLast) {
                   setHint(`${ACTION} to continue reading...`);
                   await waitForSpace();
@@ -744,7 +750,7 @@ export default function SessionPage() {
     }
     setIsSpeaking(false);
     isSpeakingRef.current = false;
-  }, [inModeration, waitForSpace, typeIntoBubble]);
+  }, [getBubblePages, inModeration, waitForSpace, typeIntoBubble]);
 
   const handleWrapUp = useCallback(async () => {
     const orchestrator = orchestratorRef.current;

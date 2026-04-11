@@ -20,13 +20,15 @@ const PROVIDERS: { id: ProviderType; label: string }[] = [
 
 export default function ApiKeyConfig({ provider, apiKey, modelId, onProviderChange, onApiKeyChange, onModelChange }: Props) {
   useEffect(() => {
-    const savedKey = localStorage.getItem(`fishbowl-apikey-${provider}`);
-    if (savedKey && !apiKey) onApiKeyChange(savedKey);
-  }, [provider]);
-
-  useEffect(() => {
-    if (apiKey) localStorage.setItem(`fishbowl-apikey-${provider}`, apiKey);
-  }, [apiKey, provider]);
+    const legacyStorageKey = `fishbowl-apikey-${provider}`;
+    const savedKey = localStorage.getItem(legacyStorageKey);
+    if (savedKey && !apiKey) {
+      onApiKeyChange(savedKey);
+    }
+    if (savedKey) {
+      localStorage.removeItem(legacyStorageKey);
+    }
+  }, [apiKey, onApiKeyChange, provider]);
 
   const models = getModelsForProvider(provider);
   const hasKey = provider === 'claude-code' || !!apiKey.trim();
@@ -80,7 +82,7 @@ export default function ApiKeyConfig({ provider, apiKey, modelId, onProviderChan
               className="dossier-input"
             />
             <p className="text-[10px] mt-2" style={{ color: '#5a5248', opacity: 0.8 }}>
-              Stored in your browser only. Sent directly to Anthropic.
+              Kept only in this tab&apos;s session. Sent only to Anthropic.
             </p>
 
             <div className="mt-4">

@@ -378,18 +378,7 @@ export class SpeechBubble extends Container {
     const style = this.textDisplay.style as TextStyle;
     const fullMetrics = CanvasTextMetrics.measureText(this.fullText || ' ', style);
     const fullLines = fullMetrics.lines.length > 0 ? fullMetrics.lines : [''];
-
-    // Compute the maximum text area height:
-    // 1. Hard cap: MAX_BUBBLE_HEIGHT minus padding and tail
-    // 2. Position cap: don't extend above the canvas top (y=0); leave 8px margin
-    const hardMaxTextH = this.MAX_BUBBLE_HEIGHT - this.PADDING * 2 - this.TAIL_HEIGHT;
-    const availableAbove = this.position.y - 8 - this.PADDING * 2 - this.TAIL_HEIGHT;
-    const positionMaxTextH = Math.max(this.MIN_HEIGHT - this.PADDING * 2, availableAbove);
-    const maxTextH = Math.min(hardMaxTextH, positionMaxTextH);
-    // Use a slightly inflated line height for the count to avoid overflow
-    // (PixiJS text rendering can exceed the nominal lineHeight)
-    const effectiveLH = this.LINE_HEIGHT * 1.15;
-    const maxVisibleLines = Math.max(1, Math.floor(maxTextH / effectiveLH));
+    const maxVisibleLines = this.getMaxVisibleLines();
     const isOverflowing = fullLines.length > maxVisibleLines;
     const visibleLines = isOverflowing
       ? fullLines.slice(fullLines.length - maxVisibleLines)
@@ -515,5 +504,104 @@ export class SpeechBubble extends Container {
       this.layout();
       this.dirty = false;
     }
+  }
+
+  /**
+   * Paginate text to fit the visible bubble area at the bubble's current position.
+   * This is more reliable than splitting only on paragraph breaks because long
+   * single-paragraph responses otherwise clip off the top of the canvas.
+   */
+  paginateText(text: string): string[] {
+    const normalized = text.trim();
+    if (!normalized) return [''];
+
+    const style = this.textDisplay.style as TextStyle;
+    const fullCapacity = this.getMaxVisibleLines();
+
+    if (this.getWrappedLineCount(normalized, style) <= fullCapacity) {
+      return [normalized];
+    }
+
+    // Reserve space for the in-bubble "continue" affordance on non-final pages.
+    const continuedCapacity = Math.max(1, fullCapacity - 2);
+    const paragraphs = normalized.split(/\n{2,}/).map((p) => p.trim()).filter(Boolean);
+    const pages: string[] = [];
+    let currentPage = '';
+
+    const flushPage = () => {
+      if (currentPage.trim()) {
+        pages.push(currentPage.trim());
+        currentPage = '';
+      }
+    };
+
+    for (const paragraph of paragraphs) {
+      const candidate = currentPage ? `${currentPage}\n\n${paragraph}` : paragraph;
+      if (this.getWrappedLineCount(candidate, style) <= continuedCapacity) {
+        currentPage = candidate;
+        continue;
+      }
+
+      if (currentPage) {
+        flushPage();
+      }
+
+      if (this.getWrappedLineCount(paragraph, style) <= continuedCapacity) {
+        currentPage = paragraph;
+        continue;
+      }
+
+      const paragraphPages = this.paginateParagraphByWords(paragraph, continuedCapacity, style);
+      if (paragraphPages.length === 0) continue;
+
+      pages.push(...paragraphPages.slice(0, -1));
+      currentPage = paragraphPages[paragraphPages.length - 1] || '';
+    }
+
+    flushPage();
+    return pages.length > 0 ? pages : [normalized];
+  }
+
+  private getMaxVisibleLines(): number {
+    const hardMaxTextH = this.MAX_BUBBLE_HEIGHT - this.PADDING * 2 - this.TAIL_HEIGHT;
+    const availableAbove = this.position.y - 8 - this.PADDING * 2 - this.TAIL_HEIGHT;
+    const positionMaxTextH = Math.max(this.MIN_HEIGHT - this.PADDING * 2, availableAbove);
+    const maxTextH = Math.min(hardMaxTextH, positionMaxTextH);
+    const effectiveLH = this.LINE_HEIGHT * 1.15;
+    return Math.max(1, Math.floor(maxTextH / effectiveLH));
+  }
+
+  private getWrappedLineCount(text: string, style: TextStyle): number {
+    const metrics = CanvasTextMetrics.measureText(text || ' ', style);
+    return metrics.lines.length > 0 ? metrics.lines.length : 1;
+  }
+
+  private paginateParagraphByWords(paragraph: string, lineCapacity: number, style: TextStyle): string[] {
+    const words = paragraph.split(/\s+/).filter(Boolean);
+    if (words.length === 0) return [];
+
+    const pages: string[] = [];
+    let current = '';
+
+    for (const word of words) {
+      const candidate = current ? `${current} ${word}` : word;
+      if (this.getWrappedLineCount(candidate, style) <= lineCapacity) {
+        current = candidate;
+        continue;
+      }
+
+      if (current) {
+        pages.push(current);
+      }
+
+      // If even a single token overflows, keep it rather than dropping content.
+      current = word;
+    }
+
+    if (current) {
+      pages.push(current);
+    }
+
+    return pages;
   }
 }

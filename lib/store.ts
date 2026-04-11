@@ -18,6 +18,7 @@ interface FishbowlState {
   provider: ProviderType;
   apiKey: string;
   modelId: string;
+  sessionId: string | null;
   sessionCost: { inputTokens: number; outputTokens: number };
   status: SessionStatus;
   currentRound: RoundType;
@@ -63,6 +64,7 @@ export const useFishbowlStore = create<FishbowlState>()(
   provider: 'claude',
   apiKey: '',
   modelId: getDefaultModel('claude').id,
+  sessionId: null,
   sessionCost: { inputTokens: 0, outputTokens: 0 },
   status: 'setup',
   currentRound: 'initial-takes',
@@ -96,7 +98,7 @@ export const useFishbowlStore = create<FishbowlState>()(
   })),
   incrementModerationCount: () => set((s) => ({ moderationQuestionCount: s.moderationQuestionCount + 1 })),
 
-  startSession: () => set({ status: 'running', currentRound: 'initial-takes', transcript: [], summary: null, sessionCost: { inputTokens: 0, outputTokens: 0 }, sessionStartTime: Date.now(), sessionEndTime: null, moderationQuestionCount: 0 }),
+  startSession: () => set({ status: 'running', currentRound: 'initial-takes', transcript: [], summary: null, sessionId: crypto.randomUUID(), sessionCost: { inputTokens: 0, outputTokens: 0 }, sessionStartTime: Date.now(), sessionEndTime: null, moderationQuestionCount: 0 }),
   setCurrentRound: (currentRound) => set({ currentRound }),
   setActivePanelist: (activePanelistId) => set({ activePanelistId }),
   addTranscriptEntry: (entry) => set((s) => ({ transcript: [...s.transcript, entry] })),
@@ -131,6 +133,7 @@ export const useFishbowlStore = create<FishbowlState>()(
       ideaFiles: [],
       provider: 'claude',
       modelId: getDefaultModel('claude').id,
+      sessionId: null,
       sessionCost: { inputTokens: 0, outputTokens: 0 },
       sessionStartTime: null,
       sessionEndTime: null,
@@ -159,6 +162,7 @@ export const useFishbowlStore = create<FishbowlState>()(
         provider: state.provider,
         apiKey: state.apiKey,
         modelId: state.modelId,
+        sessionId: state.sessionId,
         sessionCost: state.sessionCost,
         status: state.status,
         transcript: state.transcript,
