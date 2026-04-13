@@ -18,9 +18,10 @@ export default function IdeaInput({ ideaText, ideaFiles, onTextChange, onFilesCh
   const handleFilesWithFeedback = useCallback(async (files: FileList | File[]) => {
     setFileError(null);
     const fileArray = Array.from(files);
-    const unsupported = fileArray.filter((f) => { const ext = f.name.split('.').pop()?.toLowerCase(); return ext !== 'md' && ext !== 'txt'; });
+    const supported = new Set(['md', 'txt', 'pdf']);
+    const unsupported = fileArray.filter((f) => { const ext = f.name.split('.').pop()?.toLowerCase(); return !ext || !supported.has(ext); });
     if (unsupported.length > 0) {
-      setFileError(`Unsupported: ${unsupported.map((f) => f.name).join(', ')}. Only .md and .txt for now.`);
+      setFileError(`Unsupported: ${unsupported.map((f) => f.name).join(', ')}. Supported: .pdf, .md, .txt`);
     }
     const parsed = await parseFiles(fileArray);
     if (parsed.length > 0) onFilesChange([...ideaFiles, ...parsed].slice(0, 3));
@@ -178,10 +179,10 @@ export default function IdeaInput({ ideaText, ideaFiles, onTextChange, onFilesCh
                 <path d="M8 3v10M3 8h10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
               </svg>
               <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
-                Drop .md or .txt files, or{' '}
+                Drop .pdf, .md, or .txt files, or{' '}
                 <label className="cursor-pointer" style={{ color: 'var(--accent-gold)' }}>
                   browse
-                  <input type="file" accept=".md,.txt" multiple onChange={handleFileSelect} className="hidden" />
+                  <input type="file" accept=".pdf,.md,.txt" multiple onChange={handleFileSelect} className="hidden" />
                 </label>
               </p>
               <span className="text-[10px] ml-auto" style={{ color: 'var(--text-muted)', opacity: 0.5 }}>
