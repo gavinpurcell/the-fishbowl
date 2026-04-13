@@ -493,7 +493,7 @@ export default function AboutPage() {
         </section>
 
         {/* --- SECTION 6: It's yours now --- */}
-        <section style={{ marginBottom: '64px' }}>
+        <section style={{ marginBottom: '24px' }}>
           <h2
             style={{
               fontFamily: "'Silkscreen', monospace",
@@ -537,7 +537,7 @@ export default function AboutPage() {
           style={{
             height: '1px',
             background: 'linear-gradient(90deg, transparent, var(--dark-border), transparent)',
-            margin: '48px 0',
+            margin: '0 0 24px',
           }}
         />
 
