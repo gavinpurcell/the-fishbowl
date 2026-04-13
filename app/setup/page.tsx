@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useFishbowlStore } from '@/lib/store';
 import { createPanelistFromTemplate } from '@/engine/panelist';
@@ -52,10 +52,30 @@ export default function SetupPage() {
   const completedSteps = readinessSteps.filter(Boolean).length;
   const readinessPercent = (completedSteps / readinessSteps.length) * 100;
 
-  const handleStart = () => {
+  const [checking, setChecking] = useState(false);
+
+  const handleStart = useCallback(async () => {
+    const isHosted = process.env.NEXT_PUBLIC_HOSTED_MODE === 'true';
+
+    if (isHosted) {
+      setChecking(true);
+      try {
+        const res = await fetch('/api/capacity');
+        const data = await res.json();
+        if (!data.available) {
+          router.push('/capacity');
+          return;
+        }
+      } catch {
+        // If capacity check fails, let them through — the session will handle errors
+      } finally {
+        setChecking(false);
+      }
+    }
+
     store.startSession();
     router.push('/session');
-  };
+  }, [store, router]);
 
   return (
     <div className="min-h-screen">
@@ -185,10 +205,10 @@ export default function SetupPage() {
               {/* Start button - full width dramatic CTA */}
               <button
                 onClick={handleStart}
-                disabled={!canStart}
+                disabled={!canStart || checking}
                 className="start-button-dramatic"
               >
-                {canStart ? 'Start the Fishbowl' : 'Complete setup to begin'}
+                {checking ? 'Checking availability...' : canStart ? 'Start the Fishbowl' : 'Complete setup to begin'}
               </button>
 
               <div className="text-center mt-4">
