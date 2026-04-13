@@ -321,7 +321,7 @@ export default function AboutPage() {
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src="/about-andthen.png"
+              src="/about-andthen.jpg"
               alt="Screenshot of AndThen, the voice-first AI conversation platform"
               style={{
                 width: '100%',
@@ -481,7 +481,7 @@ export default function AboutPage() {
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src="/fishbowlSCREENSHOT.png"
+              src="/fishbowlSCREENSHOT.jpg"
               alt="A Fishbowl session in action — four AI panelists debating around the fishbowl table"
               style={{
                 width: '100%',

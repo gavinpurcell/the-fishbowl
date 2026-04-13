@@ -19,8 +19,8 @@ export async function loadTitleSprites(): Promise<void> {
   }
 
   // Room essentials
-  assets.push({ alias: 'room_bg', src: '/sprites/room/background_prev.png' });
-  assets.push({ alias: 'room_bg_clean', src: '/sprites/room/background_clean.png' });
+  assets.push({ alias: 'room_bg', src: '/sprites/room/background_prev.jpg' });
+  assets.push({ alias: 'room_bg_clean', src: '/sprites/room/background_clean.jpg' });
   assets.push({ alias: 'coffee_table', src: '/sprites/room/coffee_table.png' });
   assets.push({ alias: 'table_only', src: '/sprites/room/table_only.png' });
   assets.push({ alias: 'fishbowl_table', src: '/sprites/room/fishbowl_table.png' });
@@ -53,8 +53,8 @@ export async function loadAllSprites(): Promise<void> {
   assets.push({ alias: 'table_shadow', src: '/sprites/shadows/table_shadow.png' });
 
   // Room
-  assets.push({ alias: 'room_bg', src: '/sprites/room/background_prev.png' });
-  assets.push({ alias: 'room_bg_clean', src: '/sprites/room/background_clean.png' });
+  assets.push({ alias: 'room_bg', src: '/sprites/room/background_prev.jpg' });
+  assets.push({ alias: 'room_bg_clean', src: '/sprites/room/background_clean.jpg' });
   assets.push({ alias: 'coffee_table', src: '/sprites/room/coffee_table.png' });
   assets.push({ alias: 'table_only', src: '/sprites/room/table_only.png' });
   assets.push({ alias: 'coffee_cups', src: '/sprites/room/coffee_cups.png' });

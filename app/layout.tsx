@@ -19,7 +19,7 @@ export const metadata: Metadata = {
     url: 'https://fishbowl.show',
     images: [
       {
-        url: 'https://fishbowl.show/og-image.png',
+        url: 'https://fishbowl.show/og-image.jpg',
         width: 1200,
         height: 630,
         alt: 'The Fishbowl - AI experts debating in a pixel art scene',
@@ -31,7 +31,7 @@ export const metadata: Metadata = {
     title: 'The Fishbowl',
     description:
       'Assemble a panel of AI experts, pitch your idea, and watch them debate it live in a pixel-art scene.',
-    images: ['https://fishbowl.show/og-image.png'],
+    images: ['https://fishbowl.show/og-image.jpg'],
   },
   icons: {
     icon: [
