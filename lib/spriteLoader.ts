@@ -24,6 +24,7 @@ export async function loadTitleSprites(): Promise<void> {
   assets.push({ alias: 'coffee_table', src: '/sprites/room/coffee_table.png' });
   assets.push({ alias: 'table_only', src: '/sprites/room/table_only.png' });
   assets.push({ alias: 'fishbowl_table', src: '/sprites/room/fishbowl_table.png' });
+  assets.push({ alias: 'table_shadow', src: '/sprites/shadows/table_shadow.png' });
 
   await Assets.load(assets.map(a => ({ alias: a.alias, src: a.src })));
 }
