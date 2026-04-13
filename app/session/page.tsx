@@ -782,11 +782,20 @@ export default function SessionPage() {
         setHint(`${panelist.name} — final thought...`);
         await orchestrator.runSinglePanelist(panelist, 'wrap-up');
 
-        // Show in bubble with typing effect
+        // Show in bubble with typing effect + pagination
         const transcript = localTranscriptRef.current;
         const lastEntry = transcript[transcript.length - 1];
         if (lastEntry && sceneRef.current) {
-          await typeIntoBubble(panelist.id, lastEntry.content.trim());
+          const pages = getBubblePages(panelist.id, lastEntry.content.trim());
+          for (let p = 0; p < pages.length; p++) {
+            const isLast = p === pages.length - 1;
+            const suffix = isLast ? '' : '\n\n▸ continue';
+            await typeIntoBubble(panelist.id, pages[p], suffix);
+            if (!isLast) {
+              setHint(`${ACTION} to continue reading...`);
+              await waitForSpace();
+            }
+          }
         }
 
         if (sceneRef.current) sceneRef.current.setCharacterState(panelist.id, 'idle');
@@ -1211,29 +1220,32 @@ export default function SessionPage() {
                   <div
                     style={{
                       display: 'flex',
+                      flexWrap: 'wrap',
                       alignItems: 'center',
-                      gap: '8px',
+                      justifyContent: 'center',
+                      gap: '6px',
                       background: 'rgba(26, 23, 20, 0.9)',
                       border: '1px solid rgba(196,154,42,0.25)',
                       borderRadius: '8px',
                       padding: '8px 10px',
                     }}
                   >
-                    {/* YOUR TURN label */}
+                    {/* YOUR TURN label — hidden on mobile, buttons are self-explanatory */}
                     <span
-                      className="font-pixel flex-shrink-0"
+                      className="font-pixel hidden sm:inline"
                       style={{
                         fontSize: '8px',
                         letterSpacing: '0.1em',
                         color: 'var(--accent-gold)',
                         opacity: 0.7,
+                        flexShrink: 0,
                       }}
                     >
                       YOUR TURN
                     </span>
 
-                    {/* Spacer */}
-                    <div style={{ flex: 1 }} />
+                    {/* Spacer — desktop only */}
+                    <div className="hidden sm:block" style={{ flex: 1 }} />
 
                     {/* Three inline buttons */}
                     <button
@@ -1243,15 +1255,16 @@ export default function SessionPage() {
                           moderationChoiceRef.current = null;
                         }
                       }}
-                      className="font-pixel cursor-pointer transition-all flex-shrink-0"
+                      className="font-pixel cursor-pointer transition-all"
                       style={{
                         background: 'var(--accent-gold)',
                         color: 'var(--dark-deep)',
                         border: 'none',
                         borderRadius: '4px',
-                        padding: '7px 14px',
+                        padding: '7px 12px',
                         fontSize: '8px',
                         letterSpacing: '0.06em',
+                        whiteSpace: 'nowrap',
                       }}
                     >
                       ASK A QUESTION
@@ -1263,15 +1276,16 @@ export default function SessionPage() {
                           moderationChoiceRef.current = null;
                         }
                       }}
-                      className="font-pixel cursor-pointer transition-all flex-shrink-0"
+                      className="font-pixel cursor-pointer transition-all"
                       style={{
                         background: 'transparent',
                         color: 'var(--accent-gold)',
                         border: '1px solid rgba(196,154,42,0.35)',
                         borderRadius: '4px',
-                        padding: '6px 12px',
+                        padding: '6px 10px',
                         fontSize: '8px',
                         letterSpacing: '0.06em',
+                        whiteSpace: 'nowrap',
                       }}
                     >
                       KEEP TALKING
@@ -1283,15 +1297,16 @@ export default function SessionPage() {
                           moderationChoiceRef.current = null;
                         }
                       }}
-                      className="font-pixel cursor-pointer transition-all flex-shrink-0"
+                      className="font-pixel cursor-pointer transition-all"
                       style={{
                         background: 'none',
                         color: 'rgba(255,255,255,0.35)',
                         border: '1px solid rgba(255,255,255,0.1)',
                         borderRadius: '4px',
-                        padding: '6px 12px',
+                        padding: '6px 10px',
                         fontSize: '8px',
                         letterSpacing: '0.06em',
+                        whiteSpace: 'nowrap',
                       }}
                     >
                       END

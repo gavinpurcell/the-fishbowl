@@ -175,12 +175,15 @@ export default function IntroOverlay({ topic, panelists, onComplete, ready = fal
             <div
               style={{
                 fontFamily: "'Outfit', sans-serif",
-                fontSize: 'clamp(1.4rem, 4vw, 2.4rem)',
+                fontSize: 'clamp(1rem, 3.5vw, 2.4rem)',
                 fontWeight: 600,
                 color: 'rgba(255, 255, 255, 0.9)',
                 textAlign: 'center',
                 lineHeight: 1.3,
                 maxWidth: '600px',
+                wordBreak: 'break-word' as const,
+                overflowWrap: 'break-word' as const,
+                padding: '0 12px',
                 opacity: 0,
                 animation: 'introTopicIn 800ms cubic-bezier(0.22, 1, 0.36, 1) 400ms forwards',
               }}
