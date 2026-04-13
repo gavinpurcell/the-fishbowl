@@ -102,7 +102,7 @@ export default function ResultsPage() {
     <div className="min-h-screen" style={{ background: 'var(--bg-deep)' }}>
       {/* Lead capture — full modal first time, slim banner after */}
       {showLeadPopup && (
-        <LeadCapturePopup onDismiss={() => setShowLeadPopup(false)} />
+        <LeadCapturePopup onDismiss={() => setShowLeadPopup(false)} ideaText={store.ideaText} />
       )}
       {!showLeadPopup && (
         <div

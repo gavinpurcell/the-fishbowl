@@ -4,11 +4,12 @@ import { useState, useEffect } from 'react';
 
 interface Props {
   onDismiss: () => void;
+  ideaText?: string;
 }
 
 const STORAGE_KEY = 'fishbowl-lead-shown';
 
-export default function LeadCapturePopup({ onDismiss }: Props) {
+export default function LeadCapturePopup({ onDismiss, ideaText }: Props) {
   const [email, setEmail] = useState('');
   const [submitted, setSubmitted] = useState(false);
   const [visible, setVisible] = useState(false);
@@ -30,13 +31,15 @@ export default function LeadCapturePopup({ onDismiss }: Props) {
     e.preventDefault();
     if (!email.trim()) return;
 
-    // Store locally (Redis version will come later)
+    // Send to backend (Redis) — fire and don't block on failure
     try {
-      const leads = JSON.parse(localStorage.getItem('fishbowl-leads') || '[]');
-      leads.push({ email: email.trim(), timestamp: Date.now() });
-      localStorage.setItem('fishbowl-leads', JSON.stringify(leads));
+      await fetch('/api/lead', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email.trim(), ideaText }),
+      });
     } catch {
-      // localStorage full or unavailable — proceed anyway
+      // API unavailable — proceed anyway
     }
 
     localStorage.setItem(STORAGE_KEY, 'true');
