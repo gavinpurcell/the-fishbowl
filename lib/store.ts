@@ -19,6 +19,7 @@ interface FishbowlState {
   apiKey: string;
   modelId: string;
   sessionId: string | null;
+  hostedSessionToken: string | null;
   sessionCost: { inputTokens: number; outputTokens: number };
   status: SessionStatus;
   currentRound: RoundType;
@@ -41,7 +42,7 @@ interface FishbowlState {
   addTokenUsage: (input: number, output: number) => void;
   incrementModerationCount: () => void;
 
-  startSession: () => void;
+  startSession: (sessionId?: string, hostedSessionToken?: string | null) => void;
   setCurrentRound: (round: RoundType) => void;
   setActivePanelist: (id: string | null) => void;
   addTranscriptEntry: (entry: TranscriptEntry) => void;
@@ -65,6 +66,7 @@ export const useFishbowlStore = create<FishbowlState>()(
   apiKey: '',
   modelId: getDefaultModel('claude').id,
   sessionId: null,
+  hostedSessionToken: null,
   sessionCost: { inputTokens: 0, outputTokens: 0 },
   status: 'setup',
   currentRound: 'initial-takes',
@@ -98,7 +100,18 @@ export const useFishbowlStore = create<FishbowlState>()(
   })),
   incrementModerationCount: () => set((s) => ({ moderationQuestionCount: s.moderationQuestionCount + 1 })),
 
-  startSession: () => set({ status: 'running', currentRound: 'initial-takes', transcript: [], summary: null, sessionId: crypto.randomUUID(), sessionCost: { inputTokens: 0, outputTokens: 0 }, sessionStartTime: Date.now(), sessionEndTime: null, moderationQuestionCount: 0 }),
+  startSession: (sessionId, hostedSessionToken) => set({
+    status: 'running',
+    currentRound: 'initial-takes',
+    transcript: [],
+    summary: null,
+    sessionId: sessionId || crypto.randomUUID(),
+    hostedSessionToken: hostedSessionToken || null,
+    sessionCost: { inputTokens: 0, outputTokens: 0 },
+    sessionStartTime: Date.now(),
+    sessionEndTime: null,
+    moderationQuestionCount: 0,
+  }),
   setCurrentRound: (currentRound) => set({ currentRound }),
   setActivePanelist: (activePanelistId) => set({ activePanelistId }),
   addTranscriptEntry: (entry) => set((s) => ({ transcript: [...s.transcript, entry] })),
@@ -120,6 +133,8 @@ export const useFishbowlStore = create<FishbowlState>()(
       currentRound: 'initial-takes',
       activePanelistId: null,
       summary: null,
+      sessionId: null,
+      hostedSessionToken: null,
     }),
   resetSession: () =>
     set({
@@ -134,6 +149,7 @@ export const useFishbowlStore = create<FishbowlState>()(
       provider: 'claude',
       modelId: getDefaultModel('claude').id,
       sessionId: null,
+      hostedSessionToken: null,
       sessionCost: { inputTokens: 0, outputTokens: 0 },
       sessionStartTime: null,
       sessionEndTime: null,
@@ -148,8 +164,8 @@ export const useFishbowlStore = create<FishbowlState>()(
       ideaFiles: s.ideaFiles,
       provider: s.provider,
       apiKey: s.apiKey,
-      modelId: s.modelId,
-    };
+        modelId: s.modelId,
+      };
   },
   }),
     {
@@ -163,6 +179,7 @@ export const useFishbowlStore = create<FishbowlState>()(
         apiKey: state.apiKey,
         modelId: state.modelId,
         sessionId: state.sessionId,
+        hostedSessionToken: state.hostedSessionToken,
         sessionCost: state.sessionCost,
         status: state.status,
         transcript: state.transcript,

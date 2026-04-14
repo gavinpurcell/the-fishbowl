@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server';
 import type { LLMRequestBody } from '@/providers/types';
 import { checkRateLimit, checkSpendCap, recordSpend } from '@/lib/redis';
+import { HOSTED_MODEL_ID, verifyHostedSessionToken } from '@/lib/hostedSession';
 
 export const runtime = 'edge';
 
@@ -34,11 +35,18 @@ function jsonError(message: string, status: number): Response {
   });
 }
 
-function hasTrustedOrigin(req: NextRequest): boolean {
+function getClientIp(req: NextRequest): string {
+  return req.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
+    || req.headers.get('x-real-ip')
+    || 'unknown';
+}
+
+function hasTrustedOrigin(req: NextRequest, requireOrigin: boolean): boolean {
   const origin = req.headers.get('origin');
   const host = req.headers.get('x-forwarded-host') || req.headers.get('host');
 
-  if (!origin || !host) return true;
+  if (!host) return false;
+  if (!origin) return !requireOrigin;
 
   try {
     return new URL(origin).host === host;
@@ -70,7 +78,10 @@ function validateMessages(messages: unknown): messages is { role: string; conten
 }
 
 export async function POST(req: NextRequest) {
-  if (!hasTrustedOrigin(req)) {
+  const isHostedMode = process.env.NEXT_PUBLIC_HOSTED_MODE === 'true';
+  const ip = getClientIp(req);
+
+  if (!hasTrustedOrigin(req, isHostedMode)) {
     return jsonError('Cross-origin requests are not allowed.', 403);
   }
 
@@ -87,7 +98,7 @@ export async function POST(req: NextRequest) {
     return jsonError('Invalid JSON.', 400);
   }
 
-  const { messages, provider, modelId, stream = true, sessionId } = body;
+  const { messages, provider, modelId, stream = true, sessionId, hostedSessionToken } = body;
 
   // Validate required fields
   if (!validateMessages(messages)) {
@@ -98,7 +109,23 @@ export async function POST(req: NextRequest) {
     return jsonError('Invalid or unsupported model.', 400);
   }
 
-  const isHostedMode = process.env.NEXT_PUBLIC_HOSTED_MODE === 'true';
+  const effectiveModelId = isHostedMode ? HOSTED_MODEL_ID : modelId;
+
+  if (isHostedMode && modelId !== HOSTED_MODEL_ID) {
+    return jsonError('Hosted Fishbowl sessions only support Claude Sonnet 4.6.', 400);
+  }
+
+  if (isHostedMode) {
+    if (!sessionId || !hostedSessionToken) {
+      return jsonError('Hosted sessions must start from the Fishbowl setup page.', 403);
+    }
+
+    const validToken = await verifyHostedSessionToken(hostedSessionToken, sessionId, ip);
+    if (!validToken) {
+      return jsonError('Hosted session token is invalid or expired. Restart from setup.', 403);
+    }
+  }
+
   // In hosted mode, always use the server key so the public site cannot act as a
   // generic proxy for arbitrary client-supplied API keys.
   const apiKey = isHostedMode
@@ -110,19 +137,12 @@ export async function POST(req: NextRequest) {
 
   // --- Rate limiting & spend cap (hosted mode only, requires Redis) ---
   if (isHostedMode) {
-    const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
-      || req.headers.get('x-real-ip')
-      || 'unknown';
-
-    // Check per-IP session rate limit (only if this request has a sessionId)
-    if (sessionId) {
-      const rateResult = await checkRateLimit(ip, sessionId);
-      if (!rateResult.allowed) {
-        return jsonError(
-          "You've used your free sessions for today. Come back tomorrow, or run your own instance from GitHub.",
-          429,
-        );
-      }
+    const rateResult = await checkRateLimit(ip, sessionId!);
+    if (!rateResult.allowed) {
+      return jsonError(
+        "You've used your free sessions for today. Come back tomorrow, or run your own instance from GitHub.",
+        429,
+      );
     }
 
     // Check daily spend cap
@@ -137,7 +157,7 @@ export async function POST(req: NextRequest) {
 
   try {
     if (provider === 'claude') {
-      return await handleClaude(messages, apiKey, modelId, stream);
+      return await handleClaude(messages, apiKey, effectiveModelId, stream);
     } else {
       return jsonError('Unknown provider.', 400);
     }
@@ -208,7 +228,7 @@ async function handleClaude(messages: { role: string; content: string }[], apiKe
           const usageEvent = `data: ${JSON.stringify({ type: 'usage', inputTokens, outputTokens })}\n\n`;
           controller.enqueue(encoder.encode(usageEvent));
           // Fire-and-forget spend tracking
-          recordSpend(inputTokens, outputTokens).catch(() => {});
+          recordSpend(modelId, inputTokens, outputTokens).catch(() => {});
         }
       },
     });
@@ -224,7 +244,7 @@ async function handleClaude(messages: { role: string; content: string }[], apiKe
   // Non-streaming: read the full response and forward it
   const data = await response.json();
   if (data.usage) {
-    recordSpend(data.usage.input_tokens || 0, data.usage.output_tokens || 0).catch(() => {});
+    recordSpend(modelId, data.usage.input_tokens || 0, data.usage.output_tokens || 0).catch(() => {});
   }
   return new Response(JSON.stringify(data), {
     headers: {

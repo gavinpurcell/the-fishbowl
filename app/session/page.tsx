@@ -245,7 +245,7 @@ export default function SessionPage() {
     startedRef.current = true;
 
     const s = storeRef.current;
-    const provider = createProvider(s.provider, s.apiKey, s.modelId, s.sessionId);
+    const provider = createProvider(s.provider, s.apiKey, s.modelId, s.sessionId, s.hostedSessionToken);
     const localTranscript: TranscriptEntry[] = [];
     localTranscriptRef.current = localTranscript;
 

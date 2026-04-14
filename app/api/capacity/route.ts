@@ -1,5 +1,6 @@
 import { NextRequest } from 'next/server';
 import { checkRateLimit, checkSpendCap } from '@/lib/redis';
+import { createHostedSessionToken } from '@/lib/hostedSession';
 
 export const runtime = 'edge';
 
@@ -27,18 +28,25 @@ export async function GET(req: NextRequest) {
     });
   }
 
-  // Check per-IP rate limit (use a probe session ID — don't register a real one)
   const sessionId = req.nextUrl.searchParams.get('sessionId');
-  if (sessionId) {
-    const rate = await checkRateLimit(ip, sessionId);
-    if (!rate.allowed) {
-      return Response.json({
-        available: false,
-        reason: 'rate_limit',
-        remaining: rate.remaining,
-      });
-    }
+  if (!sessionId) {
+    return Response.json({ error: 'sessionId is required.' }, { status: 400 });
   }
 
-  return Response.json({ available: true });
+  // Reserve the session slot here so hosted sessions must begin through setup.
+  const rate = await checkRateLimit(ip, sessionId);
+  if (!rate.allowed) {
+    return Response.json({
+      available: false,
+      reason: 'rate_limit',
+      remaining: rate.remaining,
+    });
+  }
+
+  const sessionToken = await createHostedSessionToken(sessionId, ip);
+  if (!sessionToken) {
+    return Response.json({ error: 'Hosted session signing is not configured.' }, { status: 500 });
+  }
+
+  return Response.json({ available: true, sessionToken });
 }

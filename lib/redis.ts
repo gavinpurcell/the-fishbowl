@@ -1,4 +1,5 @@
 import { Redis } from '@upstash/redis';
+import { HOSTED_MODEL_ID } from '@/lib/hostedSession';
 
 // Lazy singleton — only connects when Upstash env vars are set
 let redis: Redis | null = null;
@@ -29,6 +30,39 @@ export interface RateLimitResult {
   limit: number;
 }
 
+async function inspectRateLimit(ip: string, sessionId: string, register: boolean): Promise<RateLimitResult> {
+  const r = getRedis();
+  const limit = DAILY_SESSION_LIMIT();
+  if (!r) return { allowed: true, remaining: limit, limit };
+
+  const key = `sessions:${ip}`;
+
+  try {
+    const isMember = await r.sismember(key, sessionId);
+    if (isMember) {
+      const count = await r.scard(key);
+      return { allowed: true, remaining: Math.max(0, limit - count), limit };
+    }
+
+    const count = await r.scard(key);
+    if (count >= limit) {
+      return { allowed: false, remaining: 0, limit };
+    }
+
+    if (register) {
+      await r.sadd(key, sessionId);
+      if (count === 0) {
+        await r.expire(key, SESSION_TTL);
+      }
+    }
+
+    return { allowed: true, remaining: Math.max(0, limit - count - (register ? 1 : 0)), limit };
+  } catch (err) {
+    console.error(`[Redis] Rate limit ${register ? 'check' : 'peek'} failed, allowing request:`, err);
+    return { allowed: true, remaining: limit, limit };
+  }
+}
+
 /**
  * Check (and optionally register) a session against the per-IP rate limit.
  * Returns { allowed, remaining, limit }.
@@ -37,38 +71,11 @@ export interface RateLimitResult {
  * within one Fishbowl session count as a single session.
  */
 export async function checkRateLimit(ip: string, sessionId: string): Promise<RateLimitResult> {
-  const r = getRedis();
-  const limit = DAILY_SESSION_LIMIT();
-  if (!r) return { allowed: true, remaining: limit, limit };
+  return inspectRateLimit(ip, sessionId, true);
+}
 
-  const key = `sessions:${ip}`;
-
-  try {
-    // Check if this session is already registered (existing session → always allow)
-    const isMember = await r.sismember(key, sessionId);
-    if (isMember) {
-      const count = await r.scard(key);
-      return { allowed: true, remaining: Math.max(0, limit - count), limit };
-    }
-
-    // New session — check if there's room
-    const count = await r.scard(key);
-    if (count >= limit) {
-      return { allowed: false, remaining: 0, limit };
-    }
-
-    // Register the new session
-    await r.sadd(key, sessionId);
-    // Set TTL only on first add (don't reset the clock on subsequent sessions)
-    if (count === 0) {
-      await r.expire(key, SESSION_TTL);
-    }
-
-    return { allowed: true, remaining: Math.max(0, limit - count - 1), limit };
-  } catch (err) {
-    console.error('[Redis] Rate limit check failed, allowing request:', err);
-    return { allowed: true, remaining: limit, limit };
-  }
+export async function peekRateLimit(ip: string, sessionId: string): Promise<RateLimitResult> {
+  return inspectRateLimit(ip, sessionId, false);
 }
 
 // ---------------------------------------------------------------------------
@@ -78,9 +85,11 @@ export async function checkRateLimit(ip: string, sessionId: string): Promise<Rat
 const SPEND_TTL = 172800; // 48 hours (spans midnight safely)
 const DAILY_SPEND_CAP = () => parseFloat(process.env.DAILY_SPEND_CAP || '100');
 
-// Sonnet 4.6 pricing (default model)
-const COST_PER_INPUT_TOKEN = 3 / 1_000_000;   // $3 per 1M input tokens
-const COST_PER_OUTPUT_TOKEN = 15 / 1_000_000;  // $15 per 1M output tokens
+const MODEL_PRICING: Record<string, { input: number; output: number }> = {
+  'claude-haiku-4-5-20251001': { input: 1 / 1_000_000, output: 5 / 1_000_000 },
+  [HOSTED_MODEL_ID]: { input: 3 / 1_000_000, output: 15 / 1_000_000 },
+  'claude-opus-4-6': { input: 15 / 1_000_000, output: 75 / 1_000_000 },
+};
 
 export interface SpendCheckResult {
   allowed: boolean;
@@ -111,11 +120,12 @@ export async function checkSpendCap(): Promise<SpendCheckResult> {
  * Record token usage against the daily spend counter.
  * Fire-and-forget — caller doesn't need to await this.
  */
-export async function recordSpend(inputTokens: number, outputTokens: number): Promise<void> {
+export async function recordSpend(modelId: string, inputTokens: number, outputTokens: number): Promise<void> {
   const r = getRedis();
   if (!r) return;
 
-  const cost = inputTokens * COST_PER_INPUT_TOKEN + outputTokens * COST_PER_OUTPUT_TOKEN;
+  const pricing = MODEL_PRICING[modelId] || MODEL_PRICING[HOSTED_MODEL_ID];
+  const cost = inputTokens * pricing.input + outputTokens * pricing.output;
   if (cost <= 0) return;
 
   const key = `spend:${todayKey()}`;

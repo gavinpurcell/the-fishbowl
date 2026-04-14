@@ -56,24 +56,37 @@ export default function SetupPage() {
 
   const handleStart = useCallback(async () => {
     const isHosted = process.env.NEXT_PUBLIC_HOSTED_MODE === 'true';
+    let sessionId: string | undefined;
+    let hostedSessionToken: string | undefined;
 
     if (isHosted) {
       setChecking(true);
       try {
-        const res = await fetch('/api/capacity');
+        sessionId = crypto.randomUUID();
+        const res = await fetch(`/api/capacity?sessionId=${encodeURIComponent(sessionId)}`, {
+          cache: 'no-store',
+        });
         const data = await res.json();
+        if (!res.ok) {
+          throw new Error(data.error || 'Unable to verify session availability.');
+        }
         if (!data.available) {
           router.push('/capacity');
           return;
         }
+        if (!data.sessionToken) {
+          throw new Error('Hosted session token missing from capacity check.');
+        }
+        hostedSessionToken = data.sessionToken;
       } catch {
-        // If capacity check fails, let them through — the session will handle errors
+        window.alert('The Fishbowl could not verify availability right now. Please reload and try again in a moment.');
+        return;
       } finally {
         setChecking(false);
       }
     }
 
-    store.startSession();
+    store.startSession(sessionId, hostedSessionToken);
     router.push('/session');
   }, [store, router]);
 

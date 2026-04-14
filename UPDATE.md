@@ -264,3 +264,132 @@ Outside of that, the remaining work is mostly code-health cleanup, not hidden ca
 - [`eslint.config.mjs`](/Users/gavinpurcell/the-fishbowl/eslint.config.mjs)
 - [`package.json`](/Users/gavinpurcell/the-fishbowl/package.json)
 - [`package-lock.json`](/Users/gavinpurcell/the-fishbowl/package-lock.json)
+
+---
+
+# Hosted Security Follow-Up
+
+Date: April 14, 2026
+
+## Why This Pass Happened
+
+After the pre-publish review, there were still two meaningful hosted-mode risks:
+
+- the public `/api/llm` route could still be hit directly by non-browser clients without a real app session
+- spend tracking assumed Sonnet pricing for all models, which would undercount cost if Opus was ever used
+
+This pass tightened the hosted deployment path specifically for `fishbowl.show`.
+
+## What Changed
+
+### 1. Hosted Mode Is Now Sonnet-Only
+
+File:
+
+- [`app/api/llm/route.ts`](/Users/gavinpurcell/the-fishbowl/app/api/llm/route.ts)
+
+Hosted requests now only accept:
+
+- `claude-sonnet-4-6`
+
+In hosted mode, the route rejects any other model ID even if the client tries to send one manually.
+
+### 2. Hosted Sessions Must Start From `/setup`
+
+Files:
+
+- [`app/api/capacity/route.ts`](/Users/gavinpurcell/the-fishbowl/app/api/capacity/route.ts)
+- [`lib/hostedSession.ts`](/Users/gavinpurcell/the-fishbowl/lib/hostedSession.ts)
+- [`app/setup/page.tsx`](/Users/gavinpurcell/the-fishbowl/app/setup/page.tsx)
+- [`lib/store.ts`](/Users/gavinpurcell/the-fishbowl/lib/store.ts)
+- [`providers/claude.ts`](/Users/gavinpurcell/the-fishbowl/providers/claude.ts)
+- [`providers/index.ts`](/Users/gavinpurcell/the-fishbowl/providers/index.ts)
+- [`providers/types.ts`](/Users/gavinpurcell/the-fishbowl/providers/types.ts)
+- [`app/session/page.tsx`](/Users/gavinpurcell/the-fishbowl/app/session/page.tsx)
+
+Flow now:
+
+1. `/setup` creates a fresh `sessionId`
+2. it calls `/api/capacity?sessionId=...`
+3. the server reserves the session slot in Redis
+4. the server returns a signed hosted session token
+5. that token is stored in session state and sent with all hosted `/api/llm` calls
+
+The LLM route now rejects hosted requests unless they have:
+
+- a real `sessionId`
+- a valid signed hosted session token
+- a same-origin browser `Origin` header
+
+This closes the main “curl the paid endpoint directly” hole from the review.
+
+### 3. Spend Tracking Now Uses Per-Model Pricing
+
+File:
+
+- [`lib/redis.ts`](/Users/gavinpurcell/the-fishbowl/lib/redis.ts)
+
+`recordSpend()` now takes `modelId` and uses model-specific pricing for:
+
+- Haiku 4.5
+- Sonnet 4.6
+- Opus 4.6
+
+That makes the daily spend cap accounting honest even if someone later expands model use.
+
+### 4. The Public `/test` Route Is Hidden In Hosted Mode
+
+File:
+
+- [`proxy.ts`](/Users/gavinpurcell/the-fishbowl/proxy.ts)
+
+Hosted deployments now return `404` for `/test`.
+
+This does not remove the route for local/dev work. It only keeps the public site cleaner and less surprising.
+
+## Verification
+
+Commands run:
+
+```bash
+npm run build
+npm run lint
+```
+
+Results:
+
+- production build passes
+- lint still has the same 7 warnings as before
+- no new lint errors were introduced by this pass
+
+## Notes For Claude
+
+If Claude picks this up next, the important context is:
+
+- hosted mode is intentionally locked to Sonnet 4.6 now
+- hosted sessions now require a server-issued signed token from `/api/capacity`
+- self-hosted behavior should remain unchanged
+- `/test` should stay hidden on hosted deploys unless there is a deliberate reason to expose it again
+
+### Env Vars To Check In Vercel
+
+- `ANTHROPIC_API_KEY`
+- `UPSTASH_REDIS_REST_URL`
+- `UPSTASH_REDIS_REST_TOKEN`
+- optional but recommended: `HOSTED_SESSION_SECRET`
+
+`HOSTED_SESSION_SECRET` currently falls back to `ANTHROPIC_API_KEY` if unset, which is functional but not ideal long-term.
+
+## Files Changed During This Pass
+
+- [`app/api/capacity/route.ts`](/Users/gavinpurcell/the-fishbowl/app/api/capacity/route.ts)
+- [`app/api/llm/route.ts`](/Users/gavinpurcell/the-fishbowl/app/api/llm/route.ts)
+- [`app/session/page.tsx`](/Users/gavinpurcell/the-fishbowl/app/session/page.tsx)
+- [`app/setup/page.tsx`](/Users/gavinpurcell/the-fishbowl/app/setup/page.tsx)
+- [`lib/hostedSession.ts`](/Users/gavinpurcell/the-fishbowl/lib/hostedSession.ts)
+- [`lib/redis.ts`](/Users/gavinpurcell/the-fishbowl/lib/redis.ts)
+- [`lib/store.ts`](/Users/gavinpurcell/the-fishbowl/lib/store.ts)
+- [`providers/claude.ts`](/Users/gavinpurcell/the-fishbowl/providers/claude.ts)
+- [`providers/index.ts`](/Users/gavinpurcell/the-fishbowl/providers/index.ts)
+- [`providers/types.ts`](/Users/gavinpurcell/the-fishbowl/providers/types.ts)
+- [`proxy.ts`](/Users/gavinpurcell/the-fishbowl/proxy.ts)

@@ -1,7 +1,12 @@
 import type { LLMProvider, Message, StreamEvent, GenerateResult } from './types';
 
 export class ClaudeProvider implements LLMProvider {
-  constructor(private apiKey: string, private modelId?: string, private sessionId?: string) {}
+  constructor(
+    private apiKey: string,
+    private modelId?: string,
+    private sessionId?: string,
+    private hostedSessionToken?: string,
+  ) {}
 
   async *stream(messages: Message[], options?: { signal?: AbortSignal }): AsyncIterable<StreamEvent> {
     const response = await fetch('/api/llm', {
@@ -14,6 +19,7 @@ export class ClaudeProvider implements LLMProvider {
         modelId: this.modelId,
         stream: true,
         sessionId: this.sessionId,
+        hostedSessionToken: this.hostedSessionToken,
       }),
       signal: options?.signal,
     });
@@ -72,6 +78,7 @@ export class ClaudeProvider implements LLMProvider {
         modelId: this.modelId,
         stream: false,
         sessionId: this.sessionId,
+        hostedSessionToken: this.hostedSessionToken,
       }),
     });
 

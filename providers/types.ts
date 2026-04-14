@@ -24,4 +24,5 @@ export interface LLMRequestBody {
   modelId?: string;
   stream?: boolean;
   sessionId?: string;
+  hostedSessionToken?: string;
 }
