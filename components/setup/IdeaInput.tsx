@@ -113,7 +113,7 @@ export default function IdeaInput({ ideaText, ideaFiles, onTextChange, onFilesCh
           style={{
             fontFamily: "'DM Mono', monospace",
             fontSize: '8px',
-            color: '#6a6258',
+            color: 'var(--text-muted)',
             letterSpacing: '0.14em',
           }}
         >

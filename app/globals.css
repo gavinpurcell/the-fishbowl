@@ -224,6 +224,10 @@ body::before {
   border-top: 1px dashed #524a44;
 }
 
+[data-theme="light"] .dashed-divider {
+  border-top: 1px dashed #c0b8a8;
+}
+
 /* Hard pixel-shadow hover — replaces gold-glow halos */
 .specimen-hover {
   transition: transform 0.08s ease, box-shadow 0.08s ease;
