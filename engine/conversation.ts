@@ -148,58 +148,26 @@ export class ConversationOrchestrator {
       return prefetched;
     });
 
-    // Hybrid pre-warm: panelist 0 generates alone. Once their take is final,
-    // panelists 1..N kick off in parallel, each with panelist 0's take in their
-    // "already said" context. Wall-clock ~2x single-panelist time instead of
-    // ~Nx, while still preventing the worst repetition (where later panelists
-    // had no idea what the first one said).
-    const buildPrompt = (
-      panelist: Panelist,
-      idx: number,
-      priorTakes: { name: string; role: string; text: string }[]
-    ): string => {
-      const roundContext = priorTakes.length > 0
-        ? `Already said by your fellow panelists in this opening round (do not echo any of these arguments, framings, or examples — find a genuinely different angle):\n\n${priorTakes
-            .map((p) => `${p.name} (${p.role}): ${p.text}`)
-            .join('\n\n')}\n\n`
-        : '';
-      return `${ideaContext}\n\n${roundContext}You are panelist ${idx + 1} of ${totalPanelists}. React naturally, like you just heard this pitch for the first time. Focus specifically on what your expertise as a ${panelist.role} reveals that a generalist would miss. Don't give a broad overview. Go deep on the one or two things that matter most from YOUR perspective. Be specific and draw on your expertise. Keep your response to 100-200 words. Write in plain text only. No markdown, no em-dashes, no formatting.`;
-    };
-
-    const runOne = async (
-      panelist: Panelist,
-      idx: number,
-      priorTakes: { name: string; role: string; text: string }[]
-    ): Promise<void> => {
+    // Full parallel: initial takes are each panelist's first-impression
+    // reaction, anchored to their distinct role, so cross-repetition risk is
+    // low and not worth the wall-clock cost of any sequencing here.
+    // Cross-talk (prefetchCrossTalk) is where panelists react to each other
+    // and where staying sequential matters.
+    for (let idx = 0; idx < this.panelists.length; idx++) {
+      const panelist = this.panelists[idx];
       const prefetched = slots[idx];
+      const prompt = `${ideaContext}\n\nYou are panelist ${idx + 1} of ${totalPanelists}. React naturally, like you just heard this pitch for the first time. Focus specifically on what your expertise as a ${panelist.role} reveals that a generalist would miss. Don't give a broad overview. Go deep on the one or two things that matter most from YOUR perspective. Be specific and draw on your expertise. Keep your response to 100-200 words. Write in plain text only. No markdown, no em-dashes, no formatting.`;
       const messages: Message[] = [
         { role: 'system', content: panelist.systemPrompt },
-        { role: 'user', content: buildPrompt(panelist, idx, priorTakes) },
+        { role: 'user', content: prompt },
       ];
-      try {
-        await this.prefetchWithRetry(panelist, messages, prefetched);
-      } catch (err) {
+
+      this.prefetchWithRetry(panelist, messages, prefetched).catch((err) => {
         console.error(`[prefetch] Unhandled error for panelist ${panelist.id}:`, err);
         prefetched.error = err instanceof Error ? err.message : String(err);
         prefetched.ready = true;
-      }
-    };
-
-    (async () => {
-      // Phase 1: panelist 0 alone, no prior takes.
-      await runOne(this.panelists[0], 0, []);
-      if (this.aborted) return;
-
-      const first = slots[0];
-      const priorTakes = first.text.trim() && !first.error
-        ? [{ name: this.panelists[0].name, role: this.panelists[0].role, text: first.text.trim() }]
-        : [];
-
-      // Phase 2: panelists 1..N in parallel, each anchored against panelist 0.
-      await Promise.all(
-        this.panelists.slice(1).map((panelist, i) => runOne(panelist, i + 1, priorTakes))
-      );
-    })();
+      });
+    }
   }
 
   /**
