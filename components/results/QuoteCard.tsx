@@ -268,6 +268,17 @@ async function renderQuoteCard(
     ctx.fillText(lines[i], quoteColX, startY + i * lineHeight);
   }
 
+  // ── 4b. Marketing CTA ──────────────────────────────────────────────────────
+  // Big, centered, in the empty band between the quote and the bottom strip.
+  if ('letterSpacing' in ctx) {
+    (ctx as CanvasRenderingContext2D & { letterSpacing: string }).letterSpacing = '0em';
+  }
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'alphabetic';
+  ctx.font = "700 26px 'Outfit', sans-serif";
+  ctx.fillStyle = '#c49a2a';
+  ctx.fillText('Test your idea on a panel of AI experts at fishbowl.show', CARD_W / 2, 518);
+
   // ── 5. Bottom strip ────────────────────────────────────────────────────────
   // Dashed separator line
   ctx.save();
