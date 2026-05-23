@@ -87,16 +87,24 @@ export default function KeyboardHelp({ extraShortcuts = [] }: KeyboardHelpProps)
           fontFamily: "'Silkscreen', 'Courier New', monospace",
           fontSize: '14px',
           cursor: 'pointer',
-          boxShadow: '0 2px 8px rgba(0,0,0,0.4), 0 0 12px rgba(196,154,42,0.1)',
-          transition: 'transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease',
+          boxShadow: '2px 2px 0 var(--accent-gold)',
+          transition: 'transform 0.08s ease, box-shadow 0.08s ease',
         }}
         onMouseEnter={(e) => {
-          (e.currentTarget as HTMLElement).style.transform = 'translateY(-2px)';
-          (e.currentTarget as HTMLElement).style.boxShadow = '0 4px 12px rgba(0,0,0,0.5), 0 0 20px rgba(196,154,42,0.2)';
+          (e.currentTarget as HTMLElement).style.transform = 'translate(-2px, -2px)';
+          (e.currentTarget as HTMLElement).style.boxShadow = '4px 4px 0 var(--accent-gold)';
         }}
         onMouseLeave={(e) => {
-          (e.currentTarget as HTMLElement).style.transform = 'translateY(0)';
-          (e.currentTarget as HTMLElement).style.boxShadow = '0 2px 8px rgba(0,0,0,0.4), 0 0 12px rgba(196,154,42,0.1)';
+          (e.currentTarget as HTMLElement).style.transform = 'translate(0, 0)';
+          (e.currentTarget as HTMLElement).style.boxShadow = '2px 2px 0 var(--accent-gold)';
+        }}
+        onMouseDown={(e) => {
+          (e.currentTarget as HTMLElement).style.transform = 'translate(0, 0)';
+          (e.currentTarget as HTMLElement).style.boxShadow = '0 0 0 transparent';
+        }}
+        onMouseUp={(e) => {
+          (e.currentTarget as HTMLElement).style.transform = 'translate(-2px, -2px)';
+          (e.currentTarget as HTMLElement).style.boxShadow = '4px 4px 0 var(--accent-gold)';
         }}
       >
         ?

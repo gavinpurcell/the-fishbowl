@@ -206,7 +206,7 @@ export default function StatusBar({ round, panelistsSpoken, totalPanelists, onWr
                 color: round === 'moderation'
                   ? 'var(--accent-gold-light)'
                   : 'var(--accent-red)',
-                transition: 'all 0.15s ease',
+                transition: 'transform 0.08s ease, box-shadow 0.08s ease, background 0.15s ease',
                 textTransform: 'uppercase',
                 animation: round === 'moderation' ? 'wrapGoldPulseSubtle 3s ease-in-out infinite' : 'none',
                 position: 'relative',
@@ -215,7 +215,8 @@ export default function StatusBar({ round, panelistsSpoken, totalPanelists, onWr
                 const el = e.currentTarget;
                 if (round === 'moderation') {
                   el.style.background = 'linear-gradient(180deg, rgba(196, 154, 42, 0.4) 0%, rgba(196, 154, 42, 0.2) 100%)';
-                  el.style.boxShadow = '0 0 20px rgba(196, 154, 42, 0.4), 0 0 40px rgba(196, 154, 42, 0.15)';
+                  el.style.transform = 'translate(-2px, -2px)';
+                  el.style.boxShadow = '4px 4px 0 var(--accent-gold)';
                 } else {
                   el.style.background = 'rgba(232, 90, 74, 0.25)';
                   el.style.borderColor = 'rgba(232, 90, 74, 0.6)';
@@ -226,11 +227,26 @@ export default function StatusBar({ round, panelistsSpoken, totalPanelists, onWr
                 const el = e.currentTarget;
                 if (round === 'moderation') {
                   el.style.background = 'linear-gradient(180deg, rgba(196, 154, 42, 0.25) 0%, rgba(196, 154, 42, 0.12) 100%)';
+                  el.style.transform = '';
                   el.style.boxShadow = '';
                 } else {
                   el.style.background = 'rgba(232, 90, 74, 0.12)';
                   el.style.borderColor = 'rgba(232, 90, 74, 0.4)';
                   el.style.boxShadow = 'none';
+                }
+              }}
+              onMouseDown={(e) => {
+                const el = e.currentTarget;
+                if (round === 'moderation') {
+                  el.style.transform = 'translate(0, 0)';
+                  el.style.boxShadow = '0 0 0 transparent';
+                }
+              }}
+              onMouseUp={(e) => {
+                const el = e.currentTarget;
+                if (round === 'moderation') {
+                  el.style.transform = 'translate(-2px, -2px)';
+                  el.style.boxShadow = '4px 4px 0 var(--accent-gold)';
                 }
               }}
             >

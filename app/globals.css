@@ -112,13 +112,20 @@ body::before {
 }
 
 .cta-glow { animation: ctaGlow 3s ease-in-out infinite; }
+.cta-glow {
+  transition: transform 0.08s ease, box-shadow 0.08s ease;
+}
 .cta-glow:hover {
-  transform: translateY(-1px) scale(1.02);
-  box-shadow: 0 6px 24px rgba(196, 154, 42, 0.45) !important;
+  transform: translate(-2px, -2px);
+  box-shadow: 4px 4px 0 var(--accent-gold) !important;
+  animation: none;
 }
 .cta-glow:active {
-  transform: translateY(0px) scale(0.98);
-  box-shadow: 0 2px 8px rgba(196, 154, 42, 0.3) !important;
+  transform: translate(0, 0);
+  box-shadow: 0 0 0 transparent !important;
+}
+@media (prefers-reduced-motion: reduce) {
+  .cta-glow:hover { transform: none; }
 }
 
 @keyframes spin {
