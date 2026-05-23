@@ -154,6 +154,102 @@ body::before {
   }
 }
 
+/* ============================================================
+   Specimen Tag design language — see spec
+   docs/superpowers/specs/2026-05-22-specimen-tag-design-refresh.md
+   ============================================================ */
+
+.specimen-card {
+  background: var(--bg-card);
+  border: 1px solid #2a2422;
+  border-radius: 0;
+  position: relative;
+  overflow: hidden;
+}
+
+.brass-plate {
+  background: linear-gradient(180deg, #2a2422 0%, #1c1918 100%);
+  padding: 6px 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-bottom: 2px solid var(--brass-accent, var(--accent-gold));
+}
+
+.brass-screw {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: #524a44;
+  box-shadow: inset 1px 1px 0 #6a6258;
+  flex-shrink: 0;
+}
+
+.brass-label {
+  font-family: 'DM Mono', monospace;
+  font-size: 9px;
+  color: #8a8278;
+  letter-spacing: 0.18em;
+  flex: 1;
+}
+
+.brass-marker {
+  font-family: 'Silkscreen', monospace;
+  font-size: 9px;
+  color: var(--brass-accent, var(--accent-gold));
+}
+
+.pixel-frame {
+  padding: 3px;
+  background: var(--brass-accent, var(--accent-gold));
+  display: inline-block;
+  line-height: 0;
+}
+
+.dashed-divider {
+  border-top: 1px dashed #524a44;
+}
+
+/* Hard pixel-shadow hover — replaces gold-glow halos */
+.specimen-hover {
+  transition: transform 0.08s ease, box-shadow 0.08s ease;
+}
+.specimen-hover:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: 4px 4px 0 var(--brass-accent, var(--accent-gold));
+}
+.specimen-hover:active {
+  transform: translate(0, 0);
+  box-shadow: 0 0 0 transparent;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .specimen-hover:hover,
+  .specimen-hover:active {
+    transform: none;
+    box-shadow: none;
+  }
+}
+
+/* Light-theme overrides */
+[data-theme="light"] .specimen-card {
+  background: #ffffff;
+  border-color: #d4ccc2;
+}
+
+[data-theme="light"] .brass-plate {
+  background: linear-gradient(180deg, #ebe5d8 0%, #faf6f0 100%);
+}
+
+[data-theme="light"] .brass-screw {
+  background: #c0b8a8;
+  box-shadow: inset 1px 1px 0 #d4ccc2;
+}
+
+[data-theme="light"] .brass-label {
+  color: #5a5248;
+}
+
 /* Global focus-visible ring for keyboard navigation */
 button:focus-visible, input:focus-visible, a:focus-visible, textarea:focus-visible, select:focus-visible {
   outline: 2px solid var(--accent-gold);
