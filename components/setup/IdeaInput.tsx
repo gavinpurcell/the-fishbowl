@@ -3,6 +3,8 @@
 import { useState, useCallback } from 'react';
 import type { FileContent } from '@/engine/types';
 import { parseFiles } from '@/lib/fileParser';
+import { useFishbowlStore } from '@/lib/store';
+import { HOSTED_MODEL_ID } from '@/lib/hostedSession';
 
 interface Props {
   ideaText: string;
@@ -11,10 +13,90 @@ interface Props {
   onFilesChange: (files: FileContent[]) => void;
 }
 
+const SUGGEST_PROMPT = `Read the document(s) below and extract a single short topic line — the kind of one-sentence pitch a person would put in a "what should the panel evaluate?" box.
+
+Rules:
+- Output ONE sentence, max ~15 words.
+- No preamble, no quotes around it, no "Topic:" prefix. Just the sentence.
+- Use plain language. No marketing fluff.
+- Examples of good output:
+    "Pre-seed AI dog walker for urban professionals"
+    "Series B SaaS pricing redesign for mid-market customers"
+    "Should I send this resignation email tomorrow"
+
+Documents:`;
+
 export default function IdeaInput({ ideaText, ideaFiles, onTextChange, onFilesChange }: Props) {
   const [isDragging, setIsDragging] = useState(false);
   const [fileError, setFileError] = useState<string | null>(null);
   const [flashingFiles, setFlashingFiles] = useState<Set<string>>(new Set());
+  const [isSuggesting, setIsSuggesting] = useState(false);
+
+  const apiKey = useFishbowlStore((s) => s.apiKey);
+  const provider = useFishbowlStore((s) => s.provider);
+  const hostedSessionToken = useFishbowlStore((s) => s.hostedSessionToken);
+  const sessionId = useFishbowlStore((s) => s.sessionId);
+  const isHosted = process.env.NEXT_PUBLIC_HOSTED_MODE === 'true';
+
+  const handleSuggestTopic = useCallback(async () => {
+    if (ideaFiles.length === 0 || isSuggesting) return;
+    setIsSuggesting(true);
+    setFileError(null);
+
+    const documentBlock = ideaFiles
+      .map((f) => `=== ${f.name} ===\n${f.content.slice(0, 12000)}`)
+      .join('\n\n');
+
+    try {
+      const body: Record<string, unknown> = {
+        messages: [
+          { role: 'user', content: `${SUGGEST_PROMPT}\n\n${documentBlock}` },
+        ],
+        provider: 'claude',
+        // Hosted mode only allows Sonnet; BYOK can use Haiku for speed/cost.
+        modelId: isHosted ? HOSTED_MODEL_ID : 'claude-haiku-4-5-20251001',
+        stream: false,
+      };
+      if (isHosted) {
+        body.sessionId = sessionId;
+        body.hostedSessionToken = hostedSessionToken;
+      } else {
+        body.apiKey = apiKey;
+      }
+
+      const res = await fetch('/api/llm', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: 'Suggestion failed.' }));
+        throw new Error(err.error || `HTTP ${res.status}`);
+      }
+
+      // Non-streaming Claude API response shape:
+      // { content: [{ type: 'text', text: '...' }, ...], usage: {...}, ... }
+      const data = await res.json();
+      const textBlock = Array.isArray(data?.content)
+        ? data.content.find((b: { type?: string }) => b?.type === 'text')
+        : null;
+      const text = (textBlock?.text || '').toString().trim();
+      if (text) {
+        onTextChange(text.replace(/^["']|["']$/g, '').replace(/\.$/, ''));
+      } else {
+        setFileError("Couldn't extract a topic from the evidence.");
+      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Suggestion failed.';
+      setFileError(`Suggest topic: ${message}`);
+    } finally {
+      setIsSuggesting(false);
+    }
+  }, [ideaFiles, isSuggesting, isHosted, sessionId, hostedSessionToken, apiKey, onTextChange]);
+
+  // Suppress unused-var warning for provider — kept in case future expansion routes to other providers.
+  void provider;
 
   const handleFilesWithFeedback = useCallback(async (files: FileList | File[]) => {
     setFileError(null);
@@ -220,6 +302,30 @@ export default function IdeaInput({ ideaText, ideaFiles, onTextChange, onFilesCh
                 </button>
               </div>
             ))}
+
+            {/* Suggest topic from evidence — only shown when files are present */}
+            <button
+              onClick={handleSuggestTopic}
+              disabled={isSuggesting}
+              className="w-full text-xs p-2 rounded-lg transition-colors flex items-center justify-center gap-2"
+              style={{
+                background: 'transparent',
+                border: '1px dashed rgba(196, 154, 42, 0.4)',
+                color: isSuggesting ? 'var(--text-muted)' : 'var(--accent-gold)',
+                cursor: isSuggesting ? 'wait' : 'pointer',
+                fontFamily: "'DM Mono', monospace",
+                letterSpacing: '0.08em',
+                textTransform: 'uppercase',
+                fontSize: '10px',
+              }}
+            >
+              <svg width="11" height="11" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0 }}>
+                <path d="M8 1.5l1.5 4 4 1.5-4 1.5L8 12.5l-1.5-4-4-1.5 4-1.5L8 1.5z" fill="currentColor" opacity="0.85" />
+              </svg>
+              {isSuggesting ? 'Reading evidence…' : ideaText.trim()
+                ? 'Replace subject with evidence summary'
+                : 'Suggest topic from evidence'}
+            </button>
           </div>
         )}
       </div>
