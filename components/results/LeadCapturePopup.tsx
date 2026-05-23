@@ -87,7 +87,7 @@ export default function LeadCapturePopup({ onDismiss, ideaText }: Props) {
         <div
           style={{
             height: '2px',
-            background: 'linear-gradient(90deg, transparent, var(--accent-gold), transparent)',
+            background: 'var(--accent-gold)',
           }}
         />
 

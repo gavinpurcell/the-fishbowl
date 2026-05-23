@@ -170,7 +170,7 @@ export default function KeyboardHelp({ extraShortcuts = [] }: KeyboardHelpProps)
             }}
           >
             {/* Top gold accent line */}
-            <div style={{ height: '2px', background: 'linear-gradient(90deg, transparent 5%, var(--accent-gold) 30%, var(--accent-gold-light) 50%, var(--accent-gold) 70%, transparent 95%)' }} />
+            <div style={{ height: '2px', background: 'var(--accent-gold)' }} />
 
             {/* Header */}
             <div style={{ padding: '18px 22px 0' }}>

@@ -71,7 +71,8 @@ export default function StatusBar({ round, panelistsSpoken, totalPanelists, onWr
       <div
         style={{
           height: '1px',
-          background: 'linear-gradient(90deg, transparent, rgba(196, 154, 42, 0.5), transparent)',
+          background: 'var(--accent-gold)',
+          opacity: 0.5,
         }}
       />
 
