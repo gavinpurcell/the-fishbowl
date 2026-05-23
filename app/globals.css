@@ -545,36 +545,6 @@ html, body {
 /*  Setup Page — Character Card & Mission Briefing Styles        */
 /* ============================================================ */
 
-/* Character card — tactile, collectible feel */
-.character-card {
-  position: relative;
-  border-radius: 12px;
-  overflow: hidden;
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
-}
-
-[data-theme="light"] .character-card {
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
-}
-
-.character-card:hover {
-  transform: translateY(-2px);
-  border-color: var(--border-light);
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2), 0 0 30px rgba(196, 154, 42, 0.04);
-}
-
-[data-theme="light"] .character-card:hover {
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1), 0 0 30px rgba(196, 154, 42, 0.06);
-}
-
-/* Colored top border on character cards — like card rarity */
-.character-card-border {
-  height: 4px;
-  width: 100%;
-}
 
 /* Character portrait frame — pixel art friendly */
 .character-portrait {

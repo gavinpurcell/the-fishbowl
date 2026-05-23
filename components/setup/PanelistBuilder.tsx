@@ -94,28 +94,28 @@ export default function PanelistBuilder({ panelists, onUpdate }: Props) {
         {panelists.map((p, i) => (
           <div
             key={p.id}
-            className={`character-card animate-card-pop stagger-${i + 1}`}
+            className={`specimen-card specimen-hover animate-card-pop stagger-${i + 1}`}
+            style={{ ['--brass-accent' as string]: p.color }}
           >
-            {/* Color bar at top */}
-            <div className="character-card-border" style={{ background: p.color }} />
+            {/* Brass plate header */}
+            <div className="brass-plate">
+              <div className="brass-screw" />
+              <span className="brass-label">SPECIMEN · {String(i + 1).padStart(2, '0')} / 04</span>
+              <span className="brass-marker">{p.name.charAt(0).toUpperCase()}</span>
+              <div className="brass-screw" />
+            </div>
 
             {/* Card body */}
             <div className="p-3">
               <div className="flex items-start gap-3">
-                {/* Portrait */}
-                <div
-                  className="character-portrait"
-                  style={{ border: `2px solid ${p.color}40` }}
-                >
+                {/* Pixel-frame portrait */}
+                <div className="pixel-frame">
                   <Image
                     src={`/sprites/portraits/char_${p.spriteIndex}_portrait.png`}
                     alt={`${p.name} portrait`}
                     width={56}
                     height={56}
-                    style={{
-                      imageRendering: 'pixelated',
-                      borderRadius: '6px',
-                    }}
+                    style={{ imageRendering: 'pixelated', display: 'block' }}
                   />
                 </div>
 
@@ -125,14 +125,16 @@ export default function PanelistBuilder({ panelists, onUpdate }: Props) {
                     {p.name}
                   </div>
                   <div
-                    className="role-badge mt-1"
+                    className="mt-1"
                     style={{
-                      backgroundColor: p.color + '18',
                       color: p.color,
-                      border: `1px solid ${p.color}30`,
+                      fontFamily: "'DM Mono', monospace",
+                      fontSize: '9px',
+                      letterSpacing: '0.16em',
+                      textTransform: 'uppercase',
                     }}
                   >
-                    {p.role}
+                    Genus: {p.role}
                   </div>
                 </div>
               </div>
@@ -152,26 +154,34 @@ export default function PanelistBuilder({ panelists, onUpdate }: Props) {
               </p>
 
               {/* Actions */}
-              <div className="flex items-center gap-2 mt-3 pt-2" style={{ borderTop: `1px solid var(--border)` }}>
+              <div className="flex items-center gap-2 mt-3 pt-2 dashed-divider">
                 <button
                   onClick={() => editingId === p.id ? setEditingId(null) : startEditing(p)}
                   className="text-[10px] font-500 px-2 py-1 rounded transition-colors"
                   style={{
                     color: 'var(--accent-gold)',
                     background: editingId === p.id ? 'rgba(196, 154, 42, 0.1)' : 'transparent',
+                    fontFamily: "'DM Mono', monospace",
+                    letterSpacing: '0.1em',
+                    textTransform: 'uppercase',
                   }}
                 >
-                  {editingId === p.id ? 'Close' : 'Edit Prompt'}
+                  {editingId === p.id ? 'Close' : '▸ Annotate'}
                 </button>
                 <div style={{ flex: 1 }} />
                 <button
                   onClick={() => removePanelist(p.id)}
                   className="text-[10px] px-2 py-1 rounded transition-colors"
-                  style={{ color: 'var(--text-muted)' }}
+                  style={{
+                    color: 'var(--text-muted)',
+                    fontFamily: "'DM Mono', monospace",
+                    letterSpacing: '0.1em',
+                    textTransform: 'uppercase',
+                  }}
                   onMouseEnter={(e) => e.currentTarget.style.color = 'var(--accent-red)'}
                   onMouseLeave={(e) => e.currentTarget.style.color = 'var(--text-muted)'}
                 >
-                  Remove
+                  Release
                 </button>
               </div>
             </div>
