@@ -887,7 +887,7 @@ export default function SessionPage() {
           {viewMode === 'intro' && (
             <IntroOverlay
               topic={store.ideaText}
-              panelists={store.panelists.map((p) => ({ id: p.id, name: p.name, role: p.role, color: p.color }))}
+              panelists={store.panelists.map((p) => ({ id: p.id, name: p.name, role: p.role, color: p.color, spriteIndex: p.spriteIndex, description: p.description }))}
               onComplete={handleIntroComplete}
               ready={firstTakeReady}
             />

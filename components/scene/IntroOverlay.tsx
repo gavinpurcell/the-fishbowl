@@ -1,10 +1,11 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import Image from 'next/image';
 
 interface IntroOverlayProps {
   topic: string;
-  panelists: Array<{ id: string; name: string; role: string; color: string }>;
+  panelists: Array<{ id: string; name: string; role: string; color: string; spriteIndex: number; description: string }>;
   onComplete: () => void;
   /** When true, at least one initial take is ready — safe to proceed */
   ready?: boolean;
@@ -143,7 +144,9 @@ export default function IntroOverlay({ topic, panelists, onComplete, ready = fal
           justify-content: center;
           width: 100%;
           max-width: 700px;
-          padding: 0 24px;
+          max-height: 100vh;
+          overflow-y: auto;
+          padding: 24px;
           gap: 32px;
         }
       `}</style>
@@ -218,49 +221,71 @@ export default function IntroOverlay({ topic, panelists, onComplete, ready = fal
             Your Panel
           </div>
 
-          {/* Panelist list */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', width: '100%', maxWidth: '400px' }}>
+          {/* Panelist specimen cards */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', width: '100%', maxWidth: '460px' }}>
             {panelists.map((p, i) => (
               <div
                 key={p.id}
                 style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '12px',
                   opacity: 0,
                   animation: `introPanelistIn 500ms ease-out ${1400 + i * 150}ms forwards`,
                 }}
               >
                 <div
-                  style={{
-                    width: '3px',
-                    height: '20px',
-                    background: p.color,
-                    borderRadius: '2px',
-                    flexShrink: 0,
-                  }}
-                />
-                <span
-                  style={{
-                    fontFamily: "'Silkscreen', 'Courier New', monospace",
-                    fontSize: 'clamp(0.8rem, 1.8vw, 1rem)',
-                    color: p.color,
-                    letterSpacing: '0.04em',
-                  }}
+                  className="specimen-card"
+                  style={{ ['--brass-accent' as string]: p.color }}
                 >
-                  {p.name}
-                </span>
-                <span
-                  style={{
-                    fontFamily: "'DM Mono', monospace",
-                    fontSize: 'clamp(0.5rem, 1vw, 0.65rem)',
-                    color: 'rgba(255, 255, 255, 0.35)',
-                    letterSpacing: '0.08em',
-                    textTransform: 'uppercase',
-                  }}
-                >
-                  {p.role}
-                </span>
+                  <div className="brass-plate">
+                    <div className="brass-screw" />
+                    <span className="brass-label">
+                      NOW IN THE FISHBOWL · {String(i + 1).padStart(2, '0')} / {String(panelists.length).padStart(2, '0')}
+                    </span>
+                    <span className="brass-marker" style={{ color: p.color }}>LIVE</span>
+                    <div className="brass-screw" />
+                  </div>
+                  <div className="p-4">
+                    <div className="flex gap-3 items-center">
+                      <div className="pixel-frame">
+                        <Image
+                          src={`/sprites/portraits/char_${p.spriteIndex}_portrait.png`}
+                          alt={p.name}
+                          width={72}
+                          height={72}
+                          style={{ imageRendering: 'pixelated', display: 'block' }}
+                        />
+                      </div>
+                      <div className="flex-1">
+                        <div
+                          style={{
+                            color: 'var(--text-primary)',
+                            fontFamily: "'Silkscreen', monospace",
+                            fontSize: '16px',
+                          }}
+                        >
+                          {p.name}
+                        </div>
+                        <div
+                          style={{
+                            color: p.color,
+                            fontFamily: "'DM Mono', monospace",
+                            fontSize: '10px',
+                            letterSpacing: '0.16em',
+                            textTransform: 'uppercase',
+                            marginTop: '4px',
+                          }}
+                        >
+                          {p.role}
+                        </div>
+                        <p
+                          className="mt-2 text-xs leading-relaxed"
+                          style={{ color: 'var(--text-muted)' }}
+                        >
+                          {p.description}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
             ))}
           </div>
