@@ -231,6 +231,7 @@ export default function ResultsPage() {
             <QuoteCard
               transcript={store.transcript}
               panelists={store.panelists}
+              topic={store.ideaText}
             />
           </div>
         )}

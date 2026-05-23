@@ -6,6 +6,7 @@ import type { TranscriptEntry, Panelist } from '@/engine/types';
 interface QuoteCardProps {
   transcript: TranscriptEntry[];
   panelists: Panelist[];
+  topic?: string;
 }
 
 interface QuoteOption {
@@ -13,6 +14,7 @@ interface QuoteOption {
   panelistName: string;
   role: string;
   spriteIndex: number;
+  panelistColor: string;
 }
 
 /** Pick one best quote per panelist — the punchiest sentence from their contributions */
@@ -45,6 +47,7 @@ function pickQuotes(transcript: TranscriptEntry[], panelists: Panelist[]): Quote
           panelistName: p.name,
           role: p.role,
           spriteIndex: p.spriteIndex,
+          panelistColor: p.color,
           _score: score,
         };
         bestByPanelist.set(p.name, option);
@@ -60,110 +63,18 @@ function pickQuotes(transcript: TranscriptEntry[], panelists: Panelist[]): Quote
 const CARD_W = 1200;
 const CARD_H = 630;
 
-async function renderQuoteCard(
-  quote: QuoteOption,
-  canvas: HTMLCanvasElement,
-): Promise<void> {
-  canvas.width = CARD_W;
-  canvas.height = CARD_H;
-  const ctx = canvas.getContext('2d')!;
-
-  // -- Background --
-  ctx.fillStyle = '#1a1714';
-  ctx.fillRect(0, 0, CARD_W, CARD_H);
-
-  // Subtle warm gradient overlay
-  const grad = ctx.createLinearGradient(0, 0, 0, CARD_H);
-  grad.addColorStop(0, 'rgba(232, 196, 74, 0.06)');
-  grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
-  ctx.fillStyle = grad;
-  ctx.fillRect(0, 0, CARD_W, CARD_H);
-
-  // -- Gold accent line at top --
-  ctx.fillStyle = '#e8c44a';
-  ctx.fillRect(0, 0, CARD_W, 4);
-
-  // -- Load portrait sprite --
-  const portraitSrc = `/sprites/portraits/char_${quote.spriteIndex}_portrait.png`;
-  const portrait = await loadImage(portraitSrc);
-
-  // Draw portrait — large, left side
-  const portraitSize = 220;
-  const portraitX = 60;
-  const portraitY = CARD_H / 2 - portraitSize / 2 - 10;
-
-  // Circular clip with gold border
-  ctx.save();
-  ctx.beginPath();
-  ctx.arc(portraitX + portraitSize / 2, portraitY + portraitSize / 2, portraitSize / 2 + 4, 0, Math.PI * 2);
-  ctx.fillStyle = '#e8c44a';
-  ctx.fill();
-  ctx.beginPath();
-  ctx.arc(portraitX + portraitSize / 2, portraitY + portraitSize / 2, portraitSize / 2, 0, Math.PI * 2);
-  ctx.clip();
-  ctx.imageSmoothingEnabled = false; // keep pixel art crisp
-  ctx.drawImage(portrait, portraitX, portraitY, portraitSize, portraitSize);
-  ctx.restore();
-
-  // -- Name + Role below portrait --
-  ctx.textAlign = 'center';
-  const nameCenterX = portraitX + portraitSize / 2;
-
-  ctx.font = 'bold 24px Helvetica, Arial, sans-serif';
-  ctx.fillStyle = '#ffffff';
-  ctx.fillText(quote.panelistName, nameCenterX, portraitY + portraitSize + 35);
-
-  ctx.font = '18px Helvetica, Arial, sans-serif';
-  ctx.fillStyle = '#e8c44a';
-  ctx.fillText(quote.role, nameCenterX, portraitY + portraitSize + 60);
-
-  // -- Quote text — right side --
-  ctx.textAlign = 'left';
-  const quoteX = 340;
-  const quoteMaxW = CARD_W - quoteX - 60;
-
-  // Big open quote mark
-  ctx.font = 'bold 120px Georgia, serif';
-  ctx.fillStyle = 'rgba(232, 196, 74, 0.3)';
-  ctx.fillText('\u201C', quoteX - 15, 120);
-
-  // Quote text
-  ctx.font = '28px Helvetica, Arial, sans-serif';
-  ctx.fillStyle = '#f0e8d8';
-  const lines = wrapText(ctx, quote.text, quoteMaxW);
-  const lineHeight = 38;
-  const totalTextH = lines.length * lineHeight;
-  const startY = Math.max(100, CARD_H / 2 - totalTextH / 2);
-
-  for (let i = 0; i < lines.length; i++) {
-    ctx.fillText(lines[i], quoteX, startY + i * lineHeight);
+/** Deterministic 3-digit catalog number from panelist name + topic */
+function catalogNumber(panelistName: string, topic: string): string {
+  const str = panelistName + '|' + topic;
+  let h = 0;
+  for (let i = 0; i < str.length; i++) {
+    h = (Math.imul(31, h) + str.charCodeAt(i)) | 0;
   }
-
-  // -- Fishbowl branding — bottom right --
-  ctx.textAlign = 'right';
-  ctx.font = 'bold 18px Courier, monospace';
-  ctx.fillStyle = 'rgba(232, 196, 74, 0.6)';
-  ctx.fillText('THE FISHBOWL', CARD_W - 50, CARD_H - 45);
-
-  ctx.font = '14px Helvetica, Arial, sans-serif';
-  ctx.fillStyle = 'rgba(240, 232, 216, 0.4)';
-  ctx.fillText('fishbowl.show', CARD_W - 50, CARD_H - 25);
-
-  // -- Gold accent line at bottom --
-  ctx.fillStyle = '#e8c44a';
-  ctx.fillRect(0, CARD_H - 4, CARD_W, 4);
+  const n = (Math.abs(h) % 999) + 1;
+  return String(n).padStart(3, '0');
 }
 
-function loadImage(src: string): Promise<HTMLImageElement> {
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    img.crossOrigin = 'anonymous';
-    img.onload = () => resolve(img);
-    img.onerror = reject;
-    img.src = src;
-  });
-}
-
+/** Word-wrap text to fit maxWidth, returns array of lines */
 function wrapText(ctx: CanvasRenderingContext2D, text: string, maxWidth: number): string[] {
   const words = text.split(' ');
   const lines: string[] = [];
@@ -182,7 +93,227 @@ function wrapText(ctx: CanvasRenderingContext2D, text: string, maxWidth: number)
   return lines;
 }
 
-export default function QuoteCard({ transcript, panelists }: QuoteCardProps) {
+/** Draw scanlines (1px every 4px) over a rect */
+function drawScanlines(
+  ctx: CanvasRenderingContext2D,
+  x: number, y: number, w: number, h: number,
+  alpha = 0.012,
+) {
+  ctx.save();
+  ctx.fillStyle = `rgba(255,255,255,${alpha})`;
+  for (let row = y; row < y + h; row += 4) {
+    ctx.fillRect(x, row, w, 1);
+  }
+  ctx.restore();
+}
+
+function loadImage(src: string): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => resolve(img);
+    img.onerror = reject;
+    img.src = src;
+  });
+}
+
+async function renderQuoteCard(
+  quote: QuoteOption,
+  canvas: HTMLCanvasElement,
+  topic: string,
+): Promise<void> {
+  canvas.width = CARD_W;
+  canvas.height = CARD_H;
+  const ctx = canvas.getContext('2d')!;
+
+  // Wait for fonts to be ready
+  await document.fonts.ready;
+
+  const panelistColor = quote.panelistColor || '#c49a2a';
+
+  // ── 1. Background ──────────────────────────────────────────────────────────
+  ctx.fillStyle = '#14110f';
+  ctx.fillRect(0, 0, CARD_W, CARD_H);
+  drawScanlines(ctx, 0, 0, CARD_W, CARD_H, 0.012);
+
+  // ── 2. Brass plate header (full width, 56px) ───────────────────────────────
+  const headerH = 56;
+  const headerGrad = ctx.createLinearGradient(0, 0, 0, headerH);
+  headerGrad.addColorStop(0, '#2a2422');
+  headerGrad.addColorStop(1, '#1c1918');
+  ctx.fillStyle = headerGrad;
+  ctx.fillRect(0, 0, CARD_W, headerH);
+
+  // Bottom accent line in panelist color
+  ctx.fillStyle = panelistColor;
+  ctx.fillRect(0, headerH - 2, CARD_W, 2);
+
+  // Screws — left and right
+  function drawScrew(cx: number, cy: number) {
+    // Outer circle
+    ctx.beginPath();
+    ctx.arc(cx, cy, 8, 0, Math.PI * 2);
+    ctx.fillStyle = '#524a44';
+    ctx.fill();
+    // Inner highlight (offset slightly for depth)
+    ctx.beginPath();
+    ctx.arc(cx - 1.5, cy - 1.5, 3.5, 0, Math.PI * 2);
+    ctx.fillStyle = '#6a6258';
+    ctx.fill();
+  }
+  drawScrew(28, 28);
+  drawScrew(1172, 28);
+
+  // Center label "FROM THE FISHBOWL"
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'middle';
+  ctx.fillStyle = '#8a8278';
+  ctx.font = "14px 'DM Mono', monospace";
+  if ('letterSpacing' in ctx) {
+    (ctx as CanvasRenderingContext2D & { letterSpacing: string }).letterSpacing = '0.18em';
+  }
+  ctx.fillText('FROM THE FISHBOWL', 64, 28);
+
+  // Right catalog number — reset letter spacing first
+  if ('letterSpacing' in ctx) {
+    (ctx as CanvasRenderingContext2D & { letterSpacing: string }).letterSpacing = '0.05em';
+  }
+  const catNum = `№ ${catalogNumber(quote.panelistName, topic)}`;
+  ctx.textAlign = 'right';
+  ctx.fillStyle = '#c49a2a';
+  ctx.font = "14px 'Silkscreen', monospace";
+  ctx.fillText(catNum, 1144, 28);
+
+  // Reset
+  if ('letterSpacing' in ctx) {
+    (ctx as CanvasRenderingContext2D & { letterSpacing: string }).letterSpacing = '0px';
+  }
+  ctx.textBaseline = 'alphabetic';
+
+  // ── 3. Portrait column (left) ─────────────────────────────────────────────
+  const portraitX = 28;
+  const portraitY = 128;
+  const portraitSize = 200;
+
+  // Load portrait sprite
+  const portraitSrc = `/sprites/portraits/char_${quote.spriteIndex}_portrait.png`;
+  let portrait: HTMLImageElement | null = null;
+  try {
+    portrait = await loadImage(portraitSrc);
+  } catch {
+    // Portrait failed to load — draw a placeholder box
+  }
+
+  // Outer border rect in panelist color
+  ctx.fillStyle = panelistColor;
+  ctx.fillRect(portraitX - 4, portraitY - 4, portraitSize + 8, portraitSize + 8);
+
+  // Dark inset background
+  ctx.fillStyle = '#0a0908';
+  ctx.fillRect(portraitX, portraitY, portraitSize, portraitSize);
+
+  // Draw portrait with pixelated rendering
+  if (portrait) {
+    ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(portrait, portraitX, portraitY, portraitSize, portraitSize);
+    ctx.imageSmoothingEnabled = true;
+  }
+
+  // Scanline overlay on portrait only
+  drawScanlines(ctx, portraitX, portraitY, portraitSize, portraitSize, 0.018);
+
+  // Panelist NAME centered over portrait x-range
+  const nameCenterX = portraitX + portraitSize / 2;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'alphabetic';
+  ctx.font = "18px 'Silkscreen', monospace";
+  ctx.fillStyle = '#faf6f0';
+  ctx.fillText(quote.panelistName, nameCenterX, 352);
+
+  // Panelist ROLE below name
+  ctx.font = "10px 'DM Mono', monospace";
+  ctx.fillStyle = '#c49a2a';
+  ctx.fillText(quote.role.toUpperCase(), nameCenterX, 372);
+
+  // ── 4. Quote column (right) ───────────────────────────────────────────────
+  const quoteColX = 260;
+  const quoteColW = CARD_W - quoteColX - 28; // 912px to x=1172
+
+  // Open-quote glyph
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'alphabetic';
+  ctx.font = "56px 'Silkscreen', monospace";
+  ctx.fillStyle = '#c49a2a';
+  ctx.fillText('“', quoteColX, 184);
+
+  // Quote text — Outfit 600 28px
+  ctx.font = "600 28px 'Outfit', sans-serif";
+  ctx.fillStyle = '#faf6f0';
+  const lines = wrapText(ctx, quote.text, quoteColW);
+  const lineHeight = 28 * 1.4; // ~39px
+  const totalTextH = lines.length * lineHeight;
+  // Center quote text vertically in the region from y=200 to y=540
+  const quoteRegionTop = 200;
+  const quoteRegionBottom = 540;
+  const quoteRegionH = quoteRegionBottom - quoteRegionTop;
+  const startY = quoteRegionTop + Math.max(0, (quoteRegionH - totalTextH) / 2) + 28;
+
+  for (let i = 0; i < lines.length; i++) {
+    ctx.fillText(lines[i], quoteColX, startY + i * lineHeight);
+  }
+
+  // ── 5. Bottom strip ────────────────────────────────────────────────────────
+  // Dashed separator line
+  ctx.save();
+  ctx.setLineDash([4, 4]);
+  ctx.strokeStyle = '#524a44';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(28, 560);
+  ctx.lineTo(1172, 560);
+  ctx.stroke();
+  ctx.restore();
+
+  // Left: Observation Request label + truncated topic
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'alphabetic';
+  ctx.font = "12px 'DM Mono', monospace";
+  ctx.fillStyle = '#8a8278';
+  if ('letterSpacing' in ctx) {
+    (ctx as CanvasRenderingContext2D & { letterSpacing: string }).letterSpacing = '0.08em';
+  }
+
+  const topicLabel = 'OBSERVATION REQUEST: ';
+  const labelWidth = ctx.measureText(topicLabel).width;
+  const maxTopicWidth = 700 - labelWidth;
+
+  let topicDisplay = topic.toUpperCase();
+  if (ctx.measureText(topicDisplay).width > maxTopicWidth) {
+    // Truncate with ellipsis
+    while (ctx.measureText(topicDisplay + '…').width > maxTopicWidth && topicDisplay.length > 0) {
+      topicDisplay = topicDisplay.slice(0, -1);
+    }
+    topicDisplay = topicDisplay.trimEnd() + '…';
+  }
+
+  ctx.fillText(topicLabel + topicDisplay, 28, 590);
+
+  // Right: fishbowl.show in gold
+  if ('letterSpacing' in ctx) {
+    (ctx as CanvasRenderingContext2D & { letterSpacing: string }).letterSpacing = '0.08em';
+  }
+  ctx.textAlign = 'right';
+  ctx.fillStyle = '#c49a2a';
+  ctx.fillText('FISHBOWL.SHOW', 1172, 590);
+
+  // Reset
+  if ('letterSpacing' in ctx) {
+    (ctx as CanvasRenderingContext2D & { letterSpacing: string }).letterSpacing = '0px';
+  }
+  ctx.textBaseline = 'alphabetic';
+}
+
+export default function QuoteCard({ transcript, panelists, topic = '' }: QuoteCardProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [quotes] = useState(() => pickQuotes(transcript, panelists));
   const [selectedIdx, setSelectedIdx] = useState(0);
@@ -193,9 +324,9 @@ export default function QuoteCard({ transcript, panelists }: QuoteCardProps) {
 
   const render = useCallback(async () => {
     if (!canvasRef.current || !selected) return;
-    await renderQuoteCard(selected, canvasRef.current);
+    await renderQuoteCard(selected, canvasRef.current, topic);
     setRendered(true);
-  }, [selected]);
+  }, [selected, topic]);
 
   // Auto-render when quote changes
   useEffect(() => {
@@ -235,7 +366,7 @@ export default function QuoteCard({ transcript, panelists }: QuoteCardProps) {
     // Copy image to clipboard first so user can paste it
     await handleCopyImage();
     const text = encodeURIComponent(
-      `"${selected.text}"\n\n\u2014 ${selected.panelistName}, AI panelist on The Fishbowl`
+      `"${selected.text}"\n\n— ${selected.panelistName}, AI panelist on The Fishbowl`
     );
     window.open(`https://twitter.com/intent/tweet?text=${text}`, '_blank');
   };
