@@ -1148,7 +1148,7 @@ export default function SessionPage() {
               {/* Topic banner */}
               {store.ideaText && (
                 <div className="topic-banner">
-                  <span className="topic-banner-label">Topic</span>
+                  <span className="topic-banner-label">Observation Request</span>
                   <span className="topic-banner-text">{store.ideaText}</span>
                 </div>
               )}

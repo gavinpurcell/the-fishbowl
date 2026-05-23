@@ -1,6 +1,7 @@
 'use client';
 
 import { Suspense, useEffect, useRef, useState, useCallback } from 'react';
+import Image from 'next/image';
 import { useSearchParams } from 'next/navigation';
 import { FishbowlScene, type LayoutEditorSnapshot } from '@/scene/FishbowlScene';
 import { loadAllSprites } from '@/lib/spriteLoader';
@@ -516,9 +517,12 @@ function TestPageContent() {
                             background: 'var(--dark-deep)',
                           }}
                         >
-                          <img
+                          <Image
                             src={`/sprites/portraits/char_${p.spriteIndex}_portrait.png`}
                             alt={`${p.name} portrait`}
+                            fill
+                            unoptimized
+                            sizes="48px"
                             className="absolute inset-0 w-full h-full object-contain"
                             style={{
                               imageRendering: 'pixelated',
@@ -581,9 +585,12 @@ function TestPageContent() {
                           boxShadow: `0 0 16px ${currentPanelist.color}20`,
                         }}
                       >
-                        <img
+                        <Image
                           src={`/sprites/portraits/char_${currentPanelist.spriteIndex}_portrait.png`}
                           alt={`${currentPanelist.name} portrait`}
+                          fill
+                          unoptimized
+                          sizes="96px"
                           className="absolute inset-0 w-full h-full object-contain"
                           style={{
                             imageRendering: 'pixelated',
@@ -694,7 +701,7 @@ function TestPageContent() {
             <div style={{ position: 'sticky', top: 0, zIndex: 10 }}>
               {/* Topic banner */}
               <div className="max-w-[800px] mx-auto topic-banner">
-                <span className="topic-banner-label">Topic</span>
+                <span className="topic-banner-label">Observation Request</span>
                 <span className="topic-banner-text">Help me design a new logo for my coffee shop</span>
               </div>
               {/* On small screens, show a note that the scene is best on desktop */}

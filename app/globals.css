@@ -335,55 +335,69 @@ html, body {
   font-family: 'DM Mono', monospace;
 }
 
-/* Topic banner above the scene — reminds user what's being discussed */
+/* Topic banner above the scene — reminds user what's being discussed.
+   Specimen-style: brass-plate strip on top with screws + caps label, then
+   the user's topic underneath. */
 .topic-banner {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 10px 16px;
-  background: linear-gradient(135deg, var(--dark-deep, #111) 0%, var(--dark-surface, #1a1a1a) 100%);
-  border: 1px solid var(--dark-border, #333);
-  border-bottom: none;
-  border-radius: 10px 10px 0 0;
+  gap: 8px;
+  padding: 6px 10px;
+  background: linear-gradient(180deg, #2a2422 0%, #1c1918 100%);
+  border: 1px solid #2a2422;
+  border-bottom: 2px solid var(--accent-gold);
+  border-radius: 0;
   font-family: 'DM Mono', monospace;
   font-size: 12px;
   line-height: 1.4;
   position: relative;
-  overflow: hidden;
 }
 
-/* Subtle gold accent line at top */
-.topic-banner::before {
+.topic-banner::before,
+.topic-banner::after {
   content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, var(--accent-gold, #c49a2a) 30%, var(--accent-gold, #c49a2a) 70%, transparent);
-  opacity: 0.4;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: #524a44;
+  box-shadow: inset 1px 1px 0 #6a6258;
+  flex-shrink: 0;
 }
 
 .topic-banner-label {
-  font-family: 'Silkscreen', 'Courier New', monospace;
-  font-size: 8px;
-  letter-spacing: 0.16em;
+  font-family: 'DM Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: var(--dark-deep, #111);
-  background: var(--accent-gold, #c49a2a);
-  padding: 2px 8px;
-  border-radius: 3px;
+  color: #8a8278;
+  background: transparent;
+  padding: 0;
+  border-radius: 0;
   flex-shrink: 0;
   font-weight: 400;
 }
 
 .topic-banner-text {
-  color: rgba(255, 255, 255, 0.55);
+  color: var(--text-primary);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 11px;
-  letter-spacing: 0.02em;
+  font-size: 12px;
+  letter-spacing: 0.01em;
+  flex: 1;
+}
+
+[data-theme="light"] .topic-banner {
+  background: linear-gradient(180deg, #ebe5d8 0%, #faf6f0 100%);
+  border-color: #d4ccc2;
+}
+[data-theme="light"] .topic-banner::before,
+[data-theme="light"] .topic-banner::after {
+  background: #c0b8a8;
+  box-shadow: inset 1px 1px 0 #d4ccc2;
+}
+[data-theme="light"] .topic-banner-label {
+  color: #5a5248;
 }
 
 /* Scene viewport — retro CRT-style frame */

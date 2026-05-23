@@ -1,6 +1,7 @@
 'use client';
 
 import { Suspense, useEffect, useRef, useState, useCallback } from 'react';
+import Image from 'next/image';
 import { FishbowlScene } from '@/scene/FishbowlScene';
 import { loadAllSprites } from '@/lib/spriteLoader';
 import type { Panelist, RoundType, TranscriptEntry } from '@/engine/types';
@@ -426,9 +427,12 @@ function DemoPageContent() {
                           background: 'var(--dark-deep)',
                         }}
                       >
-                        <img
+                        <Image
                           src={`/sprites/portraits/char_${p.spriteIndex}_portrait.png`}
                           alt={`${p.name} portrait`}
+                          fill
+                          unoptimized
+                          sizes="48px"
                           className="absolute inset-0 w-full h-full object-contain"
                           style={{ imageRendering: 'pixelated' }}
                         />
@@ -483,9 +487,12 @@ function DemoPageContent() {
                         boxShadow: `0 0 16px ${currentPanelist.color}20`,
                       }}
                     >
-                      <img
+                      <Image
                         src={`/sprites/portraits/char_${currentPanelist.spriteIndex}_portrait.png`}
                         alt={`${currentPanelist.name} portrait`}
+                        fill
+                        unoptimized
+                        sizes="96px"
                         className="absolute inset-0 w-full h-full object-contain"
                         style={{ imageRendering: 'pixelated' }}
                       />
@@ -585,7 +592,7 @@ function DemoPageContent() {
           <div style={{ position: 'sticky', top: 0, zIndex: 10 }}>
             {/* Topic banner */}
             <div className="max-w-[800px] mx-auto topic-banner">
-              <span className="topic-banner-label">Topic</span>
+              <span className="topic-banner-label">Observation Request</span>
               <span className="topic-banner-text">{DEMO_IDEA}</span>
             </div>
             <div className="sm:hidden text-center mb-2">
