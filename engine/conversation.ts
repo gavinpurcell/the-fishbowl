@@ -148,46 +148,57 @@ export class ConversationOrchestrator {
       return prefetched;
     });
 
-    // Sequential generation: panelist N sees panelists 1..N-1's finished takes.
-    // Public signature stays void; the chain runs in the background.
-    (async () => {
-      const priorTakes: { name: string; role: string; text: string }[] = [];
+    // Hybrid pre-warm: panelist 0 generates alone. Once their take is final,
+    // panelists 1..N kick off in parallel, each with panelist 0's take in their
+    // "already said" context. Wall-clock ~2x single-panelist time instead of
+    // ~Nx, while still preventing the worst repetition (where later panelists
+    // had no idea what the first one said).
+    const buildPrompt = (
+      panelist: Panelist,
+      idx: number,
+      priorTakes: { name: string; role: string; text: string }[]
+    ): string => {
+      const roundContext = priorTakes.length > 0
+        ? `Already said by your fellow panelists in this opening round (do not echo any of these arguments, framings, or examples — find a genuinely different angle):\n\n${priorTakes
+            .map((p) => `${p.name} (${p.role}): ${p.text}`)
+            .join('\n\n')}\n\n`
+        : '';
+      return `${ideaContext}\n\n${roundContext}You are panelist ${idx + 1} of ${totalPanelists}. React naturally, like you just heard this pitch for the first time. Focus specifically on what your expertise as a ${panelist.role} reveals that a generalist would miss. Don't give a broad overview. Go deep on the one or two things that matter most from YOUR perspective. Be specific and draw on your expertise. Keep your response to 100-200 words. Write in plain text only. No markdown, no em-dashes, no formatting.`;
+    };
 
-      for (let idx = 0; idx < this.panelists.length; idx++) {
-        if (this.aborted) break;
-
-        const panelist = this.panelists[idx];
-        const prefetched = slots[idx];
-
-        const roundContext = priorTakes.length > 0
-          ? `Already said by your fellow panelists in this opening round (do not echo any of these arguments, framings, or examples — find a genuinely different angle):\n\n${priorTakes
-              .map((p) => `${p.name} (${p.role}): ${p.text}`)
-              .join('\n\n')}\n\n`
-          : '';
-
-        const prompt = `${ideaContext}\n\n${roundContext}You are panelist ${idx + 1} of ${totalPanelists}. React naturally, like you just heard this pitch for the first time. Focus specifically on what your expertise as a ${panelist.role} reveals that a generalist would miss. Don't give a broad overview. Go deep on the one or two things that matter most from YOUR perspective. Be specific and draw on your expertise. Keep your response to 100-200 words. Write in plain text only. No markdown, no em-dashes, no formatting.`;
-
-        const messages: Message[] = [
-          { role: 'system', content: panelist.systemPrompt },
-          { role: 'user', content: prompt },
-        ];
-
-        try {
-          await this.prefetchWithRetry(panelist, messages, prefetched);
-        } catch (err) {
-          console.error(`[prefetch] Unhandled error for panelist ${panelist.id}:`, err);
-          prefetched.error = err instanceof Error ? err.message : String(err);
-          prefetched.ready = true;
-        }
-
-        if (prefetched.text.trim() && !prefetched.error) {
-          priorTakes.push({
-            name: panelist.name,
-            role: panelist.role,
-            text: prefetched.text.trim(),
-          });
-        }
+    const runOne = async (
+      panelist: Panelist,
+      idx: number,
+      priorTakes: { name: string; role: string; text: string }[]
+    ): Promise<void> => {
+      const prefetched = slots[idx];
+      const messages: Message[] = [
+        { role: 'system', content: panelist.systemPrompt },
+        { role: 'user', content: buildPrompt(panelist, idx, priorTakes) },
+      ];
+      try {
+        await this.prefetchWithRetry(panelist, messages, prefetched);
+      } catch (err) {
+        console.error(`[prefetch] Unhandled error for panelist ${panelist.id}:`, err);
+        prefetched.error = err instanceof Error ? err.message : String(err);
+        prefetched.ready = true;
       }
+    };
+
+    (async () => {
+      // Phase 1: panelist 0 alone, no prior takes.
+      await runOne(this.panelists[0], 0, []);
+      if (this.aborted) return;
+
+      const first = slots[0];
+      const priorTakes = first.text.trim() && !first.error
+        ? [{ name: this.panelists[0].name, role: this.panelists[0].role, text: first.text.trim() }]
+        : [];
+
+      // Phase 2: panelists 1..N in parallel, each anchored against panelist 0.
+      await Promise.all(
+        this.panelists.slice(1).map((panelist, i) => runOne(panelist, i + 1, priorTakes))
+      );
     })();
   }
 
