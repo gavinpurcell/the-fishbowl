@@ -1,6 +1,10 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
+
+const prefersReducedMotion = () =>
+  typeof window !== 'undefined' &&
+  window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 interface Shortcut {
   key: string;
@@ -22,6 +26,7 @@ const DEFAULT_SHORTCUTS: Shortcut[] = [
 export default function KeyboardHelp({ extraShortcuts = [] }: KeyboardHelpProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [hasAppeared, setHasAppeared] = useState(false);
+  const isHoveringRef = useRef(false);
 
   // Mark that the badge has finished its entrance animation
   useEffect(() => {
@@ -91,20 +96,31 @@ export default function KeyboardHelp({ extraShortcuts = [] }: KeyboardHelpProps)
           transition: 'transform 0.08s ease, box-shadow 0.08s ease',
         }}
         onMouseEnter={(e) => {
+          isHoveringRef.current = true;
+          if (prefersReducedMotion()) return;
           (e.currentTarget as HTMLElement).style.transform = 'translate(-2px, -2px)';
           (e.currentTarget as HTMLElement).style.boxShadow = '4px 4px 0 var(--accent-gold)';
         }}
         onMouseLeave={(e) => {
+          isHoveringRef.current = false;
+          if (prefersReducedMotion()) return;
           (e.currentTarget as HTMLElement).style.transform = 'translate(0, 0)';
           (e.currentTarget as HTMLElement).style.boxShadow = '2px 2px 0 var(--accent-gold)';
         }}
         onMouseDown={(e) => {
+          if (prefersReducedMotion()) return;
           (e.currentTarget as HTMLElement).style.transform = 'translate(0, 0)';
           (e.currentTarget as HTMLElement).style.boxShadow = '0 0 0 transparent';
         }}
         onMouseUp={(e) => {
-          (e.currentTarget as HTMLElement).style.transform = 'translate(-2px, -2px)';
-          (e.currentTarget as HTMLElement).style.boxShadow = '4px 4px 0 var(--accent-gold)';
+          if (prefersReducedMotion()) return;
+          if (isHoveringRef.current) {
+            (e.currentTarget as HTMLElement).style.transform = 'translate(-2px, -2px)';
+            (e.currentTarget as HTMLElement).style.boxShadow = '4px 4px 0 var(--accent-gold)';
+          } else {
+            (e.currentTarget as HTMLElement).style.transform = 'translate(0, 0)';
+            (e.currentTarget as HTMLElement).style.boxShadow = '2px 2px 0 var(--accent-gold)';
+          }
         }}
       >
         ?

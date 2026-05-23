@@ -5,6 +5,10 @@ import type { ReactNode } from 'react';
 import type { RoundType } from '@/engine/types';
 import { formatCost, formatTokens } from '@/lib/models';
 
+const prefersReducedMotion = () =>
+  typeof window !== 'undefined' &&
+  window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
 interface Props {
   round: RoundType;
   panelistsSpoken: number;
@@ -38,6 +42,7 @@ export default function StatusBar({ round, panelistsSpoken, totalPanelists, onWr
   // Timer: counts up from session start
   const [elapsed, setElapsed] = useState(0);
   const startTimeRef = useRef(0);
+  const isHoveringRef = useRef(false);
 
   useEffect(() => {
     startTimeRef.current = Date.now();
@@ -212,6 +217,8 @@ export default function StatusBar({ round, panelistsSpoken, totalPanelists, onWr
                 position: 'relative',
               }}
               onMouseEnter={(e) => {
+                isHoveringRef.current = true;
+                if (prefersReducedMotion()) return;
                 const el = e.currentTarget;
                 if (round === 'moderation') {
                   el.style.background = 'linear-gradient(180deg, rgba(196, 154, 42, 0.4) 0%, rgba(196, 154, 42, 0.2) 100%)';
@@ -224,6 +231,8 @@ export default function StatusBar({ round, panelistsSpoken, totalPanelists, onWr
                 }
               }}
               onMouseLeave={(e) => {
+                isHoveringRef.current = false;
+                if (prefersReducedMotion()) return;
                 const el = e.currentTarget;
                 if (round === 'moderation') {
                   el.style.background = 'linear-gradient(180deg, rgba(196, 154, 42, 0.25) 0%, rgba(196, 154, 42, 0.12) 100%)';
@@ -236,6 +245,7 @@ export default function StatusBar({ round, panelistsSpoken, totalPanelists, onWr
                 }
               }}
               onMouseDown={(e) => {
+                if (prefersReducedMotion()) return;
                 const el = e.currentTarget;
                 if (round === 'moderation') {
                   el.style.transform = 'translate(0, 0)';
@@ -243,10 +253,16 @@ export default function StatusBar({ round, panelistsSpoken, totalPanelists, onWr
                 }
               }}
               onMouseUp={(e) => {
+                if (prefersReducedMotion()) return;
                 const el = e.currentTarget;
                 if (round === 'moderation') {
-                  el.style.transform = 'translate(-2px, -2px)';
-                  el.style.boxShadow = '4px 4px 0 var(--accent-gold)';
+                  if (isHoveringRef.current) {
+                    el.style.transform = 'translate(-2px, -2px)';
+                    el.style.boxShadow = '4px 4px 0 var(--accent-gold)';
+                  } else {
+                    el.style.transform = '';
+                    el.style.boxShadow = '';
+                  }
                 }
               }}
             >
