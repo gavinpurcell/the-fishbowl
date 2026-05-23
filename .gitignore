@@ -56,3 +56,6 @@ scripts/generate-sprites.sh
 # Local environment variables
 .env.local
 .env*.local
+
+# Brainstorming companion
+.superpowers/
