@@ -14,10 +14,12 @@ export interface ParseResult {
 
 async function extractPdfText(file: File): Promise<string> {
   const pdfjsLib = await import('pdfjs-dist');
-  pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
-    'pdfjs-dist/build/pdf.worker.min.mjs',
-    import.meta.url
-  ).toString();
+  // jsdelivr mirrors the exact npm version. Avoid cdnjs (doesn't host this
+  // version) and `new URL('pdfjs-dist/...', import.meta.url)` (Next/webpack
+  // doesn't asset-emit it, so the URL resolves to nothing and the worker
+  // crashes with "Object.defineProperty called on non-object").
+  pdfjsLib.GlobalWorkerOptions.workerSrc =
+    `https://cdn.jsdelivr.net/npm/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
 
   const buffer = await file.arrayBuffer();
   const pdf = await pdfjsLib.getDocument({ data: buffer }).promise;
