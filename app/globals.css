@@ -199,6 +199,13 @@ body::before {
   color: var(--brass-accent, var(--accent-gold));
 }
 
+.brass-marker-sm {
+  font-family: 'DM Mono', monospace;
+  font-size: 8px;
+  color: #6a6258;
+  letter-spacing: 0.14em;
+}
+
 .pixel-frame {
   padding: 3px;
   background: var(--brass-accent, var(--accent-gold));
@@ -247,6 +254,10 @@ body::before {
 }
 
 [data-theme="light"] .brass-label {
+  color: #5a5248;
+}
+
+[data-theme="light"] .brass-marker-sm {
   color: #5a5248;
 }
 

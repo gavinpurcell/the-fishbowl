@@ -330,16 +330,6 @@ export default function ExportPanel({ transcript, summary, mode, onModeChange, i
       <div className="brass-plate">
         <div className="brass-screw" />
         <span className="brass-label">EXPORT · ARCHIVE</span>
-        <span
-          style={{
-            fontFamily: "'DM Mono', monospace",
-            fontSize: '8px',
-            color: '#6a6258',
-            letterSpacing: '0.14em',
-          }}
-        >
-          {''}
-        </span>
         <div className="brass-screw" />
       </div>
       <div className="p-4">
