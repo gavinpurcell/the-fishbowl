@@ -46,47 +46,24 @@ export default function Transcript({ transcript, panelists }: Props) {
   }
 
   return (
-    <div className="transcript-report">
-      {/* Header bar — matching session page broadcast style */}
-      <div
-        className="flex items-center gap-2.5 px-4 py-3"
-        style={{
-          borderBottom: '1px solid var(--dark-border)',
-        }}
-      >
-        <svg
-          width="12"
-          height="12"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="var(--accent-gold)"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          style={{ opacity: 0.7 }}
-        >
-          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-        </svg>
-        <span
-          style={{
-            fontFamily: "'Silkscreen', monospace",
-            fontSize: '9px',
-            letterSpacing: '0.1em',
-            color: 'var(--accent-gold)',
-          }}
-        >
-          FULL TRANSCRIPT
-        </span>
+    <div
+      className="specimen-card"
+      style={{ ['--brass-accent' as string]: 'var(--accent-gold)' }}
+    >
+      <div className="brass-plate">
+        <div className="brass-screw" />
+        <span className="brass-label">FIELD LOG · FULL TRANSCRIPT</span>
         <span
           style={{
             fontFamily: "'DM Mono', monospace",
-            fontSize: '10px',
-            color: 'rgba(255,255,255,0.25)',
-            fontVariantNumeric: 'tabular-nums',
+            fontSize: '8px',
+            color: '#6a6258',
+            letterSpacing: '0.14em',
           }}
         >
-          {transcript.length} entries
+          {transcript.length} ENTRIES
         </span>
+        <div className="brass-screw" />
       </div>
 
       {/* Transcript body */}

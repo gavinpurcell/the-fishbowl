@@ -251,36 +251,15 @@ export default function ResultsPage() {
         {/* === DOCUMENT BODY — Summary or Transcript === */}
         <div className="report-enter report-enter-3 mb-6">
           {exportMode === 'summary' ? (
-            <div className="report-document">
-              <div className="report-doc-header">
-                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: 'var(--accent-gold)' }}>
-                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                  <path d="M14 2v6h6" />
-                  <path d="M16 13H8" />
-                  <path d="M16 17H8" />
-                  <path d="M10 9H8" />
-                </svg>
-                <span
-                  style={{
-                    fontFamily: "'Silkscreen', monospace",
-                    fontSize: '9px',
-                    letterSpacing: '0.1em',
-                    color: 'var(--text-muted)',
-                  }}
-                >
-                  EXECUTIVE SUMMARY
-                </span>
-              </div>
-              <div
-                className="p-5 sm:p-6 transition-opacity duration-150 ease-in-out"
-                style={{ opacity: viewTransition ? 0 : 1 }}
-              >
-                {store.summary ? (
-                  <Summary summary={store.summary} />
-                ) : (
-                  <Summary summary={null} />
-                )}
-              </div>
+            <div
+              className="transition-opacity duration-150 ease-in-out"
+              style={{ opacity: viewTransition ? 0 : 1 }}
+            >
+              {store.summary ? (
+                <Summary summary={store.summary} />
+              ) : (
+                <Summary summary={null} />
+              )}
             </div>
           ) : (
             <div

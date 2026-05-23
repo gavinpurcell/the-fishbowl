@@ -1583,38 +1583,6 @@ html, body {
   color: var(--dark-surface);
 }
 
-/* Document content area — the report body */
-.report-document {
-  position: relative;
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  overflow: hidden;
-  box-shadow: 0 2px 16px rgba(0, 0, 0, 0.4);
-}
-
-/* Corner fold decoration on document */
-.report-document::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  right: 0;
-  width: 24px;
-  height: 24px;
-  background: linear-gradient(225deg, var(--bg-deep) 50%, var(--border) 50%, var(--border) 51%, transparent 51%);
-  pointer-events: none;
-}
-
-/* Document section header bar */
-.report-doc-header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 14px 20px;
-  border-bottom: 1px solid var(--border);
-  background: var(--bg-surface);
-}
-
 /* Summary content — research brief styling */
 .summary-content h2 {
   font-family: 'Silkscreen', monospace;
@@ -1665,14 +1633,6 @@ html, body {
   text-transform: uppercase;
   color: var(--accent-gold);
   margin-top: 6px;
-}
-
-/* Transcript in report mode — matches summary document style */
-.transcript-report {
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  overflow: hidden;
 }
 
 /* Transcript entry row — court reporter style */

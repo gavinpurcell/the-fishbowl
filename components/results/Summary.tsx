@@ -171,7 +171,21 @@ export default function Summary({ summary }: Props) {
     );
   }
 
-  return <div className="summary-content">{elements}</div>;
+  return (
+    <div
+      className="specimen-card"
+      style={{ ['--brass-accent' as string]: 'var(--accent-gold)' }}
+    >
+      <div className="brass-plate">
+        <div className="brass-screw" />
+        <span className="brass-label">FINDINGS · DEBRIEF</span>
+        <div className="brass-screw" />
+      </div>
+      <div className="p-4">
+        <div className="summary-content">{elements}</div>
+      </div>
+    </div>
+  );
 }
 
 /** Render **bold** inline text with emphasis styling */

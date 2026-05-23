@@ -323,99 +323,121 @@ export default function ExportPanel({ transcript, summary, mode, onModeChange, i
   };
 
   return (
-    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-      {/* Document type toggle — classified document tabs */}
-      <div className="flex">
-        <button
-          onClick={() => onModeChange('summary')}
-          className={`doc-tab ${mode === 'summary' ? 'active' : ''}`}
+    <div
+      className="specimen-card"
+      style={{ ['--brass-accent' as string]: 'var(--accent-gold)' }}
+    >
+      <div className="brass-plate">
+        <div className="brass-screw" />
+        <span className="brass-label">EXPORT · ARCHIVE</span>
+        <span
+          style={{
+            fontFamily: "'DM Mono', monospace",
+            fontSize: '8px',
+            color: '#6a6258',
+            letterSpacing: '0.14em',
+          }}
         >
-          <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-            <path d="M14 2v6h6" />
-            <path d="M16 13H8" />
-            <path d="M16 17H8" />
-            <path d="M10 9H8" />
-          </svg>
-          Summary
-        </button>
-        <button
-          onClick={() => onModeChange('transcript')}
-          className={`doc-tab ${mode === 'transcript' ? 'active' : ''}`}
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-          </svg>
-          Transcript
-        </button>
+          {''}
+        </span>
+        <div className="brass-screw" />
       </div>
-
-      {/* Action badges — compact export row */}
-      <div className="flex items-center gap-2">
-        <button
-          onClick={handleCopyToClipboard}
-          className={`action-badge ${copyFeedback ? 'success' : ''}`}
-        >
-          {copyFeedback ? (
-            <>
-              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M20 6L9 17l-5-5" />
-              </svg>
-              Copied
-            </>
-          ) : (
-            <>
-              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <rect width="14" height="14" x="8" y="8" rx="2" ry="2" />
-                <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" />
-              </svg>
-              Copy
-            </>
-          )}
-        </button>
-        <button
-          onClick={handleDownloadMarkdown}
-          className={`action-badge ${mdFeedback ? 'success' : ''}`}
-        >
-          {mdFeedback ? (
-            <>
-              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M20 6L9 17l-5-5" />
-              </svg>
-              Saved
-            </>
-          ) : (
-            <>
-              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                <polyline points="7 10 12 15 17 10" />
-                <line x1="12" y1="15" x2="12" y2="3" />
-              </svg>
-              .md
-            </>
-          )}
-        </button>
-        <button
-          onClick={handleDownloadPdf}
-          className={`action-badge ${pdfFeedback ? 'success' : ''}`}
-        >
-          {pdfFeedback ? (
-            <>
-              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M20 6L9 17l-5-5" />
-              </svg>
-              Saved
-            </>
-          ) : (
-            <>
+      <div className="p-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          {/* Document type toggle — classified document tabs */}
+          <div className="flex">
+            <button
+              onClick={() => onModeChange('summary')}
+              className={`doc-tab ${mode === 'summary' ? 'active' : ''}`}
+            >
               <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
                 <path d="M14 2v6h6" />
+                <path d="M16 13H8" />
+                <path d="M16 17H8" />
+                <path d="M10 9H8" />
               </svg>
-              .pdf
-            </>
-          )}
-        </button>
+              Summary
+            </button>
+            <button
+              onClick={() => onModeChange('transcript')}
+              className={`doc-tab ${mode === 'transcript' ? 'active' : ''}`}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+              </svg>
+              Transcript
+            </button>
+          </div>
+
+          {/* Action badges — compact export row */}
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleCopyToClipboard}
+              className={`action-badge ${copyFeedback ? 'success' : ''}`}
+            >
+              {copyFeedback ? (
+                <>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M20 6L9 17l-5-5" />
+                  </svg>
+                  Copied
+                </>
+              ) : (
+                <>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <rect width="14" height="14" x="8" y="8" rx="2" ry="2" />
+                    <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" />
+                  </svg>
+                  Copy
+                </>
+              )}
+            </button>
+            <button
+              onClick={handleDownloadMarkdown}
+              className={`action-badge ${mdFeedback ? 'success' : ''}`}
+            >
+              {mdFeedback ? (
+                <>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M20 6L9 17l-5-5" />
+                  </svg>
+                  Saved
+                </>
+              ) : (
+                <>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                    <polyline points="7 10 12 15 17 10" />
+                    <line x1="12" y1="15" x2="12" y2="3" />
+                  </svg>
+                  .md
+                </>
+              )}
+            </button>
+            <button
+              onClick={handleDownloadPdf}
+              className={`action-badge ${pdfFeedback ? 'success' : ''}`}
+            >
+              {pdfFeedback ? (
+                <>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M20 6L9 17l-5-5" />
+                  </svg>
+                  Saved
+                </>
+              ) : (
+                <>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                    <path d="M14 2v6h6" />
+                  </svg>
+                  .pdf
+                </>
+              )}
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );
