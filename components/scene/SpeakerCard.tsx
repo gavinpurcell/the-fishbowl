@@ -25,8 +25,8 @@ export default function SpeakerCard({ panelist, text, isStreaming }: Props) {
           <div
             className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-700"
             style={{
-              backgroundColor: panelist.color + '20',
-              color: panelist.color,
+              backgroundColor: panelist.color,
+              color: '#0d0b09',
               border: `2px solid ${panelist.color}`,
             }}
           >

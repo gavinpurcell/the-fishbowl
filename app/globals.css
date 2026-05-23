@@ -590,22 +590,6 @@ html, body {
   letter-spacing: 0.02em;
 }
 
-/* Role badge — small pill with accent color */
-.role-badge {
-  display: inline-flex;
-  align-items: center;
-  font-family: 'DM Mono', monospace;
-  font-size: 10px;
-  font-weight: 400;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  padding: 2px 8px;
-  border-radius: 4px;
-  white-space: nowrap;
-  max-width: 100%;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
 
 /* Card entrance animation — staggered pop-in */
 @keyframes cardPopIn {
