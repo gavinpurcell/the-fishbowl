@@ -609,33 +609,6 @@ html, body {
   opacity: 0;
 }
 
-/* Mission briefing — dossier/clipboard feel */
-.mission-briefing {
-  position: relative;
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  overflow: hidden;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
-}
-
-[data-theme="light"] .mission-briefing {
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
-}
-
-.mission-briefing::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 36px;
-  background: linear-gradient(
-    180deg,
-    var(--accent-gold) 0%,
-    var(--accent-gold-dim) 100%
-  );
-}
 
 .mission-briefing-textarea {
   background: transparent !important;
