@@ -126,6 +126,34 @@ body::before {
   to { transform: rotate(360deg); }
 }
 
+@keyframes fileRowFlash {
+  0% {
+    background: var(--accent-gold);
+    border-color: var(--accent-gold);
+    box-shadow: 0 0 0 0 rgba(196, 154, 42, 0.55);
+  }
+  40% {
+    background: rgba(196, 154, 42, 0.32);
+    border-color: var(--accent-gold);
+    box-shadow: 0 0 0 6px rgba(196, 154, 42, 0);
+  }
+  100% {
+    background: var(--bg-elevated);
+    border-color: var(--border);
+    box-shadow: 0 0 0 0 rgba(196, 154, 42, 0);
+  }
+}
+
+.file-row-flash {
+  animation: fileRowFlash 1500ms ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .file-row-flash {
+    animation: none;
+  }
+}
+
 /* Global focus-visible ring for keyboard navigation */
 button:focus-visible, input:focus-visible, a:focus-visible, textarea:focus-visible, select:focus-visible {
   outline: 2px solid var(--accent-gold);

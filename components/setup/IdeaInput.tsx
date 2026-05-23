@@ -14,17 +14,37 @@ interface Props {
 export default function IdeaInput({ ideaText, ideaFiles, onTextChange, onFilesChange }: Props) {
   const [isDragging, setIsDragging] = useState(false);
   const [fileError, setFileError] = useState<string | null>(null);
+  const [flashingFiles, setFlashingFiles] = useState<Set<string>>(new Set());
 
   const handleFilesWithFeedback = useCallback(async (files: FileList | File[]) => {
     setFileError(null);
     const fileArray = Array.from(files);
     const supported = new Set(['md', 'txt', 'pdf']);
     const unsupported = fileArray.filter((f) => { const ext = f.name.split('.').pop()?.toLowerCase(); return !ext || !supported.has(ext); });
+
+    const messages: string[] = [];
     if (unsupported.length > 0) {
-      setFileError(`Unsupported: ${unsupported.map((f) => f.name).join(', ')}. Supported: .pdf, .md, .txt`);
+      messages.push(`Unsupported: ${unsupported.map((f) => f.name).join(', ')}. Supported: .pdf, .md, .txt`);
     }
-    const parsed = await parseFiles(fileArray);
-    if (parsed.length > 0) onFilesChange([...ideaFiles, ...parsed].slice(0, 3));
+
+    const { files: parsed, errors } = await parseFiles(fileArray);
+    if (errors.length > 0) {
+      messages.push(...errors.map((e) => `Couldn't read ${e.name}: ${e.message}`));
+    }
+    if (messages.length > 0) setFileError(messages.join(' • '));
+
+    if (parsed.length > 0) {
+      onFilesChange([...ideaFiles, ...parsed].slice(0, 3));
+      const newNames = parsed.map((f) => f.name);
+      setFlashingFiles((prev) => new Set([...prev, ...newNames]));
+      setTimeout(() => {
+        setFlashingFiles((prev) => {
+          const next = new Set(prev);
+          newNames.forEach((n) => next.delete(n));
+          return next;
+        });
+      }, 1500);
+    }
   }, [ideaFiles, onFilesChange]);
 
   const handleDrop = useCallback(async (e: React.DragEvent) => {
@@ -200,7 +220,7 @@ export default function IdeaInput({ ideaText, ideaFiles, onTextChange, onFilesCh
               {ideaFiles.map((file, i) => (
                 <div
                   key={i}
-                  className="flex items-center gap-2 text-xs p-2 rounded-lg"
+                  className={`flex items-center gap-2 text-xs p-2 rounded-lg ${flashingFiles.has(file.name) ? 'file-row-flash' : ''}`}
                   style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}
                 >
                   <svg width="12" height="12" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0, opacity: 0.5 }}>

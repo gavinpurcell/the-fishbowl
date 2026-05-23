@@ -2,9 +2,22 @@ import type { FileContent } from '@/engine/types';
 
 const SUPPORTED_EXTENSIONS = new Set(['md', 'txt', 'pdf']);
 
+export interface ParseError {
+  name: string;
+  message: string;
+}
+
+export interface ParseResult {
+  files: FileContent[];
+  errors: ParseError[];
+}
+
 async function extractPdfText(file: File): Promise<string> {
   const pdfjsLib = await import('pdfjs-dist');
-  pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
+  pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
+    'pdfjs-dist/build/pdf.worker.min.mjs',
+    import.meta.url
+  ).toString();
 
   const buffer = await file.arrayBuffer();
   const pdf = await pdfjsLib.getDocument({ data: buffer }).promise;
@@ -22,28 +35,29 @@ async function extractPdfText(file: File): Promise<string> {
   return pages.join('\n\n');
 }
 
-export async function parseFiles(files: FileList | File[]): Promise<FileContent[]> {
+export async function parseFiles(files: FileList | File[]): Promise<ParseResult> {
   const results: FileContent[] = [];
+  const errors: ParseError[] = [];
   const fileArray = Array.from(files).slice(0, 3);
 
   for (const file of fileArray) {
     const ext = file.name.split('.').pop()?.toLowerCase();
     if (!ext || !SUPPORTED_EXTENSIONS.has(ext)) {
-      console.warn(`Skipping unsupported file type: ${file.name}`);
       continue;
     }
 
-    let content: string;
-    if (ext === 'pdf') {
-      content = await extractPdfText(file);
-    } else {
-      content = await file.text();
-    }
-
-    if (content.trim()) {
-      results.push({ name: file.name, content });
+    try {
+      const content = ext === 'pdf' ? await extractPdfText(file) : await file.text();
+      if (content.trim()) {
+        results.push({ name: file.name, content });
+      } else {
+        errors.push({ name: file.name, message: 'no readable text found' });
+      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'parse failed';
+      errors.push({ name: file.name, message });
     }
   }
 
-  return results;
+  return { files: results, errors };
 }
