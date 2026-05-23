@@ -52,7 +52,10 @@ export default function Transcript({ transcript, panelists }: Props) {
     >
       <div className="brass-plate">
         <div className="brass-screw" />
-        <span className="brass-label">FIELD LOG · FULL TRANSCRIPT</span>
+        <span className="brass-label">
+          <span className="sm:hidden">FIELD LOG</span>
+          <span className="hidden sm:inline">FIELD LOG · FULL TRANSCRIPT</span>
+        </span>
         <span className="brass-marker-sm">
           {transcript.length} ENTRIES
         </span>

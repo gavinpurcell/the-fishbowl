@@ -238,7 +238,8 @@ export default function IntroOverlay({ topic, panelists, onComplete, ready = fal
                   <div className="brass-plate">
                     <div className="brass-screw" />
                     <span className="brass-label">
-                      NOW IN THE FISHBOWL · {String(i + 1).padStart(2, '0')} / {String(panelists.length).padStart(2, '0')}
+                      <span className="sm:hidden">IN THE FISHBOWL · {String(i + 1).padStart(2, '0')}</span>
+                      <span className="hidden sm:inline">NOW IN THE FISHBOWL · {String(i + 1).padStart(2, '0')} / {String(panelists.length).padStart(2, '0')}</span>
                     </span>
                     <span className="brass-marker" style={{ color: p.color }}>LIVE</span>
                     <div className="brass-screw" />

@@ -290,6 +290,27 @@ html, body {
   }
 }
 
+/* ============================================================ */
+/*  Specimen Tag — mobile breakpoint tightening (<640px)         */
+/* ============================================================ */
+@media (max-width: 640px) {
+  .brass-plate {
+    padding: 5px 8px;
+    gap: 6px;
+  }
+  .brass-label {
+    font-size: 8px;
+    letter-spacing: 0.14em;
+  }
+  .brass-marker-sm {
+    font-size: 7px;
+  }
+  .brass-screw {
+    width: 3px;
+    height: 3px;
+  }
+}
+
 /* Page transition wrapper — subtle fade-in for each page */
 @keyframes pageEnter {
   from { opacity: 0; transform: translateY(6px); }
