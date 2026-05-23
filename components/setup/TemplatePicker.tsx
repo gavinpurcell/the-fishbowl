@@ -30,7 +30,6 @@ export default function TemplatePicker({ onSelect }: Props) {
             <div className="brass-plate">
               <div className="brass-screw" />
               <span className="brass-label">EXHIBIT · {String(i + 1).padStart(2, '0')}</span>
-              <span className="brass-marker">{''}</span>
               <div className="brass-screw" />
             </div>
 

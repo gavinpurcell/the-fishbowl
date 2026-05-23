@@ -109,16 +109,7 @@ export default function IdeaInput({ ideaText, ideaFiles, onTextChange, onFilesCh
       <div className="brass-plate" style={{ position: 'relative', zIndex: 2 }}>
         <div className="brass-screw" />
         <span className="brass-label">OBSERVATION REQUEST · 01</span>
-        <span
-          style={{
-            fontFamily: "'DM Mono', monospace",
-            fontSize: '8px',
-            color: 'var(--text-muted)',
-            letterSpacing: '0.14em',
-          }}
-        >
-          {hasContent ? 'READY' : 'DRAFT'}
-        </span>
+        <span className="brass-marker-sm">{hasContent ? 'READY' : 'DRAFT'}</span>
         <div className="brass-screw" />
       </div>
 
