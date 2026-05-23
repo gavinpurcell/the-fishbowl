@@ -40,7 +40,7 @@ export default function Transcript({ transcript, panelists }: Props) {
         <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="mx-auto mb-3" style={{ color: 'var(--text-muted)' }}>
           <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
         </svg>
-        <p className="text-sm" style={{ color: 'var(--text-muted)' }}>No transcript available.</p>
+        <p className="text-sm" style={{ color: 'var(--text-muted)' }}>Field log is empty.</p>
       </div>
     );
   }
