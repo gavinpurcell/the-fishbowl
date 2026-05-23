@@ -134,9 +134,9 @@ export class ConversationOrchestrator {
     const ideaContext = this.buildIdeaContext();
     const totalPanelists = this.panelists.length;
 
-    for (let idx = 0; idx < this.panelists.length; idx++) {
-      const panelist = this.panelists[idx];
-      const prompt = `${ideaContext}\n\nYou are panelist ${idx + 1} of ${totalPanelists}. React naturally, like you just heard this pitch for the first time. Focus specifically on what your expertise as a ${panelist.role} reveals that a generalist would miss. Don't give a broad overview. Go deep on the one or two things that matter most from YOUR perspective. Be specific and draw on your expertise. Keep your response to 100-200 words. Write in plain text only. No markdown, no em-dashes, no formatting.`;
+    // Reserve a slot for every panelist up front so callers polling
+    // isInitialTakeReady() always find an entry.
+    const slots: PrefetchedResponse[] = this.panelists.map((panelist) => {
       const prefetched: PrefetchedResponse = {
         text: '',
         chunks: [],
@@ -145,19 +145,50 @@ export class ConversationOrchestrator {
         ready: false,
       };
       this.prefetchedInitialTakes.set(panelist.id, prefetched);
+      return prefetched;
+    });
 
-      const messages: Message[] = [
-        { role: 'system', content: panelist.systemPrompt },
-        { role: 'user', content: prompt },
-      ];
+    // Sequential generation: panelist N sees panelists 1..N-1's finished takes.
+    // Public signature stays void; the chain runs in the background.
+    (async () => {
+      const priorTakes: { name: string; role: string; text: string }[] = [];
 
-      // Fire and forget — runs in background, catch to prevent unhandled rejection
-      this.prefetchWithRetry(panelist, messages, prefetched).catch((err) => {
-        console.error(`[prefetch] Unhandled error for panelist ${panelist.id}:`, err);
-        prefetched.error = err instanceof Error ? err.message : String(err);
-        prefetched.ready = true;
-      });
-    }
+      for (let idx = 0; idx < this.panelists.length; idx++) {
+        if (this.aborted) break;
+
+        const panelist = this.panelists[idx];
+        const prefetched = slots[idx];
+
+        const roundContext = priorTakes.length > 0
+          ? `Already said by your fellow panelists in this opening round (do not echo any of these arguments, framings, or examples — find a genuinely different angle):\n\n${priorTakes
+              .map((p) => `${p.name} (${p.role}): ${p.text}`)
+              .join('\n\n')}\n\n`
+          : '';
+
+        const prompt = `${ideaContext}\n\n${roundContext}You are panelist ${idx + 1} of ${totalPanelists}. React naturally, like you just heard this pitch for the first time. Focus specifically on what your expertise as a ${panelist.role} reveals that a generalist would miss. Don't give a broad overview. Go deep on the one or two things that matter most from YOUR perspective. Be specific and draw on your expertise. Keep your response to 100-200 words. Write in plain text only. No markdown, no em-dashes, no formatting.`;
+
+        const messages: Message[] = [
+          { role: 'system', content: panelist.systemPrompt },
+          { role: 'user', content: prompt },
+        ];
+
+        try {
+          await this.prefetchWithRetry(panelist, messages, prefetched);
+        } catch (err) {
+          console.error(`[prefetch] Unhandled error for panelist ${panelist.id}:`, err);
+          prefetched.error = err instanceof Error ? err.message : String(err);
+          prefetched.ready = true;
+        }
+
+        if (prefetched.text.trim() && !prefetched.error) {
+          priorTakes.push({
+            name: panelist.name,
+            role: panelist.role,
+            text: prefetched.text.trim(),
+          });
+        }
+      }
+    })();
   }
 
   /**
@@ -221,9 +252,8 @@ export class ConversationOrchestrator {
 
     const ideaContext = this.buildIdeaContext();
     const transcriptContext = this.buildTranscriptContext();
-    const prompt = `${ideaContext}\n\n${transcriptContext}\n\nJump in like you would in a real meeting. Push back, challenge, or build on what was said. Reference specific panelists by name. Do NOT restate or summarize points that were already made. If you agree with something, say so in one line and move on to a NEW point. Bring something to the table that hasn't been said yet. Keep your response to 100-200 words. Write in plain text only. No markdown, no em-dashes, no formatting.`;
 
-    for (const panelist of this.panelists) {
+    const slots: PrefetchedResponse[] = this.panelists.map((panelist) => {
       const prefetched: PrefetchedResponse = {
         text: '',
         chunks: [],
@@ -232,18 +262,49 @@ export class ConversationOrchestrator {
         ready: false,
       };
       this.prefetchedCrossTalk.set(panelist.id, prefetched);
+      return prefetched;
+    });
 
-      const messages: Message[] = [
-        { role: 'system', content: panelist.systemPrompt },
-        { role: 'user', content: prompt },
-      ];
+    // Sequential generation: panelist N sees the prior cross-talk in this round.
+    (async () => {
+      const priorCrossTalk: { name: string; role: string; text: string }[] = [];
 
-      this.prefetchWithRetry(panelist, messages, prefetched).catch((err) => {
-        console.error(`[prefetch-crosstalk] Error for ${panelist.id}:`, err);
-        prefetched.error = err instanceof Error ? err.message : String(err);
-        prefetched.ready = true;
-      });
-    }
+      for (let idx = 0; idx < this.panelists.length; idx++) {
+        if (this.aborted) break;
+
+        const panelist = this.panelists[idx];
+        const prefetched = slots[idx];
+
+        const roundContext = priorCrossTalk.length > 0
+          ? `Cross-talk so far in this round (do not echo any of these arguments, framings, or examples — bring a different angle or push back on something that was said):\n\n${priorCrossTalk
+              .map((p) => `${p.name} (${p.role}): ${p.text}`)
+              .join('\n\n')}\n\n`
+          : '';
+
+        const prompt = `${ideaContext}\n\n${transcriptContext}\n\n${roundContext}Jump in like you would in a real meeting. Push back, challenge, or build on what was said. Reference specific panelists by name. Do NOT restate or summarize points that were already made. If you agree with something, say so in one line and move on to a NEW point. Bring something to the table that hasn't been said yet. Keep your response to 100-200 words. Write in plain text only. No markdown, no em-dashes, no formatting.`;
+
+        const messages: Message[] = [
+          { role: 'system', content: panelist.systemPrompt },
+          { role: 'user', content: prompt },
+        ];
+
+        try {
+          await this.prefetchWithRetry(panelist, messages, prefetched);
+        } catch (err) {
+          console.error(`[prefetch-crosstalk] Error for ${panelist.id}:`, err);
+          prefetched.error = err instanceof Error ? err.message : String(err);
+          prefetched.ready = true;
+        }
+
+        if (prefetched.text.trim() && !prefetched.error) {
+          priorCrossTalk.push({
+            name: panelist.name,
+            role: panelist.role,
+            text: prefetched.text.trim(),
+          });
+        }
+      }
+    })();
   }
 
   /**
