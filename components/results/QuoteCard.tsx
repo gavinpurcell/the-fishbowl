@@ -239,24 +239,30 @@ async function renderQuoteCard(
   const quoteColX = 260;
   const quoteColW = CARD_W - quoteColX - 28; // 912px to x=1172
 
-  // Open-quote glyph
+  // Measure the wrapped quote text first so we can center the whole unit.
   ctx.textAlign = 'left';
   ctx.textBaseline = 'alphabetic';
+  ctx.font = "600 38px 'Outfit', sans-serif";
+  const lines = wrapText(ctx, quote.text, quoteColW);
+  const lineHeight = 38 * 1.3; // ~49px
+  const totalTextH = lines.length * lineHeight;
+
+  // Open-quote glyph anchored DIRECTLY above the first line of text so the
+  // glyph + quote read as one tightly coupled unit. The whole unit is then
+  // vertically centered against the portrait region (y=128 to y=380).
+  const openQuoteH = 56; // visual height of the Silkscreen " at 56px
+  const openQuoteGap = 4; // breathing room between glyph and first line
+  const unitH = openQuoteH + openQuoteGap + totalTextH;
+  const portraitCenterY = (128 + 380) / 2;
+  const unitTop = portraitCenterY - unitH / 2;
+
   ctx.font = "56px 'Silkscreen', monospace";
   ctx.fillStyle = '#c49a2a';
-  ctx.fillText('“', quoteColX, 184);
+  ctx.fillText('“', quoteColX, unitTop + openQuoteH);
 
-  // Quote text — Outfit 600 28px
-  ctx.font = "600 28px 'Outfit', sans-serif";
+  ctx.font = "600 38px 'Outfit', sans-serif";
   ctx.fillStyle = '#faf6f0';
-  const lines = wrapText(ctx, quote.text, quoteColW);
-  const lineHeight = 28 * 1.4; // ~39px
-  const totalTextH = lines.length * lineHeight;
-  // Center quote text vertically in the region from y=200 to y=540
-  const quoteRegionTop = 200;
-  const quoteRegionBottom = 540;
-  const quoteRegionH = quoteRegionBottom - quoteRegionTop;
-  const startY = quoteRegionTop + Math.max(0, (quoteRegionH - totalTextH) / 2) + 28;
+  const startY = unitTop + openQuoteH + openQuoteGap + lineHeight * 0.8;
 
   for (let i = 0; i < lines.length; i++) {
     ctx.fillText(lines[i], quoteColX, startY + i * lineHeight);
