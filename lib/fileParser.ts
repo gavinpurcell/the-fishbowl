@@ -13,22 +13,18 @@ export interface ParseResult {
 }
 
 async function extractPdfText(file: File): Promise<string> {
-  const pdfjsLib = await import('pdfjs-dist');
-  // Skip the worker entirely. Multiple worker-source strategies (cdnjs URL,
-  // bundler-resolved new URL(), jsdelivr CDN, /public static file) all
-  // produced "Object.defineProperty called on non-object" during pdfjs's
-  // internal worker init on this Next.js + webpack setup. Users upload short
-  // PDFs (briefs, one-pagers), so synchronous main-thread parsing is fast
-  // enough and bulletproof. If we ever need to parse big PDFs, revisit and
-  // wire workerPort manually with new Worker('/pdf.worker.min.mjs').
-  pdfjsLib.GlobalWorkerOptions.workerSrc = '';
+  // Import the minified build directly. The package's main entry
+  // (build/pdf.mjs) has a webpack-generated CommonJS shim that calls
+  // Object.defineProperty(exports, ...) where `exports` is undefined in true
+  // ESM contexts, throwing "Object.defineProperty called on non-object".
+  // build/pdf.min.mjs is built clean and works. The deep import path has no
+  // TS types shipped, so we cast to the public surface we need.
+  // @ts-expect-error — deep path has no types; we cast to the public surface.
+  const pdfjsLib: typeof import('pdfjs-dist') = await import('pdfjs-dist/build/pdf.min.mjs');
+  pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs';
 
   const buffer = await file.arrayBuffer();
-  // disableWorker is a real pdfjs option but missing from their TS types.
-  const pdf = await pdfjsLib.getDocument({
-    data: buffer,
-    disableWorker: true,
-  } as Parameters<typeof pdfjsLib.getDocument>[0] & { disableWorker: boolean }).promise;
+  const pdf = await pdfjsLib.getDocument({ data: buffer }).promise;
 
   const pages: string[] = [];
   for (let i = 1; i <= pdf.numPages; i++) {
