@@ -9,7 +9,7 @@ export const runtime = 'edge';
 const ALLOWED_MODELS = new Set([
   'claude-haiku-4-5-20251001',
   'claude-sonnet-4-6',
-  'claude-opus-4-6',
+  'claude-opus-4-7',
 ]);
 
 // Max request body size (100KB — generous for even long transcripts)

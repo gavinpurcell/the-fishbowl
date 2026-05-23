@@ -12,7 +12,7 @@ export interface ModelOption {
 const MODELS: ModelOption[] = [
   { id: 'claude-haiku-4-5-20251001', label: 'Haiku 4.5', provider: 'claude', tier: 'fast', inputPer1M: 1.00, outputPer1M: 5.00 },
   { id: 'claude-sonnet-4-6', label: 'Sonnet 4.6', provider: 'claude', tier: 'balanced', inputPer1M: 3.00, outputPer1M: 15.00 },
-  { id: 'claude-opus-4-6', label: 'Opus 4.6', provider: 'claude', tier: 'smartest', inputPer1M: 15.00, outputPer1M: 75.00 },
+  { id: 'claude-opus-4-7', label: 'Opus 4.7', provider: 'claude', tier: 'smartest', inputPer1M: 15.00, outputPer1M: 75.00 },
   // Claude Code (Local) — no API cost, uses Pro/Max subscription credits
   { id: 'haiku', label: 'Haiku (Local)', provider: 'claude-code', tier: 'fast', inputPer1M: 0, outputPer1M: 0 },
   { id: 'sonnet', label: 'Sonnet (Local)', provider: 'claude-code', tier: 'balanced', inputPer1M: 0, outputPer1M: 0 },

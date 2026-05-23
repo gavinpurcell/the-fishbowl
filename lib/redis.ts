@@ -88,7 +88,7 @@ const DAILY_SPEND_CAP = () => parseFloat(process.env.DAILY_SPEND_CAP || '100');
 const MODEL_PRICING: Record<string, { input: number; output: number }> = {
   'claude-haiku-4-5-20251001': { input: 1 / 1_000_000, output: 5 / 1_000_000 },
   [HOSTED_MODEL_ID]: { input: 3 / 1_000_000, output: 15 / 1_000_000 },
-  'claude-opus-4-6': { input: 15 / 1_000_000, output: 75 / 1_000_000 },
+  'claude-opus-4-7': { input: 15 / 1_000_000, output: 75 / 1_000_000 },
 };
 
 export interface SpendCheckResult {
