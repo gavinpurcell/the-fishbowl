@@ -67,9 +67,10 @@ export default function AboutPage() {
           <Link
             href="/setup"
             style={{
-              fontFamily: "'Silkscreen', monospace",
+              fontFamily: "'DM Mono', monospace",
               fontSize: '9px',
-              letterSpacing: '0.08em',
+              letterSpacing: '0.16em',
+              textTransform: 'uppercase',
               color: 'var(--text-muted)',
               textDecoration: 'none',
               border: '1px solid var(--dark-border)',
@@ -109,8 +110,9 @@ export default function AboutPage() {
           </div>
           <h1
             style={{
-              fontFamily: "'Silkscreen', monospace",
+              fontFamily: "'Outfit', sans-serif",
               fontSize: 'clamp(1.6rem, 4vw, 2.4rem)',
+              fontWeight: 600,
               lineHeight: 1.2,
               color: 'var(--text-primary)',
               marginBottom: '24px',
@@ -145,9 +147,10 @@ export default function AboutPage() {
         <section style={{ marginBottom: '64px' }}>
           <h2
             style={{
-              fontFamily: "'Silkscreen', monospace",
-              fontSize: '14px',
-              letterSpacing: '0.06em',
+              fontFamily: "'DM Mono', monospace",
+              fontSize: '11px',
+              letterSpacing: '0.16em',
+              textTransform: 'uppercase',
               color: 'var(--accent-gold)',
               marginBottom: '20px',
             }}
@@ -216,9 +219,10 @@ export default function AboutPage() {
         <section style={{ marginBottom: '64px' }}>
           <h2
             style={{
-              fontFamily: "'Silkscreen', monospace",
-              fontSize: '14px',
-              letterSpacing: '0.06em',
+              fontFamily: "'DM Mono', monospace",
+              fontSize: '11px',
+              letterSpacing: '0.16em',
+              textTransform: 'uppercase',
               color: 'var(--accent-gold)',
               marginBottom: '20px',
             }}
@@ -281,9 +285,10 @@ export default function AboutPage() {
         <section style={{ marginBottom: '64px' }}>
           <h2
             style={{
-              fontFamily: "'Silkscreen', monospace",
-              fontSize: '14px',
-              letterSpacing: '0.06em',
+              fontFamily: "'DM Mono', monospace",
+              fontSize: '11px',
+              letterSpacing: '0.16em',
+              textTransform: 'uppercase',
               color: 'var(--accent-gold)',
               marginBottom: '20px',
             }}
@@ -352,9 +357,10 @@ export default function AboutPage() {
         <section style={{ marginBottom: '64px' }}>
           <h2
             style={{
-              fontFamily: "'Silkscreen', monospace",
-              fontSize: '14px',
-              letterSpacing: '0.06em',
+              fontFamily: "'DM Mono', monospace",
+              fontSize: '11px',
+              letterSpacing: '0.16em',
+              textTransform: 'uppercase',
               color: 'var(--accent-gold)',
               marginBottom: '20px',
             }}
@@ -435,9 +441,10 @@ export default function AboutPage() {
         <section style={{ marginBottom: '64px' }}>
           <h2
             style={{
-              fontFamily: "'Silkscreen', monospace",
-              fontSize: '14px',
-              letterSpacing: '0.06em',
+              fontFamily: "'DM Mono', monospace",
+              fontSize: '11px',
+              letterSpacing: '0.16em',
+              textTransform: 'uppercase',
               color: 'var(--accent-gold)',
               marginBottom: '20px',
             }}
@@ -496,9 +503,10 @@ export default function AboutPage() {
         <section style={{ marginBottom: '24px' }}>
           <h2
             style={{
-              fontFamily: "'Silkscreen', monospace",
-              fontSize: '14px',
-              letterSpacing: '0.06em',
+              fontFamily: "'DM Mono', monospace",
+              fontSize: '11px',
+              letterSpacing: '0.16em',
+              textTransform: 'uppercase',
               color: 'var(--accent-gold)',
               marginBottom: '20px',
             }}

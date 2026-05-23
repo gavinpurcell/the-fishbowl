@@ -118,9 +118,10 @@ export default function Transcript({ transcript, panelists }: Props) {
                           style={{
                             background: 'rgba(196, 154, 42, 0.1)',
                             border: '1px solid rgba(196, 154, 42, 0.15)',
-                            fontFamily: "'Silkscreen', monospace",
+                            fontFamily: "'DM Mono', monospace",
                             fontSize: '7px',
-                            letterSpacing: '0.06em',
+                            letterSpacing: '0.16em',
+                            textTransform: 'uppercase',
                             color: 'var(--accent-gold)',
                           }}
                         >

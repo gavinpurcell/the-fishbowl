@@ -143,9 +143,10 @@ export default function LiveTranscript({
           </svg>
           <span
             style={{
-              fontFamily: "'Silkscreen', monospace",
+              fontFamily: "'DM Mono', monospace",
               fontSize: '9px',
-              letterSpacing: '0.1em',
+              letterSpacing: '0.16em',
+              textTransform: 'uppercase',
               color: 'var(--accent-gold)',
             }}
           >
@@ -331,10 +332,10 @@ export default function LiveTranscript({
               color: 'var(--dark-surface)',
               border: 'none',
               cursor: 'pointer',
-              fontFamily: "'Silkscreen', monospace",
+              fontFamily: "'DM Mono', monospace",
               fontSize: '8px',
-              fontWeight: 400,
-              letterSpacing: '0.08em',
+              fontWeight: 500,
+              letterSpacing: '0.16em',
               textTransform: 'uppercase',
             }}
           >
@@ -372,9 +373,10 @@ function RoundDivider({ round }: { round: string }) {
         />
         <span
           style={{
-            fontFamily: "'Silkscreen', monospace",
+            fontFamily: "'DM Mono', monospace",
             fontSize: '8px',
-            letterSpacing: '0.1em',
+            letterSpacing: '0.16em',
+            textTransform: 'uppercase',
             color: 'var(--accent-gold)',
           }}
         >
@@ -451,9 +453,10 @@ function EntryRow({
               style={{
                 background: 'rgba(196, 154, 42, 0.1)',
                 border: '1px solid rgba(196, 154, 42, 0.15)',
-                fontFamily: "'Silkscreen', monospace",
+                fontFamily: "'DM Mono', monospace",
                 fontSize: '7px',
-                letterSpacing: '0.06em',
+                letterSpacing: '0.16em',
+                textTransform: 'uppercase',
                 color: 'var(--accent-gold)',
               }}
             >

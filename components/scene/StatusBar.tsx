@@ -91,9 +91,10 @@ export default function StatusBar({ round, panelistsSpoken, totalPanelists, onWr
             />
             <span
               style={{
-                fontFamily: "'Silkscreen', monospace",
+                fontFamily: "'DM Mono', monospace",
                 fontSize: '9px',
-                letterSpacing: '0.08em',
+                letterSpacing: '0.16em',
+                textTransform: 'uppercase',
                 color: isActive ? 'var(--accent-red)' : '#666',
               }}
             >
@@ -107,9 +108,10 @@ export default function StatusBar({ round, panelistsSpoken, totalPanelists, onWr
           {/* Round label */}
           <span
             style={{
-              fontFamily: "'Silkscreen', monospace",
+              fontFamily: "'DM Mono', monospace",
               fontSize: '9px',
-              letterSpacing: '0.06em',
+              letterSpacing: '0.16em',
+              textTransform: 'uppercase',
               color: 'var(--accent-gold)',
             }}
           >

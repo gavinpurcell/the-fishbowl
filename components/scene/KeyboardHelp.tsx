@@ -176,11 +176,11 @@ export default function KeyboardHelp({ extraShortcuts = [] }: KeyboardHelpProps)
             <div style={{ padding: '18px 22px 0' }}>
               <div
                 style={{
-                  fontFamily: "'Silkscreen', 'Courier New', monospace",
+                  fontFamily: "'DM Mono', monospace",
                   fontSize: '11px',
-                  letterSpacing: '0.1em',
-                  color: 'var(--accent-gold)',
+                  letterSpacing: '0.16em',
                   textTransform: 'uppercase',
+                  color: 'var(--accent-gold)',
                 }}
               >
                 KEYBOARD SHORTCUTS

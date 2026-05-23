@@ -183,9 +183,9 @@ export default function TitlePage() {
             <a
               href="/about"
               style={{
-                fontFamily: "'Silkscreen', monospace",
+                fontFamily: "'DM Mono', monospace",
                 fontSize: '9px',
-                letterSpacing: '0.08em',
+                letterSpacing: '0.16em',
                 textTransform: 'uppercase',
                 color: 'var(--text-muted)',
                 textDecoration: 'none',
