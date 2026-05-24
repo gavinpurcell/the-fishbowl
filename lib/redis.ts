@@ -9,8 +9,10 @@ function getRedis(): Redis | null {
   if (checked) return redis;
   checked = true;
 
-  const url = process.env.UPSTASH_REDIS_REST_URL;
-  const token = process.env.UPSTASH_REDIS_REST_TOKEN;
+  // Trim env vars — Vercel sometimes carries trailing whitespace/newlines from
+  // paste, and Upstash strictly validates the URL ("must start with https").
+  const url = process.env.UPSTASH_REDIS_REST_URL?.trim();
+  const token = process.env.UPSTASH_REDIS_REST_TOKEN?.trim();
   if (!url || !token) return null;
 
   redis = new Redis({ url, token });

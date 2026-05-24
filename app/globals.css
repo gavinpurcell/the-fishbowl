@@ -281,6 +281,10 @@ button:focus-visible, input:focus-visible, a:focus-visible, textarea:focus-visib
 /* Prevent horizontal overflow on mobile */
 html, body {
   overflow-x: hidden;
+  /* Stop iOS Safari from auto-inflating text in mobile-landscape views, which
+     was making the topic banner explode to huge sizes after the rotate gate. */
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
 }
 
 /* Ensure minimum touch target size on mobile */
