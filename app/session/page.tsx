@@ -14,6 +14,7 @@ import TransitionOverlay from '@/components/scene/TransitionOverlay';
 import ModerationInput from '@/components/scene/ModerationInput';
 import KeyboardHelp from '@/components/scene/KeyboardHelp';
 import WrapUpOverlay from '@/components/scene/WrapUpOverlay';
+import MobileLandscapeGate from '@/components/MobileLandscapeGate';
 import { loadAllSprites } from '@/lib/spriteLoader';
 import type { RoundType, TranscriptEntry } from '@/engine/types';
 
@@ -857,6 +858,7 @@ export default function SessionPage() {
 
   return (
     <div className="min-h-screen overflow-x-hidden">
+      <MobileLandscapeGate />
       <KeyboardHelp />
 
       {/* Wrap-up overlay — broadcast sign-off */}
