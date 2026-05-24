@@ -79,11 +79,8 @@ function validateMessages(messages: unknown): messages is { role: string; conten
 
 export async function POST(req: NextRequest) {
   const isHostedMode = process.env.NEXT_PUBLIC_HOSTED_MODE === 'true';
+  const allowServerProxy = process.env.ALLOW_SERVER_ANTHROPIC_PROXY === 'true';
   const ip = getClientIp(req);
-
-  if (!hasTrustedOrigin(req, isHostedMode)) {
-    return jsonError('Cross-origin requests are not allowed.', 403);
-  }
 
   // Check content length before parsing
   const contentLength = req.headers.get('content-length');
@@ -126,13 +123,24 @@ export async function POST(req: NextRequest) {
     }
   }
 
+  const usingServerKey = isHostedMode || (!body.apiKey && allowServerProxy);
+  if (!hasTrustedOrigin(req, usingServerKey)) {
+    return jsonError('Cross-origin requests are not allowed.', 403);
+  }
+
   // In hosted mode, always use the server key so the public site cannot act as a
-  // generic proxy for arbitrary client-supplied API keys.
+  // generic proxy for arbitrary client-supplied API keys. Outside hosted mode,
+  // only use the server key when explicitly opted in for trusted same-origin use.
   const apiKey = isHostedMode
     ? (process.env.ANTHROPIC_API_KEY || '')
-    : (body.apiKey || process.env.ANTHROPIC_API_KEY || '');
+    : (body.apiKey || (allowServerProxy ? process.env.ANTHROPIC_API_KEY || '' : ''));
   if (!apiKey) {
-    return jsonError('No API key configured. Set ANTHROPIC_API_KEY on the server.', 400);
+    return jsonError(
+      isHostedMode
+        ? 'No API key configured. Set ANTHROPIC_API_KEY on the server.'
+        : 'No API key configured. Enter your Claude API key, use Claude Local, or opt in to ALLOW_SERVER_ANTHROPIC_PROXY.',
+      400,
+    );
   }
 
   // --- Rate limiting & spend cap (hosted mode only, requires Redis) ---

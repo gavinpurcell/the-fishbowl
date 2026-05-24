@@ -4,15 +4,32 @@ import { createHostedSessionToken } from '@/lib/hostedSession';
 
 export const runtime = 'edge';
 
+function hasTrustedOrigin(req: NextRequest): boolean {
+  const origin = req.headers.get('origin');
+  const host = req.headers.get('x-forwarded-host') || req.headers.get('host');
+
+  if (!origin || !host) return false;
+
+  try {
+    return new URL(origin).host === host;
+  } catch {
+    return false;
+  }
+}
+
 /**
  * Lightweight pre-session capacity check.
  * Returns { available: true } or { available: false, reason: 'rate_limit' | 'spend_cap' }.
  * Only enforced in hosted mode — self-hosted always returns available.
  */
-export async function GET(req: NextRequest) {
+export async function POST(req: NextRequest) {
   const isHosted = process.env.NEXT_PUBLIC_HOSTED_MODE === 'true';
   if (!isHosted) {
     return Response.json({ available: true });
+  }
+
+  if (!hasTrustedOrigin(req)) {
+    return Response.json({ error: 'Cross-origin requests are not allowed.' }, { status: 403 });
   }
 
   const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
@@ -28,7 +45,14 @@ export async function GET(req: NextRequest) {
     });
   }
 
-  const sessionId = req.nextUrl.searchParams.get('sessionId');
+  let body: { sessionId?: string };
+  try {
+    body = await req.json();
+  } catch {
+    return Response.json({ error: 'Invalid JSON.' }, { status: 400 });
+  }
+
+  const sessionId = typeof body.sessionId === 'string' ? body.sessionId : '';
   if (!sessionId) {
     return Response.json({ error: 'sessionId is required.' }, { status: 400 });
   }

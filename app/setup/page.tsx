@@ -63,7 +63,10 @@ export default function SetupPage() {
       setChecking(true);
       try {
         sessionId = crypto.randomUUID();
-        const res = await fetch(`/api/capacity?sessionId=${encodeURIComponent(sessionId)}`, {
+        const res = await fetch('/api/capacity', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sessionId }),
           cache: 'no-store',
         });
         const data = await res.json();

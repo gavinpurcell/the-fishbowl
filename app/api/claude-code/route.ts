@@ -38,13 +38,51 @@ function hasTrustedOrigin(req: NextRequest): boolean {
   const origin = req.headers.get('origin');
   const host = req.headers.get('x-forwarded-host') || req.headers.get('host');
 
-  if (!origin || !host) return true;
+  if (!origin || !host) return false;
 
   try {
     return new URL(origin).host === host;
   } catch {
     return false;
   }
+}
+
+function getHostname(req: NextRequest): string | null {
+  const host = req.headers.get('x-forwarded-host') || req.headers.get('host');
+  if (!host) return null;
+
+  try {
+    return new URL(`http://${host}`).hostname;
+  } catch {
+    return null;
+  }
+}
+
+function isLocalOrPrivateHostname(hostname: string): boolean {
+  const normalized = hostname.toLowerCase();
+  if (normalized === 'localhost' || normalized === '::1' || normalized.endsWith('.local')) {
+    return true;
+  }
+
+  if (/^127(?:\.\d{1,3}){3}$/.test(normalized)) {
+    return true;
+  }
+
+  if (/^10(?:\.\d{1,3}){3}$/.test(normalized)) {
+    return true;
+  }
+
+  if (/^192\.168(?:\.\d{1,3}){2}$/.test(normalized)) {
+    return true;
+  }
+
+  const match = normalized.match(/^172\.(\d{1,3})(?:\.\d{1,3}){2}$/);
+  if (match) {
+    const secondOctet = parseInt(match[1], 10);
+    return secondOctet >= 16 && secondOctet <= 31;
+  }
+
+  return false;
 }
 
 function validateMessages(messages: unknown): messages is { role: string; content: string }[] {
@@ -76,6 +114,15 @@ function validateMessages(messages: unknown): messages is { role: string; conten
 export async function POST(req: NextRequest) {
   if ((process.env.NEXT_PUBLIC_HOSTED_MODE === 'true') || process.env.VERCEL === '1') {
     return jsonError('Claude Local is disabled in hosted deployments.', 403);
+  }
+
+  const hostname = getHostname(req);
+  const allowRemoteClaudeCode = process.env.ALLOW_REMOTE_CLAUDE_CODE === 'true';
+  if (!hostname || (!isLocalOrPrivateHostname(hostname) && !allowRemoteClaudeCode)) {
+    return jsonError(
+      'Claude Local is only available on localhost or a private network. Set ALLOW_REMOTE_CLAUDE_CODE=true to override this intentionally.',
+      403,
+    );
   }
 
   if (!hasTrustedOrigin(req)) {
