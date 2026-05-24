@@ -424,7 +424,7 @@ html, body {
    entire viewport and the user can't see the full UX. */
 @media (max-width: 932px) and (orientation: landscape) {
   .scene-viewport {
-    max-height: 70vh;
+    max-height: min(70vh, calc(100svh - 148px));
     width: auto;
     margin-left: auto;
     margin-right: auto;
@@ -1439,6 +1439,68 @@ html, body {
 
 .dossier-slide-in {
   animation: dossierSlideIn 0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+/* Phone landscape is physically short even when it clears Tailwind's `sm`
+   width breakpoint. Keep the initial-take dossier readable without a hollow
+   desktop-style right column. */
+@media (max-width: 932px) and (orientation: landscape) {
+  .initial-take-card {
+    max-height: calc(100svh - 118px);
+    overflow: hidden;
+  }
+
+  .initial-take-layout {
+    flex-direction: column !important;
+  }
+
+  .initial-take-profile {
+    width: auto !important;
+    min-height: 0;
+    flex-direction: row !important;
+    justify-content: flex-start !important;
+    align-items: center !important;
+    gap: 12px;
+    padding: 10px 12px !important;
+    border-right: 0 !important;
+    border-bottom: 1px solid var(--dark-border) !important;
+  }
+
+  .initial-take-portrait {
+    width: 44px !important;
+    height: 44px !important;
+    margin: 0 !important;
+    border-radius: 6px !important;
+  }
+
+  .initial-take-description {
+    display: none !important;
+  }
+
+  .initial-take-watermark {
+    display: none !important;
+  }
+
+  .initial-take-counter {
+    margin: 0 0 0 auto !important;
+    white-space: nowrap;
+  }
+
+  .initial-take-copy {
+    padding: 12px 14px !important;
+    max-height: calc(100svh - 188px) !important;
+    overflow-y: auto;
+  }
+
+  .initial-take-copy .font-pixel {
+    margin-bottom: 8px !important;
+    font-size: 10px !important;
+  }
+
+  .initial-take-text {
+    font-size: 13px !important;
+    line-height: 1.5 !important;
+  }
 }
 
 /* Timer subtle brightness pulse when session is active */

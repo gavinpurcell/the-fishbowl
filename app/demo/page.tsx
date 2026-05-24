@@ -444,7 +444,7 @@ function DemoPageContent() {
               </div>
             ) : currentPanelist && (
               <div
-                className="dossier-slide-in overflow-hidden"
+                className="dossier-slide-in overflow-hidden initial-take-card"
                 key={currentPanelist.id}
                 style={{
                   background: 'var(--dark-surface)',
@@ -457,7 +457,7 @@ function DemoPageContent() {
               >
                 <div style={{ height: '1px', background: 'linear-gradient(90deg, ' + currentPanelist.color + ', transparent 80%)' }} />
                 <div
-                  className="font-pixel hidden sm:block"
+                  className="font-pixel hidden sm:block initial-take-watermark"
                   style={{
                     position: 'absolute',
                     top: '14px',
@@ -473,13 +473,13 @@ function DemoPageContent() {
                   PANELIST BRIEF
                 </div>
 
-                <div className="flex flex-col sm:flex-row">
+                <div className="flex flex-col sm:flex-row initial-take-layout">
                   <div
-                    className="sm:w-64 flex-shrink-0 flex flex-col items-center justify-center py-6 sm:py-10 px-4 sm:px-6 border-b sm:border-b-0 sm:border-r"
+                    className="sm:w-64 flex-shrink-0 flex flex-col items-center justify-center py-6 sm:py-10 px-4 sm:px-6 border-b sm:border-b-0 sm:border-r initial-take-profile"
                     style={{ borderColor: 'var(--dark-border)' }}
                   >
                     <div
-                      className="relative w-16 h-16 sm:w-24 sm:h-24 overflow-hidden mb-3 sm:mb-4"
+                      className="relative w-16 h-16 sm:w-24 sm:h-24 overflow-hidden mb-3 sm:mb-4 initial-take-portrait"
                       style={{
                         border: `2px solid ${currentPanelist.color}`,
                         borderRadius: '8px',
@@ -521,13 +521,13 @@ function DemoPageContent() {
                       </div>
                     </div>
                     <p
-                      className="text-xs text-center mt-3 leading-relaxed px-2 hidden sm:block"
+                      className="text-xs text-center mt-3 leading-relaxed px-2 hidden sm:block initial-take-description"
                       style={{ color: 'rgba(255,255,255,0.6)' }}
                     >
                       {currentPanelist.description}
                     </p>
                     <div
-                      className="mt-3 sm:mt-4"
+                      className="mt-3 sm:mt-4 initial-take-counter"
                       style={{
                         fontFamily: "'DM Mono', monospace",
                         fontSize: '9px',
@@ -540,7 +540,7 @@ function DemoPageContent() {
                     </div>
                   </div>
 
-                  <div className="flex-1 min-w-0 p-4 sm:p-8">
+                  <div className="flex-1 min-w-0 p-4 sm:p-8 initial-take-copy">
                     <div
                       className="font-pixel mb-4"
                       style={{
@@ -553,8 +553,8 @@ function DemoPageContent() {
                     </div>
                     {briefingText ? (
                       <p
-                        className="text-xl sm:text-sm leading-relaxed whitespace-pre-wrap"
-                        style={{ color: 'rgba(255,255,255,0.65)' }}
+                        className="text-sm leading-relaxed whitespace-pre-wrap initial-take-text"
+                        style={{ color: 'rgba(255,255,255,0.65)', overflowWrap: 'break-word' }}
                       >
                         {briefingText}
                         {isSpeaking && (

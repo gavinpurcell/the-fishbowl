@@ -936,7 +936,7 @@ export default function SessionPage() {
                 <>
                 {/* Character Dossier Card — classified document / RPG briefing */}
                 <div
-                  className="dossier-slide-in"
+                  className="dossier-slide-in initial-take-card"
                   key={currentPanelist.id}
                   style={{
                     background: 'var(--dark-surface)',
@@ -952,7 +952,7 @@ export default function SessionPage() {
 
                   {/* PANELIST BRIEF watermark */}
                   <div
-                    className="font-pixel hidden sm:block"
+                    className="font-pixel hidden sm:block initial-take-watermark"
                     style={{
                       position: 'absolute',
                       top: '14px',
@@ -968,15 +968,15 @@ export default function SessionPage() {
                     PANELIST BRIEF
                   </div>
 
-                  <div className="flex flex-col sm:flex-row">
+                  <div className="flex flex-col sm:flex-row initial-take-layout">
                     {/* Left: Portrait + Identity */}
                     <div
-                      className="sm:w-64 flex-shrink-0 flex flex-col items-center justify-center py-6 sm:py-10 px-4 sm:px-6 border-b sm:border-b-0 sm:border-r"
+                      className="sm:w-64 flex-shrink-0 flex flex-col items-center justify-center py-6 sm:py-10 px-4 sm:px-6 border-b sm:border-b-0 sm:border-r initial-take-profile"
                       style={{ borderColor: 'var(--dark-border)' }}
                     >
                       {/* Pixel art portrait */}
                       <div
-                        className="relative w-16 h-16 sm:w-24 sm:h-24 overflow-hidden mb-3 sm:mb-4"
+                        className="relative w-16 h-16 sm:w-24 sm:h-24 overflow-hidden mb-3 sm:mb-4 initial-take-portrait"
                         style={{
                           border: `2px solid ${currentPanelist.color}`,
                           borderRadius: '8px',
@@ -1025,7 +1025,7 @@ export default function SessionPage() {
 
                       {/* Description */}
                       <p
-                        className="text-xs text-center mt-3 leading-relaxed px-2 hidden sm:block"
+                        className="text-xs text-center mt-3 leading-relaxed px-2 hidden sm:block initial-take-description"
                         style={{ color: 'rgba(255,255,255,0.4)' }}
                       >
                         {currentPanelist.description}
@@ -1033,7 +1033,7 @@ export default function SessionPage() {
 
                       {/* Panelist counter */}
                       <div
-                        className="mt-3 sm:mt-4"
+                        className="mt-3 sm:mt-4 initial-take-counter"
                         style={{
                           fontFamily: "'DM Mono', monospace",
                           fontSize: '9px',
@@ -1047,7 +1047,7 @@ export default function SessionPage() {
                     </div>
 
                     {/* Right: Initial Take content — scrollable so long responses don't push the page */}
-                    <div className="flex-1 min-w-0 p-4 sm:p-8 overflow-y-auto" style={{ maxHeight: '50vh' }}>
+                    <div className="flex-1 min-w-0 p-4 sm:p-8 overflow-y-auto initial-take-copy" style={{ maxHeight: '50vh' }}>
                       <div
                         className="font-pixel mb-4"
                         style={{
@@ -1060,7 +1060,7 @@ export default function SessionPage() {
                       </div>
                       {briefingText ? (
                         <p
-                          className="text-xl sm:text-sm leading-relaxed whitespace-pre-wrap break-words"
+                          className="text-sm leading-relaxed whitespace-pre-wrap break-words initial-take-text"
                           style={{ color: 'rgba(255,255,255,0.65)', overflowWrap: 'break-word' }}
                         >
                           {briefingText.replace(/\n*▸ continue\n*/g, '\n\n')}
