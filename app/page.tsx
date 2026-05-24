@@ -1,6 +1,7 @@
 'use client';
 
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, useState } from 'react';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { TitleScene } from '@/scene/TitleScene';
 import { loadTitleSprites } from '@/lib/spriteLoader';
@@ -12,15 +13,28 @@ export default function TitlePage() {
   const canvasRef = useRef<HTMLDivElement>(null);
   const sceneRef = useRef<TitleScene | null>(null);
 
+  // Loader gates: showLoader gets a small delay so fast loads never see a flash.
+  // sceneReady flips once the scene's first frame paints, triggering fade-out.
+  const [showLoader, setShowLoader] = useState(false);
+  const [sceneReady, setSceneReady] = useState(false);
+
   useEffect(() => {
     if (!canvasRef.current || sceneRef.current) return;
+
+    // Delay-render the loader by 120ms so fast loads never flash it.
+    const showTimer = setTimeout(() => setShowLoader(true), 120);
+
     const scene = new TitleScene();
     sceneRef.current = scene;
     loadTitleSprites().then(() => {
-      if (canvasRef.current) scene.init(canvasRef.current);
+      if (!canvasRef.current) return;
+      scene.init(canvasRef.current);
+      // Wait one frame so the first paint actually lands before we fade.
+      requestAnimationFrame(() => requestAnimationFrame(() => setSceneReady(true)));
     });
 
     return () => {
+      clearTimeout(showTimer);
       scene.destroy();
       sceneRef.current = null;
     };
@@ -57,6 +71,62 @@ export default function TitlePage() {
               background: 'var(--dark-surface)',
             }}
           />
+
+          {/* Loading state — fishbowl icon + caption until the title scene paints */}
+          <div
+            aria-hidden={sceneReady}
+            style={{
+              position: 'absolute',
+              inset: 0,
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '14px',
+              background: 'var(--dark-surface)',
+              borderRadius: 'inherit',
+              opacity: !showLoader || sceneReady ? 0 : 1,
+              pointerEvents: sceneReady ? 'none' : 'auto',
+              transition: 'opacity 280ms ease-out',
+              zIndex: 4,
+            }}
+          >
+            <style>{`
+              @keyframes fishbowlLoaderPulse {
+                0%, 100% { opacity: 0.92; transform: scale(1); }
+                50%      { opacity: 0.6;  transform: scale(0.98); }
+              }
+              @keyframes fishbowlLoaderCaption {
+                0%, 100% { opacity: 0.95; }
+                50%      { opacity: 0.5; }
+              }
+            `}</style>
+            <Image
+              src="/fishbowl-icon.png"
+              alt=""
+              width={72}
+              height={72}
+              priority
+              style={{
+                imageRendering: 'pixelated',
+                animation: 'fishbowlLoaderPulse 1.6s ease-in-out infinite',
+                filter: 'drop-shadow(0 0 18px rgba(196, 154, 42, 0.35))',
+              }}
+            />
+            <span
+              style={{
+                fontFamily: "'DM Mono', monospace",
+                fontSize: '11px',
+                letterSpacing: '0.22em',
+                textTransform: 'uppercase',
+                color: 'var(--accent-gold)',
+                animation: 'fishbowlLoaderCaption 1.6s ease-in-out infinite',
+              }}
+            >
+              Gathering the Panel…
+            </span>
+          </div>
+
           <div className="scene-badge">
             <div className="scene-badge-dot" />
             <span
