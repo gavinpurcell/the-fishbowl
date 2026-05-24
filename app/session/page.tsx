@@ -79,18 +79,11 @@ export default function SessionPage() {
 
   // Moderation state
   const [inModeration, setInModeration] = useState(false);
-  // Moderation choice popup — "Ask a Question" / "Keep Talking" / "Wrap Up"
+  // Moderation choice — "Ask a Question" / "Keep Talking" / "Wrap Up".
+  // Renders as a brass-plate strip anchored to the bottom of the scene
+  // viewport so it doesn't cover the last speech bubble.
   const [showModerationChoice, setShowModerationChoice] = useState(false);
-  // Center-screen "It's your turn!" announcement. Auto-shows when
-  // showModerationChoice flips true; auto-dismisses when the user picks any
-  // action or taps the backdrop. The bottom bar stays as the persistent
-  // control after dismissal.
-  const [showTurnAnnouncement, setShowTurnAnnouncement] = useState(false);
   const moderationChoiceRef = useRef<((choice: 'ask' | 'keep' | 'end') => void) | null>(null);
-
-  useEffect(() => {
-    if (showModerationChoice) setShowTurnAnnouncement(true);
-  }, [showModerationChoice]);
 
   // Wrap-up overlay state
   const [showWrapOverlay, setShowWrapOverlay] = useState(false);
@@ -1219,144 +1212,8 @@ export default function SessionPage() {
                 </div>
               )}
 
-              {/* "It's your turn" center-screen announcement — auto-dismisses on action or backdrop tap */}
-              {showTurnAnnouncement && showModerationChoice && viewMode === 'roundtable' && (
-                <div
-                  onClick={() => setShowTurnAnnouncement(false)}
-                  style={{
-                    position: 'absolute',
-                    inset: 0,
-                    zIndex: 30,
-                    background: 'rgba(11, 13, 17, 0.78)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    padding: '20px',
-                    backdropFilter: 'blur(2px)',
-                    animation: 'turnAnnounceIn 220ms ease-out',
-                  }}
-                >
-                  <style>{`
-                    @keyframes turnAnnounceIn {
-                      from { opacity: 0; }
-                      to { opacity: 1; }
-                    }
-                    @keyframes turnCardIn {
-                      from { opacity: 0; transform: translateY(8px) scale(0.97); }
-                      to { opacity: 1; transform: translateY(0) scale(1); }
-                    }
-                  `}</style>
-                  <div
-                    onClick={(e) => e.stopPropagation()}
-                    className="specimen-card"
-                    style={{
-                      ['--brass-accent' as string]: 'var(--accent-gold)',
-                      maxWidth: '440px',
-                      width: '100%',
-                      animation: 'turnCardIn 280ms cubic-bezier(0.22, 1, 0.36, 1) both',
-                    }}
-                  >
-                    <div className="brass-plate">
-                      <div className="brass-screw" />
-                      <span className="brass-label">MODERATOR · YOUR TURN</span>
-                      <div className="brass-screw" />
-                    </div>
-                    <div style={{ padding: '20px 18px 16px' }}>
-                      <div
-                        style={{
-                          fontFamily: "'Silkscreen', monospace",
-                          fontSize: '18px',
-                          color: 'var(--text-primary)',
-                          marginBottom: '6px',
-                        }}
-                      >
-                        IT&apos;S YOUR TURN
-                      </div>
-                      <p
-                        style={{
-                          fontFamily: "'Outfit', sans-serif",
-                          fontSize: '14px',
-                          lineHeight: 1.45,
-                          color: 'var(--text-secondary)',
-                          margin: '0 0 16px 0',
-                        }}
-                      >
-                        Ask the panel a question, let them keep talking, or wrap it up.
-                      </p>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                        <button
-                          onClick={() => {
-                            setShowTurnAnnouncement(false);
-                            if (moderationChoiceRef.current) {
-                              moderationChoiceRef.current('ask');
-                              moderationChoiceRef.current = null;
-                            }
-                          }}
-                          className="font-pixel cursor-pointer"
-                          style={{
-                            background: 'var(--accent-gold)',
-                            color: 'var(--dark-deep)',
-                            border: 'none',
-                            borderRadius: '4px',
-                            padding: '12px 14px',
-                            fontSize: '11px',
-                            letterSpacing: '0.08em',
-                            textAlign: 'left',
-                          }}
-                        >
-                          ▸ ASK A QUESTION
-                        </button>
-                        <button
-                          onClick={() => {
-                            setShowTurnAnnouncement(false);
-                            if (moderationChoiceRef.current) {
-                              moderationChoiceRef.current('keep');
-                              moderationChoiceRef.current = null;
-                            }
-                          }}
-                          className="font-pixel cursor-pointer"
-                          style={{
-                            background: 'transparent',
-                            color: 'var(--accent-gold)',
-                            border: '1px solid rgba(196,154,42,0.45)',
-                            borderRadius: '4px',
-                            padding: '12px 14px',
-                            fontSize: '11px',
-                            letterSpacing: '0.08em',
-                            textAlign: 'left',
-                          }}
-                        >
-                          ▸ KEEP TALKING
-                        </button>
-                        <button
-                          onClick={() => {
-                            setShowTurnAnnouncement(false);
-                            if (moderationChoiceRef.current) {
-                              moderationChoiceRef.current('end');
-                              moderationChoiceRef.current = null;
-                            }
-                          }}
-                          className="font-pixel cursor-pointer"
-                          style={{
-                            background: 'transparent',
-                            color: 'rgba(255,255,255,0.55)',
-                            border: '1px solid rgba(255,255,255,0.15)',
-                            borderRadius: '4px',
-                            padding: '12px 14px',
-                            fontSize: '11px',
-                            letterSpacing: '0.08em',
-                            textAlign: 'left',
-                          }}
-                        >
-                          ▸ WRAP IT UP
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Moderation choice — compact bottom bar, same spot as the input */}
+              {/* Moderation choice — brass-plate strip pinned to the bottom of the scene.
+                  Doesn't cover the speech bubble so the last response stays readable. */}
               {showModerationChoice && viewMode === 'roundtable' && (
                 <div
                   style={{
@@ -1365,105 +1222,125 @@ export default function SessionPage() {
                     left: 0,
                     right: 0,
                     zIndex: 15,
-                    background: 'linear-gradient(transparent, rgba(0,0,0,0.85) 30%)',
-                    padding: '24px 12px 8px',
-                    borderRadius: '0 0 10px 10px',
+                    padding: '8px 12px 8px',
+                    pointerEvents: 'none',
                   }}
                 >
+                  <style>{`
+                    @keyframes turnStripIn {
+                      from { opacity: 0; transform: translateY(6px); }
+                      to { opacity: 1; transform: translateY(0); }
+                    }
+                  `}</style>
                   <div
+                    className="specimen-card"
                     style={{
-                      display: 'flex',
-                      flexWrap: 'wrap',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: '6px',
-                      background: 'rgba(26, 23, 20, 0.9)',
-                      border: '1px solid rgba(196,154,42,0.25)',
-                      borderRadius: '8px',
-                      padding: '8px 10px',
+                      ['--brass-accent' as string]: 'var(--accent-gold)',
+                      pointerEvents: 'auto',
+                      background: 'rgba(26, 23, 20, 0.92)',
+                      backdropFilter: 'blur(2px)',
+                      animation: 'turnStripIn 240ms ease-out',
                     }}
                   >
-                    {/* YOUR TURN label — hidden on mobile, buttons are self-explanatory */}
-                    <span
-                      className="font-pixel hidden sm:inline"
+                    <div className="brass-plate">
+                      <div className="brass-screw" />
+                      <span className="brass-label">MODERATOR · YOUR TURN</span>
+                      <div className="brass-screw" />
+                    </div>
+                    <div
                       style={{
-                        fontSize: '8px',
-                        letterSpacing: '0.1em',
-                        color: 'var(--accent-gold)',
-                        opacity: 0.7,
-                        flexShrink: 0,
+                        display: 'flex',
+                        flexWrap: 'wrap',
+                        alignItems: 'center',
+                        gap: '10px',
+                        padding: '10px 14px',
                       }}
                     >
-                      YOUR TURN
-                    </span>
-
-                    {/* Spacer — desktop only */}
-                    <div className="hidden sm:block" style={{ flex: 1 }} />
-
-                    {/* Three inline buttons */}
-                    <button
-                      onClick={() => {
-                        if (moderationChoiceRef.current) {
-                          moderationChoiceRef.current('ask');
-                          moderationChoiceRef.current = null;
-                        }
-                      }}
-                      className="font-pixel cursor-pointer transition-all"
-                      style={{
-                        background: 'var(--accent-gold)',
-                        color: 'var(--dark-deep)',
-                        border: 'none',
-                        borderRadius: '4px',
-                        padding: '7px 12px',
-                        fontSize: '8px',
-                        letterSpacing: '0.06em',
-                        whiteSpace: 'nowrap',
-                      }}
-                    >
-                      ASK A QUESTION
-                    </button>
-                    <button
-                      onClick={() => {
-                        if (moderationChoiceRef.current) {
-                          moderationChoiceRef.current('keep');
-                          moderationChoiceRef.current = null;
-                        }
-                      }}
-                      className="font-pixel cursor-pointer transition-all"
-                      style={{
-                        background: 'transparent',
-                        color: 'var(--accent-gold)',
-                        border: '1px solid rgba(196,154,42,0.35)',
-                        borderRadius: '4px',
-                        padding: '6px 10px',
-                        fontSize: '8px',
-                        letterSpacing: '0.06em',
-                        whiteSpace: 'nowrap',
-                      }}
-                    >
-                      KEEP TALKING
-                    </button>
-                    <button
-                      onClick={() => {
-                        if (moderationChoiceRef.current) {
-                          moderationChoiceRef.current('end');
-                          moderationChoiceRef.current = null;
-                        }
-                      }}
-                      className="font-pixel cursor-pointer transition-all"
-                      style={{
-                        background: 'none',
-                        color: 'rgba(255,255,255,0.35)',
-                        border: '1px solid rgba(255,255,255,0.1)',
-                        borderRadius: '4px',
-                        padding: '6px 10px',
-                        fontSize: '8px',
-                        letterSpacing: '0.06em',
-                        whiteSpace: 'nowrap',
-                      }}
-                    >
-                      END
-                    </button>
+                      <span
+                        className="hidden sm:inline"
+                        style={{
+                          fontFamily: "'Outfit', sans-serif",
+                          fontSize: '13px',
+                          color: 'var(--text-secondary)',
+                          flex: 1,
+                          minWidth: 0,
+                        }}
+                      >
+                        Ask a question, keep them talking, or wrap it up.
+                      </span>
+                      <div
+                        style={{
+                          display: 'flex',
+                          flexWrap: 'wrap',
+                          alignItems: 'center',
+                          gap: '6px',
+                        }}
+                      >
+                        <button
+                          onClick={() => {
+                            if (moderationChoiceRef.current) {
+                              moderationChoiceRef.current('ask');
+                              moderationChoiceRef.current = null;
+                            }
+                          }}
+                          className="font-pixel cursor-pointer transition-all"
+                          style={{
+                            background: 'var(--accent-gold)',
+                            color: 'var(--dark-deep)',
+                            border: 'none',
+                            borderRadius: '4px',
+                            padding: '8px 14px',
+                            fontSize: '9px',
+                            letterSpacing: '0.08em',
+                            whiteSpace: 'nowrap',
+                          }}
+                        >
+                          ASK A QUESTION
+                        </button>
+                        <button
+                          onClick={() => {
+                            if (moderationChoiceRef.current) {
+                              moderationChoiceRef.current('keep');
+                              moderationChoiceRef.current = null;
+                            }
+                          }}
+                          className="font-pixel cursor-pointer transition-all"
+                          style={{
+                            background: 'transparent',
+                            color: 'var(--accent-gold)',
+                            border: '1px solid rgba(196,154,42,0.5)',
+                            borderRadius: '4px',
+                            padding: '7px 12px',
+                            fontSize: '9px',
+                            letterSpacing: '0.08em',
+                            whiteSpace: 'nowrap',
+                          }}
+                        >
+                          KEEP TALKING
+                        </button>
+                        <button
+                          onClick={() => {
+                            if (moderationChoiceRef.current) {
+                              moderationChoiceRef.current('end');
+                              moderationChoiceRef.current = null;
+                            }
+                          }}
+                          className="font-pixel cursor-pointer transition-all"
+                          style={{
+                            background: 'none',
+                            color: 'rgba(255,255,255,0.55)',
+                            border: '1px solid rgba(255,255,255,0.18)',
+                            borderRadius: '4px',
+                            padding: '7px 12px',
+                            fontSize: '9px',
+                            letterSpacing: '0.08em',
+                            whiteSpace: 'nowrap',
+                          }}
+                        >
+                          WRAP UP
+                        </button>
+                      </div>
+                    </div>
                   </div>
                 </div>
               )}
