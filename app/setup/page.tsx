@@ -81,8 +81,10 @@ export default function SetupPage() {
           throw new Error('Hosted session token missing from capacity check.');
         }
         hostedSessionToken = data.sessionToken;
-      } catch {
-        window.alert('The Fishbowl could not verify availability right now. Please reload and try again in a moment.');
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        console.error('[capacity] check failed:', err);
+        window.alert(`The Fishbowl could not verify availability:\n\n${message}\n\nReload and try again, or open the browser console for details.`);
         return;
       } finally {
         setChecking(false);
