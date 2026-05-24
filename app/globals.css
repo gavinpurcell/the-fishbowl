@@ -410,6 +410,22 @@ html, body {
     0 2px 12px rgba(0, 0, 0, 0.08),
     0 0 40px rgba(196, 154, 42, 0.06),
     inset 0 0 30px rgba(0, 0, 0, 0.03);
+  /* Let vertical page scroll pass through the scene container on touch devices
+     so users can scroll past the speech bubbles and overlays. */
+  touch-action: pan-y;
+}
+
+/* Mobile landscape: keep scene short enough to leave room for the topic banner
+   above and the moderation strip below. Without this the 16/9 scene eats the
+   entire viewport and the user can't see the full UX. */
+@media (max-width: 932px) and (orientation: landscape) {
+  .scene-viewport {
+    max-height: 70vh;
+    width: auto;
+    margin-left: auto;
+    margin-right: auto;
+    aspect-ratio: 16 / 9;
+  }
 }
 
 /* Subtle scanline overlay on the scene — sells the pixel art vibe */
