@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import './globals.css';
 import ActiveSessionBanner from '@/components/ActiveSessionBanner';
 import ThemeToggle from '@/components/ThemeToggle';
+import MobileLandscapeGate from '@/components/MobileLandscapeGate';
 
 export const metadata: Metadata = {
   title: {
@@ -69,6 +70,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <ThemeToggle />
         <ActiveSessionBanner />
         <main id="main-content" className="page-transition-wrapper">{children}</main>
+        <MobileLandscapeGate />
       </body>
     </html>
   );
