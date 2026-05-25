@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import BuyMeCoffeeButton from '@/components/BuyMeCoffeeButton';
 
 export const metadata: Metadata = {
   title: 'Why I Made This - The Fishbowl',
@@ -579,6 +580,8 @@ export default function AboutPage() {
             >
               Try The Fishbowl
             </Link>
+
+            <BuyMeCoffeeButton variant="popup" />
 
             {/* Links row */}
             <div

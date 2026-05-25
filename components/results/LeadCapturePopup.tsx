@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import BuyMeCoffeeButton from '@/components/BuyMeCoffeeButton';
 
 interface Props {
   onDismiss: () => void;
@@ -110,10 +111,23 @@ export default function LeadCapturePopup({ onDismiss, ideaText }: Props) {
                   fontFamily: "'Outfit', sans-serif",
                   fontSize: '14px',
                   color: 'var(--text-secondary)',
+                  marginBottom: '20px',
                 }}
               >
                 I&apos;ll be in touch.
               </p>
+              <p
+                style={{
+                  fontFamily: "'Outfit', sans-serif",
+                  fontSize: '13px',
+                  color: 'var(--text-muted)',
+                  marginBottom: '12px',
+                  lineHeight: 1.45,
+                }}
+              >
+                If this was fun, help me cover the API bills so I can keep it running.
+              </p>
+              <BuyMeCoffeeButton variant="popup" />
             </div>
           ) : (
             <>

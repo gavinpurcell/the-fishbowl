@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { TitleScene } from '@/scene/TitleScene';
 import { loadTitleSprites } from '@/lib/spriteLoader';
+import BuyMeCoffeeButton from '@/components/BuyMeCoffeeButton';
 
 const ROSTER_COLORS = ['#4a9e6e', '#c45a5a', '#5a7ec4', '#d4a040', '#9a6ab4'];
 
@@ -221,6 +222,7 @@ export default function TitlePage() {
 
         {/* Footer */}
         <div className="animate-fade-in animate-fade-in-delay-5 mt-3 flex flex-col items-center gap-3">
+          <BuyMeCoffeeButton variant="footer" />
           <p
             style={{
               fontFamily: "'DM Mono', monospace",
