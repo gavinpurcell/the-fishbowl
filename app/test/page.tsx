@@ -537,19 +537,22 @@ function TestPageContent() {
               ) : currentPanelist && (
                 /* Character Dossier Card — classified document / RPG briefing */
                 <div
-                  className="dossier-slide-in overflow-hidden initial-take-card"
+                  className="dossier-slide-in overflow-hidden initial-take-card specimen-card"
                   key={currentPanelist.id}
                   style={{
+                    ['--brass-accent' as string]: currentPanelist.color,
                     background: 'var(--dark-surface)',
-                    border: '1px solid var(--dark-border)',
-                    borderLeft: `3px solid ${currentPanelist.color}`,
-                    borderRadius: '10px',
-                    boxShadow: '0 4px 24px rgba(0,0,0,0.3), 0 0 40px rgba(196,154,42,0.04)',
+                    boxShadow: '0 4px 24px rgba(0,0,0,0.3)',
                     position: 'relative',
                   }}
                 >
-                  {/* Top gold accent line */}
-                  <div style={{ height: '1px', background: 'linear-gradient(90deg, ' + currentPanelist.color + ', transparent 80%)' }} />
+                  {/* Brass-plate header — matches the setup page panel cards */}
+                  <div className="brass-plate">
+                    <div className="brass-screw" />
+                    <span className="brass-label">PANELIST · {String(briefingIndex + 1).padStart(2, '0')} / {String(FAKE_PANELISTS.length).padStart(2, '0')}</span>
+                    <span className="brass-marker">{currentPanelist.name.charAt(0).toUpperCase()}</span>
+                    <div className="brass-screw" />
+                  </div>
 
                   {/* PANELIST BRIEF watermark */}
                   <div
@@ -606,21 +609,18 @@ function TestPageContent() {
                         >
                           {currentPanelist.name}
                         </div>
-                        {/* Role — DM Mono uppercase pill */}
+                        {/* Role — plain colored DM Mono caps, no tinted chip */}
                         <div
-                          className="inline-block mt-2 px-2.5 py-0.5"
+                          className="mt-2"
                           style={{
                             fontFamily: "'DM Mono', monospace",
                             fontSize: '9px',
-                            letterSpacing: '0.08em',
+                            letterSpacing: '0.14em',
                             textTransform: 'uppercase',
                             color: currentPanelist.color,
-                            background: currentPanelist.color + '15',
-                            border: `1px solid ${currentPanelist.color}30`,
-                            borderRadius: '4px',
                           }}
                         >
-                          {currentPanelist.role}
+                          Genus: {currentPanelist.role}
                         </div>
                       </div>
 
